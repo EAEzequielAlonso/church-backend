@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, OneToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, OneToOne, OneToMany } from 'typeorm';
 import { Course } from './course.entity';
 import { CalendarEvent } from '../../agenda/entities/calendar-event.entity';
+import { SessionAttendance } from './session-attendance.entity';
 
 @Entity('course_sessions')
 export class CourseSession {
@@ -32,4 +33,7 @@ export class CourseSession {
     @OneToOne(() => CalendarEvent, (event) => event.session, { nullable: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'calendar_event_id' })
     event: CalendarEvent;
+
+    @OneToMany(() => SessionAttendance, (attendance) => attendance.session)
+    attendances: SessionAttendance[];
 }
