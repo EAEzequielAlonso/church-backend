@@ -116,7 +116,7 @@ export class AgendaService {
                 .andWhere(
                     new Brackets(qb => {
                         qb.where('(event.type = :churchType AND church.id = :churchId)', { churchType: 'CHURCH', churchId })
-                            .orWhere('(event.type = :personalType AND organizer.id = :personId)', { personalType: 'PERSONAL', personId })
+                            .orWhere('(organizer.id = :personId)', { personId })
                             .orWhere('(event.type = :ministryType AND ministry.id IN (:...ministryIds))', {
                                 ministryType: 'MINISTRY',
                                 ministryIds: ministryIds.length > 0 ? ministryIds : ['00000000-0000-0000-0000-000000000000']
@@ -248,10 +248,12 @@ export class AgendaService {
             church: { id: churchId }
         });
 
+        // Always assign organizer (User who created the event)
+        event.organizer = await this.personRepository.findOne({ where: { id: personId } });
+
         // Permission Logic
         if (type === CalendarEventType.PERSONAL) {
-            // Linked to organizer (User)
-            event.organizer = await this.personRepository.findOne({ where: { id: personId } });
+            // Already assigned above
         } else if (type === CalendarEventType.CHURCH) {
             // Check Capability
             if (!permissions.includes('AGENDA_CREATE_CHURCH') && !roles.includes('ADMIN_CHURCH')) {
@@ -277,7 +279,7 @@ export class AgendaService {
             // If you have CHURCH_MANAGE or AGENDA_CREATE_CHURCH, you likely can override.
             // But let's verify specific ministry leadership for standard leaders.
 
-            const hasGlobalOverride = permissions.includes('AGENDA_CREATE_CHURCH') || roles.includes('ADMIN_CHURCH');
+            const hasGlobalOverride = permissions.includes('AGENDA_CREATE_CHURCH') || roles.includes('ADMIN_CHURCH') || roles.includes('AUDITOR');
 
             if (!hasGlobalOverride) {
                 // Check if leader of this specific ministry
@@ -307,7 +309,7 @@ export class AgendaService {
             // Permission Check: Must be MODERATOR of the group
             let isModerator = false;
             // Global override? Maybe CHURCH_MANAGE
-            const hasGlobalOverride = permissions.includes('AGENDA_CREATE_CHURCH') || roles.includes('ADMIN_CHURCH');
+            const hasGlobalOverride = permissions.includes('AGENDA_CREATE_CHURCH') || roles.includes('ADMIN_CHURCH') || roles.includes('AUDITOR');
 
             if (!hasGlobalOverride) {
                 if (memberId) {
@@ -450,14 +452,31 @@ export class AgendaService {
         if (!event) throw new NotFoundException('Evento no encontrado');
 
         // Basic permission check: Admin or Organizer
-        const isAdmin = roles.includes('ADMIN_CHURCH');
+        const isAdmin = roles.includes('ADMIN_CHURCH') || roles.includes('AUDITOR');
         const isOrganizer = event.organizer?.id === personId;
 
-        // If it's a small group event, we might want to check for moderator too, 
-        // but for now let's keep it simple (Admin/Organizer). 
-        // Most group meetings in this system are created by the leader (organizer).
+        // Moderator Check
+        let isModerator = false;
+        if (event.type === CalendarEventType.SMALL_GROUP && event.smallGroup) {
+            // Need to fetch group members if not loaded? event.smallGroup has ID.
+            // But we need to check if USER is moderator of THIS group.
+            // We can check via SmallGroupMember repository or if we load relations.
+            // event relations: ['organizer', 'smallGroup', 'ministry', 'attendees']
+            // 'smallGroup' is loaded. Does it have members?
+            // Usually not fully loaded in Event entity unless specified.
+            // Better to query membership.
+            const membership = await this.smallGroupMemberRepository.findOne({
+                where: {
+                    group: { id: event.smallGroup.id },
+                    member: { person: { id: personId } }
+                }
+            });
+            if (membership && membership.role === 'MODERATOR') {
+                isModerator = true;
+            }
+        }
 
-        if (!isAdmin && !isOrganizer) {
+        if (!isAdmin && !isOrganizer && !isModerator) {
             throw new ForbiddenException('No tienes permiso para editar este evento');
         }
 
@@ -476,15 +495,29 @@ export class AgendaService {
     async deleteEvent(id: string, personId: string, roles: string[]) {
         const event = await this.eventRepository.findOne({
             where: { id },
-            relations: ['organizer']
+            relations: ['organizer', 'smallGroup']
         });
 
         if (!event) throw new NotFoundException('Evento no encontrado');
 
-        const isAdmin = roles.includes('ADMIN_CHURCH');
+        const isAdmin = roles.includes('ADMIN_CHURCH') || roles.includes('AUDITOR');
         const isOrganizer = event.organizer?.id === personId;
 
-        if (!isAdmin && !isOrganizer) {
+        // Moderator Check
+        let isModerator = false;
+        if (event.type === CalendarEventType.SMALL_GROUP && event.smallGroup) {
+            const membership = await this.smallGroupMemberRepository.findOne({
+                where: {
+                    group: { id: event.smallGroup.id },
+                    member: { person: { id: personId } }
+                }
+            });
+            if (membership && membership.role === 'MODERATOR') {
+                isModerator = true;
+            }
+        }
+
+        if (!isAdmin && !isOrganizer && !isModerator) {
             throw new ForbiddenException('No tienes permiso para eliminar este evento');
         }
 

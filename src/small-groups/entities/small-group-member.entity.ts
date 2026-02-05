@@ -1,9 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, Unique } from 'typeorm';
 import { ChurchMember } from '../../members/entities/church-member.entity';
 import { SmallGroup } from './small-group.entity';
 import { SmallGroupRole } from '../../common/enums';
 
 @Entity('small_group_members')
+@Unique(['group', 'member'])
 export class SmallGroupMember {
     @PrimaryGeneratedColumn('uuid')
     id: string;

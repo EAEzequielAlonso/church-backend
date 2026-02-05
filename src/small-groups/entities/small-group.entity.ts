@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { SmallGroupMember } from './small-group-member.entity';
 import { CalendarEvent } from '../../agenda/entities/calendar-event.entity';
@@ -37,6 +37,7 @@ export class SmallGroup {
     @Column({ default: false })
     openEnrollment: boolean;
 
+    @Index()
     @Column({
         type: 'enum',
         enum: SmallGroupStatus,
@@ -44,6 +45,7 @@ export class SmallGroup {
     })
     status: SmallGroupStatus;
 
+    @Index()
     @ManyToOne(() => Church, (church) => church.smallGroups)
     church: Church;
 

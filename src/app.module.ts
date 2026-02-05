@@ -29,22 +29,30 @@ import { DonationsModule } from './donations/donations.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_DATABASE'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,
-        dropSchema: true,
-        autoLoadEntities: true,
-      }),
-      inject: [ConfigService],
-    }),
+  imports: [ConfigModule],
+  useFactory: (configService: ConfigService) => {
+
+  const dbConfig = {
+    type: 'postgres' as const,
+    host: configService.get<string>('DB_HOST'),
+    port: Number(configService.get<string>('DB_PORT')), // 👈 FIX
+    username: configService.get<string>('DB_USERNAME'),
+    password: configService.get<string>('DB_PASSWORD'),
+    database: configService.get<string>('DB_DATABASE'),
+    entities: [__dirname + '/**/*.entity{.ts,.js}'],
+    synchronize: true,
+    dropSchema: true,
+    autoLoadEntities: true,
+  };
+
+  console.log('DB CONFIG =>', dbConfig);
+
+  return dbConfig;
+},
+  inject: [ConfigService],
+}),
     AuthModule,
     MembersModule,
     SmallGroupsModule,
