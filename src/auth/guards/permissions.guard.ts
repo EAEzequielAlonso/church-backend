@@ -44,12 +44,18 @@ export class PermissionsGuard implements CanActivate {
             }
         });
 
+        // DEBUG: Permission Check
+        console.log(`[PermissionsGuard] User: ${user.email} | Roles: ${JSON.stringify(userFunctionalRoles)}`);
+        console.log(`[PermissionsGuard] Required: ${JSON.stringify(requiredPermissions)}`);
+        // console.log(`[PermissionsGuard] Has: ${JSON.stringify(Array.from(userPermissions))}`);
+
         // 3. Check if user has ALL required permissions
         const hasPermission = requiredPermissions.every((permission) =>
             userPermissions.has(permission),
         );
 
         if (!hasPermission) {
+            console.warn(`[PermissionsGuard] DENIED. Missing permissions.`);
             throw new ForbiddenException('Insufficient permissions');
         }
 

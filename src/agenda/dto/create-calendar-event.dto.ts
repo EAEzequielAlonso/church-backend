@@ -39,7 +39,7 @@ export class CreateCalendarEventDto {
 
     @IsOptional()
     @IsUUID()
-    smallGroupId?: string; // If type is SMALL_GROUP
+    groupId?: string; // If type is SMALL_GROUP / GROUP
 
     @IsOptional()
     @IsUUID('4', { each: true })

@@ -1,11 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, OneToMany, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
-import { ChurchMember } from '../../members/entities/church-member.entity';
+import { ChurchPerson } from '../../members/entities/church-person.entity';
 import { Notification } from '../../notifications/entities/notification.entity';
 
 import { MaritalStatus, Sex } from 'src/common/enums';
-import { PersonInvited } from '../../courses/entities/person-invited.entity';
-
 @Entity('persons')
 export class Person {
   @PrimaryGeneratedColumn('uuid')
@@ -93,15 +91,13 @@ export class Person {
   @OneToOne(() => User, (user) => user.person, { nullable: true })
   user: User;
 
-  @OneToMany(() => ChurchMember, (member) => member.person)
-  memberships: ChurchMember[];
+  @OneToMany(() => ChurchPerson, (member) => member.person)
+  memberships: ChurchPerson[];
 
   @OneToMany(() => Notification, (notification) => notification.person)
   notifications: Notification[];
 
-  @OneToOne(() => PersonInvited, { nullable: true })
-  @JoinColumn({ name: 'person_invited_id' })
-  personInvited: PersonInvited;
+
 
 
 

@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Discipleship } from './discipleship.entity';
 import { DiscipleshipMeeting } from './discipleship-meeting.entity';
-import { ChurchMember } from '../../members/entities/church-member.entity';
+import { ChurchPerson } from '../../members/entities/church-person.entity';
 import { DiscipleshipNoteType } from '../../common/enums';
 
 @Entity('discipleship_notes')
@@ -17,9 +17,9 @@ export class DiscipleshipNote {
     @JoinColumn({ name: 'meeting_id' })
     meeting: DiscipleshipMeeting;
 
-    @ManyToOne(() => ChurchMember, { nullable: false })
+    @ManyToOne(() => ChurchPerson, { nullable: false })
     @JoinColumn({ name: 'author_id' })
-    author: ChurchMember;
+    author: ChurchPerson;
 
     @Column({
         type: 'enum',

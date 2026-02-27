@@ -4,13 +4,17 @@ export enum BookOwnershipType {
 }
 
 export enum BookStatus {
-    AVAILABLE = 'AVAILABLE',
-    LOANED = 'LOANED',
+    AVAILABLE = 'AVAILABLE', // Computed: No active loans
+    LOANED = 'LOANED',       // Computed: Has active loan (APPROVED/DELIVERED)
+    REMOVED = 'REMOVED',     // Soft deleted or manually set
 }
 
 export enum LoanStatus {
     REQUESTED = 'REQUESTED',
-    ACTIVE = 'ACTIVE',
-    RETURNED = 'RETURNED',
+    APPROVED = 'APPROVED',
+    DELIVERED = 'DELIVERED', // Active loan
+    RETURNED = 'RETURNED',   // Completed
     REJECTED = 'REJECTED',
+    CANCELLED = 'CANCELLED',
+    ACTIVE = 'ACTIVE', // Deprecated: Used for legacy data migration
 }

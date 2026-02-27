@@ -7,7 +7,7 @@ import { CareParticipant } from './entities/care-participant.entity';
 import { CareNote } from './entities/care-note.entity';
 import { CareSession } from './entities/care-session.entity';
 import { CareTask } from './entities/care-task.entity';
-import { ChurchMember as Member } from '../members/entities/church-member.entity';
+import { ChurchPerson as Member } from '../members/entities/church-person.entity';
 import { Church } from '../churches/entities/church.entity';
 import { MembersService } from 'src/members/members.service';
 import { Person } from 'src/users/entities/person.entity';

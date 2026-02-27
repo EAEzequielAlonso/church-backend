@@ -1,17 +1,18 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, EntityManager } from 'typeorm';
-import { ChurchMember } from './entities/church-member.entity';
+import { ChurchPerson } from './entities/church-person.entity';
 import { Person } from '../users/entities/person.entity';
 import { User } from '../users/entities/user.entity';
 import { CareParticipant } from '../counseling/entities/care-participant.entity';
 import { CreateMemberDto } from './dto/create-member.dto';
-import { MembershipStatus, EcclesiasticalRole, FunctionalRole } from '../common/enums';
+import { EcclesiasticalRole, FunctionalRole } from '../common/enums';
+import { MembershipStatus } from './enums/membership-status.enum';
 
 @Injectable()
 export class MembersService {
     constructor(
-        @InjectRepository(ChurchMember) private memberRepository: Repository<ChurchMember>,
+        @InjectRepository(ChurchPerson) private memberRepository: Repository<ChurchPerson>,
         @InjectRepository(Person) private personRepository: Repository<Person>,
         @InjectRepository(User) private userRepository: Repository<User>,
         @InjectRepository(CareParticipant) private participantRepo: Repository<CareParticipant>,
@@ -31,7 +32,7 @@ export class MembersService {
 
     async create(createMemberDto: CreateMemberDto, churchId: string, manager?: EntityManager) {
         const personRepo = manager ? manager.getRepository(Person) : this.personRepository;
-        const memberRepo = manager ? manager.getRepository(ChurchMember) : this.memberRepository;
+        const memberRepo = manager ? manager.getRepository(ChurchPerson) : this.memberRepository;
 
         const {
             email,
@@ -113,7 +114,7 @@ export class MembersService {
             church: { id: churchId },
             ecclesiasticalRole: ecclesiasticalRole || EcclesiasticalRole.NONE,
             functionalRoles: functionalRoles || [FunctionalRole.MEMBER],
-            status: status || MembershipStatus.MEMBER,
+            membershipStatus: status || MembershipStatus.MEMBER,
             joinedAt: new Date()
         });
 
@@ -128,7 +129,7 @@ export class MembersService {
             .where('church.id = :churchId', { churchId });
 
         if (status) {
-            query.andWhere('member.status = :status', { status });
+            query.andWhere('member.membershipStatus = :status', { status });
         }
 
         return query.getMany();
@@ -189,7 +190,7 @@ export class MembersService {
         }
 
         if (updateData.status) {
-            member.status = updateData.status;
+            member.membershipStatus = updateData.status;
         }
 
         if (updateData.ecclesiasticalRole) {
@@ -258,7 +259,14 @@ export class MembersService {
 
     async remove(id: string, churchId: string) {
         const member = await this.findOne(id, churchId);
-        return this.memberRepository.remove(member);
+        try {
+            return await this.memberRepository.remove(member);
+        } catch (error) {
+            if (error.code === '23503') { // Foreign Key Violation
+                throw new ConflictException('No se puede eliminar este miembro porque tiene registros asociados (como asistencias, grupos o ministerios). Te sugerimos ARCHIVARLO en su lugar para mantener la integridad de los datos.');
+            }
+            throw error;
+        }
     }
 
     async requestJoin(userId: string, personId: string, targetChurchId: string) {
@@ -298,7 +306,7 @@ export class MembersService {
             person: person,
             church: { id: targetChurchId },
             ecclesiasticalRole: EcclesiasticalRole.NONE,
-            status: MembershipStatus.MEMBER, // Pending/Prospect
+            membershipStatus: MembershipStatus.MEMBER, // Pending/Prospect
         });
 
         const savedMember = await this.memberRepository.save(member);
@@ -311,7 +319,7 @@ export class MembersService {
         return savedMember;
     }
 
-    async createFromVisitor(visitor: any, churchId: string) {
+    async createFromVisitor(visitor: any, churchId: string, status: MembershipStatus = MembershipStatus.MEMBER) {
         // 1. Check if Person exists by email (if available)
         let person: Person | null = null;
         if (visitor.email) {
@@ -349,7 +357,7 @@ export class MembersService {
             ecclesiasticalRole: EcclesiasticalRole.NONE,
             // Default roles for new member
             functionalRoles: [FunctionalRole.MEMBER],
-            status: MembershipStatus.MEMBER,
+            membershipStatus: status,
             joinedAt: new Date()
         });
 

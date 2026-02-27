@@ -24,13 +24,6 @@ export enum SubscriptionStatus {
 //     MEMBER = 'MEMBER',
 // }
 
-export enum MembershipStatus {
-    MEMBER = 'MEMBER',
-    CHILD = 'CHILD',
-    DISCIPLINED = 'DISCIPLINED',
-    EXCOMMUNICATED = 'EXCOMMUNICATED',
-    INACTIVE = 'INACTIVE'
-}
 
 export enum EcclesiasticalRole {
     PASTOR = 'PASTOR',
@@ -80,11 +73,7 @@ export enum MinistryRole {
     TEAM_MEMBER = 'MINISTRY_TEAM_MEMBER'
 }
 
-export enum SmallGroupRole {
-    MODERATOR = 'MODERATOR',
-    COLLABORATOR = 'COLLABORATOR',
-    PARTICIPANT = 'PARTICIPANT'
-}
+
 
 export enum FamilyRole {
     FATHER = 'FATHER',
@@ -92,11 +81,7 @@ export enum FamilyRole {
     CHILD = 'CHILD'
 }
 
-export enum SmallGroupStatus {
-    ACTIVE = 'ACTIVE',
-    SUSPENDED = 'SUSPENDED',
-    FINISHED = 'FINISHED'
-}
+
 
 export enum TransactionType {
     INCOME = 'INCOME',
@@ -242,19 +227,6 @@ export enum DiscipleshipTaskStatus {
     COMPLETED = 'COMPLETED',
 }
 
-export enum CourseStatus {
-    DRAFT = 'DRAFT',
-    ACTIVE = 'ACTIVE',
-    SUSPENDED = 'SUSPENDED',
-    COMPLETED = 'COMPLETED',
-}
 
-export enum CourseRole {
-    INSTRUCTOR = 'INSTRUCTOR',
-    ATTENDEE = 'ATTENDEE',
-}
 
-export enum ProgramType {
-    COURSE = 'COURSE',
-    ACTIVITY = 'ACTIVITY',
-}
+

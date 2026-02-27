@@ -58,4 +58,8 @@ export enum AppPermission {
     // --- Agenda ---
     AGENDA_CREATE_CHURCH = 'AGENDA_CREATE_CHURCH',
     AGENDA_CREATE_MINISTRY = 'AGENDA_CREATE_MINISTRY',
+
+    // --- Follow-ups ---
+    FOLLOWUP_VIEW_ALL = 'FOLLOWUP_VIEW_ALL',
+    FOLLOWUP_MANAGE = 'FOLLOWUP_MANAGE',
 }

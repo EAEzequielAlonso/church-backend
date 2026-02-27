@@ -10,14 +10,14 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { Auth0Strategy } from './strategies/auth0.strategy';
 import { User } from '../users/entities/user.entity';
 import { Church } from '../churches/entities/church.entity';
-import { ChurchMember } from '../members/entities/church-member.entity';
+import { ChurchPerson } from '../members/entities/church-person.entity';
 import { UsersModule } from '../users/users.module';
 import { Person } from 'src/users/entities/person.entity';
 
 @Module({
   imports: [
     UsersModule,
-    TypeOrmModule.forFeature([User, Church, ChurchMember, Person]),
+    TypeOrmModule.forFeature([User, Church, ChurchPerson, Person]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

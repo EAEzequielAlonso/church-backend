@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
-import { ChurchMember } from '../../members/entities/church-member.entity';
+import { ChurchPerson } from '../../members/entities/church-person.entity';
 import { PrayerRequestStatus, PrayerRequestVisibility } from '../../common/enums';
 import { PrayerUpdate } from './prayer-update.entity';
 
@@ -12,8 +12,8 @@ export class PrayerRequest {
     @ManyToOne(() => Church, { nullable: false })
     church: Church;
 
-    @ManyToOne(() => ChurchMember, { nullable: false })
-    member: ChurchMember; // The person asking for prayer
+    @ManyToOne(() => ChurchPerson, { nullable: false })
+    member: ChurchPerson; // The person asking for prayer
 
     @Column('text')
     motive: string;

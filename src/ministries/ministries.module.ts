@@ -4,7 +4,7 @@ import { MinistriesScheduleController } from './ministries-schedule.controller';
 import { MinistriesService } from './ministries.service';
 import { Ministry } from './entities/ministry.entity';
 import { MinistryMember } from './entities/ministry-member.entity';
-import { ChurchMember } from '../members/entities/church-member.entity';
+import { ChurchPerson } from '../members/entities/church-person.entity';
 import { MinistryTask } from './entities/ministry-task.entity';
 import { MeetingNote } from './entities/meeting-note.entity';
 import { CalendarEvent } from '../agenda/entities/calendar-event.entity';
@@ -21,7 +21,7 @@ import { MinistryRoleAssignment } from './entities/ministry-role-assignment.enti
     MinistryTask,
     MeetingNote,
     CalendarEvent,
-    ChurchMember,
+    ChurchPerson,
     ServiceDuty,
     MinistryRoleAssignment
   ])],

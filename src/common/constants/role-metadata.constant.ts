@@ -1,11 +1,6 @@
-import {
-    MembershipStatus,
-    EcclesiasticalRole,
-    MinistryRole,
-    SmallGroupRole,
-    FamilyRole,
-    SystemRole
-} from '../enums';
+import { SystemRole, MinistryRole, FamilyRole, EcclesiasticalRole } from '../enums';
+import { GroupRole } from '../../groups/enums/group.enums';
+import { MembershipStatus } from '../../members/enums/membership-status.enum';
 
 export const ROLE_METADATA = {
     [SystemRole.ADMIN_APP]: {
@@ -62,19 +57,6 @@ export const ROLE_METADATA = {
     [MinistryRole.TEAM_MEMBER]: {
         label: 'Miembro del Equipo',
         description: 'Parte activa del equipo de trabajo.'
-    },
-    // Small Group Roles
-    [SmallGroupRole.MODERATOR]: {
-        label: 'Moderador',
-        description: 'Líder encargado de dirigir el grupo.'
-    },
-    [SmallGroupRole.COLLABORATOR]: {
-        label: 'Colaborador',
-        description: 'Ayuda en la logística y cuidado del grupo.'
-    },
-    [SmallGroupRole.PARTICIPANT]: {
-        label: 'Participante',
-        description: 'Asistente regular del grupo.'
     },
     // Family Roles
     [FamilyRole.FATHER]: {

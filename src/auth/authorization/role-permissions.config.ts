@@ -1,4 +1,4 @@
-import { EcclesiasticalRole, MinistryRole, SystemRole } from '../../common/enums';
+import { EcclesiasticalRole, MinistryRole, SystemRole, FunctionalRole } from '../../common/enums';
 import { AppPermission } from './permissions.enum';
 
 export const ROLE_PERMISSIONS: Record<string, AppPermission[]> = {
@@ -76,6 +76,28 @@ export const ROLE_PERMISSIONS: Record<string, AppPermission[]> = {
         AppPermission.GROUP_CREATE,
         AppPermission.GROUP_MANAGE_MEMBERS,
         AppPermission.AGENDA_CREATE_MINISTRY,
+    ],
+
+    // --- Functional Roles ---
+    [FunctionalRole.MEMBER]: [
+        AppPermission.PRAYER_CREATE,
+        AppPermission.PRAYER_VIEW_ALL,
+        AppPermission.GROUP_VIEW,
+        AppPermission.MINISTRY_VIEW,
+        AppPermission.LIBRARY_VIEW, // Let members view catalog
+    ],
+
+    [FunctionalRole.AUDITOR]: [
+        AppPermission.COUNSELING_VIEW_SUPERVISION,
+        AppPermission.COUNSELING_VIEW_ALL
+    ],
+
+    [FunctionalRole.ADMIN_CHURCH]: [
+        AppPermission.COUNSELING_VIEW_SUPERVISION,
+        AppPermission.COUNSELING_VIEW_ALL,
+        AppPermission.CHURCH_MANAGE,
+        AppPermission.MEMBER_VIEW,
+        AppPermission.MEMBER_UPDATE
     ],
 };
 

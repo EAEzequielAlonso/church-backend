@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { Ministry } from '../../ministries/entities/ministry.entity';
-import { Account } from './account.entity'; // Expense Category
+import { TransactionCategory } from './transaction-category.entity';
 
 @Entity('budgets')
 export class Budget {
@@ -14,8 +14,8 @@ export class Budget {
     @ManyToOne(() => Ministry)
     ministry: Ministry;
 
-    @ManyToOne(() => Account)
-    category: Account; // Specific expense category limit (e.g. Alabanza -> Equipos)
+    @ManyToOne(() => TransactionCategory)
+    category: TransactionCategory;
 
     @Column('decimal', { precision: 15, scale: 2 })
     amountLimit: number; // Monthly? Yearly? Let's assume Monthly for MVP

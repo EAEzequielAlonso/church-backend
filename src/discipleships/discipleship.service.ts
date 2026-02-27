@@ -6,7 +6,7 @@ import { DiscipleshipParticipant } from './entities/discipleship-participant.ent
 import { DiscipleshipMeeting } from './entities/discipleship-meeting.entity';
 import { DiscipleshipNote } from './entities/discipleship-note.entity';
 import { DiscipleshipTask } from './entities/discipleship-task.entity';
-import { ChurchMember, ChurchMember as Member } from '../members/entities/church-member.entity';
+import { ChurchPerson, ChurchPerson as Member } from '../members/entities/church-person.entity';
 import { Church } from '../churches/entities/church.entity';
 import { CreateDiscipleshipDto, CreateMeetingDto, CreateNoteDto, CreateTaskDto } from './dto/create-discipleship.dto';
 import { DiscipleshipStatus, DiscipleshipRole, DiscipleshipNoteType, DiscipleshipTaskStatus, CalendarEventType, SystemRole } from '../common/enums';
@@ -22,7 +22,7 @@ export class DiscipleshipService {
         @InjectRepository(DiscipleshipMeeting) private meetingRep: Repository<DiscipleshipMeeting>,
         @InjectRepository(DiscipleshipNote) private noteRep: Repository<DiscipleshipNote>,
         @InjectRepository(DiscipleshipTask) private taskRep: Repository<DiscipleshipTask>,
-        @InjectRepository(ChurchMember) private memberRep: Repository<Member>,
+        @InjectRepository(ChurchPerson) private memberRep: Repository<Member>,
         @InjectRepository(Church) private churchRep: Repository<Church>,
         @InjectRepository(CalendarEvent) private eventRep: Repository<CalendarEvent>,
     ) { }

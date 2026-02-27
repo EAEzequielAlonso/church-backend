@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { TreasuryTransaction } from './treasury-transaction.entity';
-import { AccountType } from 'src/common/enums';
+import { AccountType, Currency } from '../enums/treasury.enums';
 
 @Entity('accounts')
 export class Account {
@@ -9,16 +9,16 @@ export class Account {
     id: string;
 
     @Column()
-    name: string; // e.g., "Banco General", "Caja Chica", "Gastos de Luz"
+    name: string;
 
     @Column({ type: 'enum', enum: AccountType })
     type: AccountType;
 
-    @Column({ nullable: true })
-    currency: string; // 'USD', 'ARS', etc.
+    @Column({ type: 'enum', enum: Currency, default: Currency.ARS })
+    currency: Currency;
 
     @Column('decimal', { precision: 15, scale: 2, default: 0 })
-    balance: number; // Current balance (cached for assets/liabilities)
+    balance: number;
 
     @ManyToOne(() => Church, (church) => church.accounts)
     church: Church;

@@ -158,6 +158,96 @@
                     ]
                 }
             ],
+            "ministries": [
+                {
+                    "name": "Ujieres",
+                    "leaderEmail": "phyessoft@gmail.com",
+                    "roles": [
+                        {
+                            "name": "Recepción",
+                            "behavior": "STANDARD"
+                        },
+                        {
+                            "name": "Ordenador 1",
+                            "behavior": "STANDARD"
+                        },
+                        {
+                            "name": "Ordenador 2",
+                            "behavior": "STANDARD"
+                        },
+                        {
+                            "name": "Despedida",
+                            "behavior": "STANDARD"
+                        },
+                        {
+                            "name": "Anuncios",
+                            "behavior": "ANNOUNCEMENTS"
+                        }
+                    ]
+                },
+                {
+                    "name": "Alabanza",
+                    "leaderEmail": "phyessoft@gmail.com",
+                    "roles": [
+                        {
+                            "name": "Guitarra",
+                            "behavior": "STANDARD"
+                        },
+                        {
+                            "name": "Voz 1",
+                            "behavior": "STANDARD"
+                        },
+                        {
+                            "name": "Voz 2",
+                            "behavior": "STANDARD"
+                        },
+                        {
+                            "name": "Cajón",
+                            "behavior": "STANDARD"
+                        },
+                        {
+                            "name": "Dirección",
+                            "behavior": "MUSIC_LEADER"
+                        }
+                    ]
+                },
+                {
+                    "name": "Predicación y Enseñanza",
+                    "leaderEmail": "phyessoft@gmail.com",
+                    "roles": [
+                        {
+                            "name": "Lectura y Oración",
+                            "behavior": "SPEAKER"
+                        },
+                        {
+                            "name": "Predicación",
+                            "behavior": "SPEAKER"
+                        },
+                        {
+                            "name": "Santa Cena",
+                            "behavior": "SPEAKER"
+                        }
+                    ]
+                },
+                {
+                    "name": "Multimedia",
+                    "leaderEmail": "phyessoft@gmail.com",
+                    "roles": [
+                        {
+                            "name": "Sonido",
+                            "behavior": "STANDARD"
+                        },
+                        {
+                            "name": "Grabación",
+                            "behavior": "STANDARD"
+                        },
+                        {
+                            "name": "Proyección",
+                            "behavior": "STANDARD"
+                        }
+                    ]
+                }
+            ],
             "counselingProcesses": [
                 {
                     "counselorEmail": "pastor1@phyessoft.com",
@@ -206,42 +296,38 @@
                         "type": "asset",
                         "currency": "ARS",
                         "balance": 500000.00
-                    },
+                    }
+                ],
+                "categories": [
                     {
                         "name": "Ofrenda Dominical",
                         "type": "income",
-                        "currency": "ARS",
-                        "balance": 0
+                        "color": "#10b981"
                     },
                     {
                         "name": "Ofrenda en Dolares",
                         "type": "income",
-                        "currency": "USD",
-                        "balance": 0
+                        "color": "#10b981"
                     },
                     {
                         "name": "Ofrenda Extraordinaria",
                         "type": "income",
-                        "currency": "ARS",
-                        "balance": 0
+                        "color": "#34d399"
                     },
                     {
                         "name": "Servicios (Luz/Agua)",
                         "type": "expense",
-                        "currency": "ARS",
-                        "balance": 0
+                        "color": "#f43f5e"
                     },
                     {
                         "name": "Mantenimiento",
                         "type": "expense",
-                        "currency": "ARS",
-                        "balance": 0
+                        "color": "#f43f5e"
                     },
                     {
                         "name": "Ayuda Social",
                         "type": "expense",
-                        "currency": "ARS",
-                        "balance": 0
+                        "color": "#fb7185"
                     }
                 ],
                 "transactions": [
@@ -249,34 +335,83 @@
                         "description": "Diezmos Mes de Enero",
                         "amount": 250000,
                         "currency": "ARS",
-                        "type": "INCOME",
-                        "source": "Ofrenda Dominical",
-                        "dest": "Caja Efectivo ARS"
+                        "type": "income",
+                        "category": "Ofrenda Dominical",
+                        "dest": "Caja Efectivo ARS",
+                        "date": "2026-01-15T10:00:00Z"
+                    },
+                    {
+                        "description": "Diezmos Mes de Febrero",
+                        "amount": 280000,
+                        "currency": "ARS",
+                        "type": "income",
+                        "category": "Ofrenda Dominical",
+                        "dest": "Caja Efectivo ARS",
+                        "date": "2026-02-15T10:00:00Z"
+                    },
+                    {
+                        "description": "Diezmos Mes de Marzo",
+                        "amount": 320000,
+                        "currency": "ARS",
+                        "type": "income",
+                        "category": "Ofrenda Dominical",
+                        "dest": "Caja Efectivo ARS",
+                        "date": "2026-03-10T10:00:00Z"
                     },
                     {
                         "description": "Ofrenda Especial Navidad",
                         "amount": 100,
                         "currency": "USD",
-                        "type": "INCOME",
-                        "source": "Ofrenda Dominical",
-                        "dest": "Caja Efectivo USD"
+                        "type": "income",
+                        "category": "Ofrenda Dominical",
+                        "dest": "Caja Efectivo USD",
+                        "date": "2025-12-25T10:00:00Z"
                     },
                     {
-                        "description": "Pago Factura Luz",
+                        "description": "Pago Factura Luz Enero",
                         "amount": 45000,
                         "currency": "ARS",
-                        "type": "EXPENSE",
+                        "type": "expense",
                         "source": "Caja Efectivo ARS",
-                        "dest": "Servicios (Luz/Agua)"
+                        "category": "Servicios (Luz/Agua)",
+                        "date": "2026-01-20T10:00:00Z"
+                    },
+                    {
+                        "description": "Pago Factura Luz Febrero",
+                        "amount": 52000,
+                        "currency": "ARS",
+                        "type": "expense",
+                        "source": "Caja Efectivo ARS",
+                        "category": "Servicios (Luz/Agua)",
+                        "date": "2026-02-20T10:00:00Z"
                     },
                     {
                         "description": "Compra de Biblias para escuela dominical",
                         "amount": 150,
                         "currency": "USD",
-                        "type": "EXPENSE",
+                        "type": "expense",
                         "source": "Caja Efectivo USD",
-                        "dest": "Ayuda Social",
-                        "rate": 1450
+                        "category": "Ayuda Social",
+                        "rate": 1450,
+                        "date": "2026-02-05T10:00:00Z"
+                    },
+                    {
+                        "description": "Mantenimiento Aire Acondicionado",
+                        "amount": 120000,
+                        "currency": "ARS",
+                        "type": "expense",
+                        "source": "Caja Efectivo ARS",
+                        "category": "Mantenimiento",
+                        "date": "2026-03-01T10:00:00Z"
+                    },
+                    {
+                        "description": "Ofrenda Misiones",
+                        "amount": 50000,
+                        "currency": "ARS",
+                        "type": "income",
+                        "category": "Ofrenda Extraordinaria",
+                        "dest": "Caja Efectivo ARS",
+                        "date": "2026-03-05T10:00:00Z"
                     }
                 ]
             },

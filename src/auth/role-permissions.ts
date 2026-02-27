@@ -19,7 +19,12 @@ export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
         AppPermission.FINANCE_MANAGE,
         AppPermission.FINANCE_AUDIT,
         AppPermission.ROLE_MANAGE,
-        AppPermission.CHURCH_MANAGE // Used for Settings
+        AppPermission.CHURCH_MANAGE, // Used for Settings
+        AppPermission.PRAYER_MANAGE,
+        AppPermission.PRAYER_CREATE,
+        AppPermission.PRAYER_VIEW_ALL,
+        AppPermission.FOLLOWUP_VIEW_ALL,
+        AppPermission.FOLLOWUP_MANAGE
     ],
     [FunctionalRole.TREASURER]: [
         AppPermission.FINANCE_VIEW,
@@ -27,7 +32,11 @@ export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
     ],
     [FunctionalRole.AUDITOR]: [
         AppPermission.FINANCE_VIEW,
-        AppPermission.FINANCE_AUDIT
+        AppPermission.FINANCE_AUDIT,
+        AppPermission.PRAYER_VIEW_ALL,
+        AppPermission.PRAYER_MANAGE,
+        AppPermission.FOLLOWUP_VIEW_ALL,
+        AppPermission.FOLLOWUP_MANAGE
     ],
     [FunctionalRole.COUNSELOR]: [
         AppPermission.COUNSELING_VIEW_OWN,
@@ -50,6 +59,8 @@ export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
         AppPermission.MEMBER_VIEW,
         AppPermission.GROUP_VIEW,
         AppPermission.COUNSELING_VIEW_OWN,
-        AppPermission.LIBRARY_VIEW
+        AppPermission.LIBRARY_VIEW,
+        AppPermission.PRAYER_CREATE,
+        AppPermission.PRAYER_VIEW_ALL
     ]
 };

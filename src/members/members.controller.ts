@@ -6,7 +6,7 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { AppPermission } from '../auth/authorization/permissions.enum';
 import { CurrentChurch } from '../common/decorators';
-import { MembershipStatus } from '../common/enums';
+import { MembershipStatus } from './enums/membership-status.enum';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('Members')

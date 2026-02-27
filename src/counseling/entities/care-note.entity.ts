@@ -1,7 +1,7 @@
 import { CareSession } from './care-session.entity';
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { CareProcess } from './care-process.entity';
-import { ChurchMember as Member } from '../../members/entities/church-member.entity';
+import { ChurchPerson as Member } from '../../members/entities/church-person.entity';
 import { CareNoteVisibility } from '../../common/enums';
 
 @Entity('care_notes')

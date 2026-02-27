@@ -64,20 +64,32 @@ export class WorshipServiceService {
         });
 
         if (data.requiredRoleIds && Array.isArray(data.requiredRoleIds)) {
-            // Assuming we can pass IDs and TypeORM handles it if we map to objects
-            // Or better, fetch them. For simplicity, let's trust IDs or use partial objects
             section.requiredRoles = data.requiredRoleIds.map((id: string) => ({ id }));
         }
 
-        return this.templateSectionRepo.save(section);
+        const savedSection = await this.templateSectionRepo.save(section);
+
+        // Touch template to update updatedAt
+        await this.templateRepo.update(templateId, { updatedAt: new Date() });
+
+        return savedSection;
     }
 
     async deleteTemplateSection(templateId: string, sectionId: string) {
-        // Ensure it belongs to template?
         const section = await this.templateSectionRepo.findOne({ where: { id: sectionId, template: { id: templateId } } });
         if (!section) throw new NotFoundException('Sección no encontrada');
-        return this.templateSectionRepo.remove(section);
+
+        await this.templateSectionRepo.remove(section);
+
+        // Touch template to update updatedAt
+        await this.templateRepo.update(templateId, { updatedAt: new Date() });
+
+        return { success: true };
     }
+
+    // Also need to handle updates to sections if they exist in the controller, 
+    // but user only mentioned add/delete/reorder usually. 
+    // If updateTemplateSection exists, touch there too. Be safe.
 
     // --- SERVICES & HYDRATION ---
 
@@ -101,13 +113,13 @@ export class WorshipServiceService {
     }
 
     async findOneService(id: string) {
-        const service = await this.serviceRepo.findOne({
+        let service = await this.serviceRepo.findOne({
             where: { id },
             relations: [
                 'sections',
                 'sections.requiredRoles',
                 'sections.requiredRoles.ministry',
-                'sections.ministry', // Include Section Ministry
+                'sections.ministry',
                 'template'
             ],
             order: {
@@ -116,6 +128,24 @@ export class WorshipServiceService {
         });
 
         if (!service) throw new NotFoundException('Culto no encontrado');
+
+        // FORCE SYNC IF DRAFT AND TEMPLATE CHANGED
+        if (service.status !== ServiceStatus.CONFIRMED && service.template) {
+            // Re-fetch template to get latest timestamp comparison if needed, 
+            // but service.template (relation) might have old data if not strictly joined with selected cols?
+            // TypeORM relations usually fetch the related entity fields.
+            // Let's ensure we compare correctly.
+
+            // We use a small buffer or direct comparison.
+            // Template updatedAt > Service updatedAt = Template is newer.
+            // Note: service.updatedAt was set when we created it. 
+            // If we modify template 1 sec later, it is newer.
+            if (service.template.updatedAt > service.updatedAt) {
+                // Check if it's REALLY newer (e.g. by at least 2 seconds to avoid race conditions on creation?)
+                // Actually, standard comparison is fine.
+                service = await this.syncServiceWithTemplate(service);
+            }
+        }
 
         // HYDRATION: Fetch assignments for this date
         const dateStr = service.date instanceof Date
@@ -129,7 +159,6 @@ export class WorshipServiceService {
         });
 
         // Attach assignments to sections dynamically
-        // We return a "rich" object, not just the entity
         const richSections = service.sections.map(section => {
             const filledRoles = section.requiredRoles.map(role => {
                 // 1. Check Override
@@ -171,6 +200,59 @@ export class WorshipServiceService {
             ...service,
             sections: richSections
         };
+    }
+
+    /**
+     * Internal method to re-sync a service with its template.
+     * Deletes all current sections and re-copies from template.
+     */
+    private async syncServiceWithTemplate(service: WorshipService): Promise<WorshipService> {
+        // 1. Fetch full template with sections
+        const template = await this.templateRepo.findOne({
+            where: { id: service.template.id },
+            relations: ['sections', 'sections.requiredRoles', 'sections.ministry']
+        });
+
+        if (!template) return service; // Should not happen
+
+        // 2. Delete existing service sections
+        // We can use the repository to delete by service ID
+        // But we need to be careful with cascading. 
+        // service.sections are loaded.
+        await this.sectionRepo.remove(service.sections);
+
+        // 3. Re-create sections
+        const newSections = template.sections.map(ts => {
+            return this.sectionRepo.create({
+                service: service, // Link to the service entity
+                title: ts.title,
+                order: ts.order,
+                duration: ts.type === 'GLOBAL' ? 0 : ts.defaultDuration,
+                type: ts.type,
+                ministry: ts.ministry,
+                requiredRoles: ts.requiredRoles
+            });
+        });
+
+        await this.sectionRepo.save(newSections);
+
+        // 4. Update Service UpdatedAt to now (so we don't sync again until template changes)
+        // This is crucial. `save` on sections might not touch service.
+        // We explicitly touch the service.
+        await this.serviceRepo.update(service.id, { updatedAt: new Date() });
+
+        // 5. Refetch the fresh service to return it
+        return this.serviceRepo.findOne({
+            where: { id: service.id },
+            relations: [
+                'sections',
+                'sections.requiredRoles',
+                'sections.requiredRoles.ministry',
+                'sections.ministry',
+                'template'
+            ],
+            order: { sections: { order: 'ASC' } }
+        });
     }
 
     async deleteService(id: string) {

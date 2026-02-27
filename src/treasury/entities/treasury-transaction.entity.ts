@@ -1,50 +1,85 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, Index, JoinColumn } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { Account } from './account.entity';
 import { Ministry } from '../../ministries/entities/ministry.entity';
-
-export enum TransactionStatus {
-    COMPLETED = 'completed',
-    PENDING_APPROVAL = 'pending_approval',
-    REJECTED = 'rejected'
-}
+import { TransactionCategory } from './transaction-category.entity';
+import { TransactionStatus, TransactionType, Currency } from '../enums/treasury.enums';
 
 @Entity('treasury_transactions')
+// MANDATORY Indexes for Reporting Performance
+@Index(['church', 'date'])
+@Index(['church', 'type', 'date'])
+@Index(['church', 'category', 'date'])
+@Index(['church', 'sourceAccount', 'date'])
+@Index(['church', 'destinationAccount', 'date'])
+@Index(['church', 'ministry', 'date'])
 export class TreasuryTransaction {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => Church)
+    @ManyToOne(() => Church, { nullable: false })
+    @JoinColumn({ name: 'churchId' })
     church: Church;
 
-    @Column()
+    @Column({ type: 'enum', enum: TransactionType })
+    type: TransactionType; // INCOME | EXPENSE | TRANSFER
+
+    @Column({ nullable: false })
     description: string;
 
-    @Column('decimal', { precision: 15, scale: 2 })
-    amount: number;
+    // --- Amounts & Currency ---
 
-    @Column({ default: 'ARS' })
-    currency: string;
+    @Column('decimal', { precision: 18, scale: 2, nullable: false })
+    amount: number; // Original Currency
 
-    @Column('decimal', { precision: 10, scale: 6, default: 1 })
-    exchangeRate: number; // Rate to base currency (e.g. USD)
+    @Column('decimal', { precision: 18, scale: 2, nullable: false })
+    amountBaseCurrency: number; // Calculated: amount * exchangeRate
+
+    @Column({ type: 'enum', enum: Currency })
+    currency: Currency;
+
+    @Column('decimal', { precision: 18, scale: 8, default: 1, nullable: false })
+    exchangeRate: number;
+
+    // --- Relationships ---
 
     @ManyToOne(() => Account, (acc) => acc.outgoingTransactions, { nullable: true })
-    sourceAccount: Account; // Origen (e.g. Caja Chica OR Ingreso Diezmos if incoming?? No, if Income: Source = IncomeCategory, Dest = Bank)
+    sourceAccount: Account; // Required for EXPENSE, TRANSFER
 
     @ManyToOne(() => Account, (acc) => acc.incomingTransactions, { nullable: true })
-    destinationAccount: Account; // Destino (e.g. Gasto Luz OR Banco)
+    destinationAccount: Account; // Required for INCOME, TRANSFER
 
-    // Optional link to Ministry for budget tracking
+    @ManyToOne(() => TransactionCategory, { nullable: true })
+    category: TransactionCategory; // Required for INCOME, EXPENSE. Null for TRANSFER.
+
     @ManyToOne(() => Ministry, { nullable: true })
-    ministry: Ministry;
+    ministry: Ministry; // Optional
+
+    // --- Status & Integrity ---
 
     @Column({ type: 'enum', enum: TransactionStatus, default: TransactionStatus.COMPLETED })
     status: TransactionStatus;
 
+    @Column('decimal', { precision: 18, scale: 2, default: 0 })
+    balanceAfter: number; // Integrity Check: Balance of the primary account after this tx
+
+    @Column({ nullable: true })
+    reference: string; // External ref number
+
     @Column({ nullable: true })
     createdById: string; // Audit
 
+    // --- Timestamps ---
+
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    date: Date; // Transaction Date
+
     @CreateDateColumn()
-    date: Date;
+    createdAt: Date;
+
+    @UpdateDateColumn()
+    updatedAt: Date;
+
+    @DeleteDateColumn()
+    deletedAt: Date;
 }

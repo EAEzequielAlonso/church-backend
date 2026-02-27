@@ -1,20 +1,11 @@
 import { DataSource } from 'typeorm';
-import * as dotenv from 'dotenv';
-import { ConfigService } from '@nestjs/config';
+import { getDatabaseConfig } from './configuration';
 
-dotenv.config();
-
-const configService = new ConfigService();
+const dbConfig = getDatabaseConfig() as any; // Cast to any to access generic properties for DataSource
 
 export const AppDataSource = new DataSource({
-    type: 'postgres',
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT, 10),
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+    ...dbConfig,
     migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-    synchronize: false, // Always false for migrations
-    logging: true,
+    // TypeORM CLI specific overwrites if needed
+    dropSchema: false,
 });

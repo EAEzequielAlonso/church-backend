@@ -2,11 +2,10 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinTabl
 import { Church } from '../../churches/entities/church.entity';
 import { Person } from '../../users/entities/person.entity';
 import { Ministry } from '../../ministries/entities/ministry.entity';
-import { SmallGroup } from '../../small-groups/entities/small-group.entity';
+import { Group } from '../../groups/entities/group.entity';
 import { MeetingNote } from '../../ministries/entities/meeting-note.entity';
 import { CalendarEventType, MinistryEventType } from '../../common/enums';
 import { DiscipleshipMeeting } from '../../discipleships/entities/discipleship-meeting.entity';
-import { CourseSession } from '../../courses/entities/course-session.entity';
 
 @Entity('calendar_events')
 export class CalendarEvent {
@@ -61,9 +60,9 @@ export class CalendarEvent {
     @ManyToOne(() => Ministry, { nullable: true })
     ministry: Ministry;
 
-    // For SMALL GROUP events
-    @ManyToOne(() => SmallGroup, { nullable: true })
-    smallGroup: SmallGroup;
+    // For GROUP events (formerly small groups/courses)
+    @ManyToOne(() => Group, { nullable: true })
+    group: Group;
 
     // Specific assignments (e.g. Preacher for a Sunday) or Attendees
     @ManyToMany(() => Person)
@@ -76,8 +75,7 @@ export class CalendarEvent {
     @OneToOne(() => DiscipleshipMeeting, (meeting) => meeting.calendarEvent)
     discipleshipMeeting: DiscipleshipMeeting;
 
-    @OneToOne(() => CourseSession, (session) => session.event)
-    session: CourseSession;
+
 
     @CreateDateColumn()
     createdAt: Date;

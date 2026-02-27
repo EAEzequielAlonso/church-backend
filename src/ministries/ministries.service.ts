@@ -6,7 +6,7 @@ import { MinistryMember } from './entities/ministry-member.entity';
 import { MinistryTask } from './entities/ministry-task.entity';
 import { MeetingNote } from './entities/meeting-note.entity';
 import { CalendarEvent } from '../agenda/entities/calendar-event.entity';
-import { ChurchMember } from '../members/entities/church-member.entity';
+import { ChurchPerson } from '../members/entities/church-person.entity';
 import { MinistryRole, MinistryEventType, CalendarEventType } from '../common/enums';
 import { Person } from '../users/entities/person.entity';
 
@@ -22,7 +22,7 @@ export class MinistriesService {
         @InjectRepository(MinistryTask) private taskRepo: Repository<MinistryTask>,
         @InjectRepository(MeetingNote) private noteRepo: Repository<MeetingNote>,
         @InjectRepository(CalendarEvent) private eventRepo: Repository<CalendarEvent>,
-        @InjectRepository(ChurchMember) private churchMemberRepo: Repository<ChurchMember>,
+        @InjectRepository(ChurchPerson) private ChurchPersonRepo: Repository<ChurchPerson>,
         @InjectRepository(ServiceDuty) private serviceDutyRepo: Repository<ServiceDuty>,
         @InjectRepository(MinistryRoleAssignment) private assignmentRepo: Repository<MinistryRoleAssignment>,
     ) { }
@@ -60,7 +60,7 @@ export class MinistriesService {
         });
 
         if (data.leaderId) {
-            const leader = await this.churchMemberRepo.findOne({ where: { id: data.leaderId } });
+            const leader = await this.ChurchPersonRepo.findOne({ where: { id: data.leaderId } });
             if (leader) {
                 ministry.leader = leader;
             }
@@ -80,7 +80,7 @@ export class MinistriesService {
         const ministry = await this.findOne(id);
 
         if (data.leaderId) {
-            const leader = await this.churchMemberRepo.findOne({ where: { id: data.leaderId } });
+            const leader = await this.ChurchPersonRepo.findOne({ where: { id: data.leaderId } });
             if (leader) {
                 ministry.leader = leader;
                 // Auto-add leader as a member
@@ -98,8 +98,8 @@ export class MinistriesService {
 
     async addMember(ministryId: string, memberId: string, role: MinistryRole) {
         const ministry = await this.findOne(ministryId);
-        const churchMember = await this.churchMemberRepo.findOne({ where: { id: memberId } });
-        if (!churchMember) throw new NotFoundException('Miembro de iglesia no encontrado');
+        const ChurchPerson = await this.ChurchPersonRepo.findOne({ where: { id: memberId } });
+        if (!ChurchPerson) throw new NotFoundException('Miembro de iglesia no encontrado');
 
         const existing = await this.memberRepo.findOne({
             where: { ministry: { id: ministryId }, member: { id: memberId } }
@@ -113,7 +113,7 @@ export class MinistriesService {
 
         const member = this.memberRepo.create({
             ministry,
-            member: churchMember,
+            member: ChurchPerson,
             roleInMinistry: role,
             status: 'active'
         });
@@ -180,6 +180,14 @@ export class MinistriesService {
         return this.taskRepo.save(task);
     }
 
+    async deleteTask(ministryId: string, taskId: string) {
+        const task = await this.taskRepo.findOne({
+            where: { id: taskId, ministry: { id: ministryId } }
+        });
+        if (!task) throw new NotFoundException('Tarea no encontrada');
+        return this.taskRepo.remove(task);
+    }
+
     // --- MEETING NOTES ---
 
     async getNote(eventId: string) {
@@ -242,7 +250,7 @@ export class MinistriesService {
 
     async updateMemberRole(ministryId: string, memberId: string, role: MinistryRole) {
         const member = await this.memberRepo.findOne({
-            where: { ministry: { id: ministryId }, member: { id: memberId } } // memberId is churchMemberId
+            where: { ministry: { id: ministryId }, member: { id: memberId } } // memberId is ChurchPersonId
         });
 
         // Try finding by internal id if above fails
@@ -283,24 +291,34 @@ export class MinistriesService {
         const created: MinistryRoleAssignment[] = [];
 
         for (const dto of assignments) {
-            // Check for existing assignment to prevent duplicates if needed, or just upsert
-            // For now, simple create
             const role = await this.serviceDutyRepo.findOne({ where: { id: dto.roleId } });
-            // Person might need to be fetched from Person repo, assuming Person entity exists and is injected?
-            // Wait, I need PersonRepo injected.
-            // Using a partial mapping for now or fetching if critical.
-
             if (!role) continue;
 
-            const assignment = this.assignmentRepo.create({
-                ministry,
-                role,
-                person: { id: dto.personId } as Person,
-                date: dto.date,
-                serviceType: dto.serviceType,
-                metadata: dto.metadata || null
+            const existing = await this.assignmentRepo.findOne({
+                where: {
+                    ministry: { id: ministryId },
+                    role: { id: dto.roleId },
+                    date: dto.date
+                }
             });
-            created.push(await this.assignmentRepo.save(assignment));
+
+            if (existing) {
+                existing.person = { id: dto.personId } as Person;
+                existing.metadata = dto.metadata || null;
+                // If serviceType needs update, do it too
+                if (dto.serviceType) existing.serviceType = dto.serviceType;
+                created.push(await this.assignmentRepo.save(existing));
+            } else {
+                const assignment = this.assignmentRepo.create({
+                    ministry,
+                    role,
+                    person: { id: dto.personId } as Person,
+                    date: dto.date,
+                    serviceType: dto.serviceType,
+                    metadata: dto.metadata || null
+                });
+                created.push(await this.assignmentRepo.save(assignment));
+            }
         }
         return created;
     }

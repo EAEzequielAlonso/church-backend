@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ChurchMember } from '../members/entities/church-member.entity';
-import { SmallGroup } from '../small-groups/entities/small-group.entity';
+import { ChurchPerson } from '../members/entities/church-person.entity';
+import { Group } from '../groups/entities/group.entity';
 import { TreasuryTransaction } from '../treasury/entities/treasury-transaction.entity';
-import { FollowUpPerson } from '../follow-ups/entities/follow-up-person.entity';
-import { TransactionType, FollowUpStatus, AccountType } from '../common/enums';
+import { FollowUp } from '../follow-ups/entities/follow-up.entity';
+import { FollowUpStatus, AccountType } from '../common/enums';
+import { TransactionType } from '../treasury/enums/treasury.enums';
 import { WorshipService, ServiceStatus } from '../worship/entities/worship-service.entity';
 import { CalendarEvent } from '../agenda/entities/calendar-event.entity';
 import { Repository, Between, MoreThan } from 'typeorm';
@@ -13,10 +14,10 @@ import * as dateFns from 'date-fns';
 @Injectable()
 export class DashboardService {
     constructor(
-        @InjectRepository(ChurchMember) private memberRepository: Repository<ChurchMember>,
-        @InjectRepository(SmallGroup) private groupRepository: Repository<SmallGroup>,
+        @InjectRepository(ChurchPerson) private memberRepository: Repository<ChurchPerson>,
+        @InjectRepository(Group) private groupRepository: Repository<Group>,
         @InjectRepository(TreasuryTransaction) private treasuryRepository: Repository<TreasuryTransaction>,
-        @InjectRepository(FollowUpPerson) private followUpRepository: Repository<FollowUpPerson>,
+        @InjectRepository(FollowUp) private followUpRepository: Repository<FollowUp>,
         @InjectRepository(WorshipService) private worshipRepo: Repository<WorshipService>,
         @InjectRepository(CalendarEvent) private eventRepo: Repository<CalendarEvent>,
     ) { }
@@ -38,10 +39,8 @@ export class DashboardService {
             }
         });
 
-        // 2. Groups
-        const groupsCount = await this.groupRepository.count({
-            where: { church: { id: churchId } }
-        });
+        // Active Groups
+        const totalGroups = await this.groupRepository.count({ where: { church: { id: churchId } } });
 
         // 3. Treasury (Income this month)
         const start = dateFns.startOfMonth(new Date());
@@ -49,10 +48,9 @@ export class DashboardService {
 
         const incomeResult = await this.treasuryRepository
             .createQueryBuilder('tx')
-            .leftJoin('tx.sourceAccount', 'source')
             .select('SUM(tx.amount)', 'total')
             .where('tx.churchId = :churchId', { churchId })
-            .andWhere('source.type = :type', { type: AccountType.INCOME })
+            .andWhere('tx.type = :type', { type: TransactionType.INCOME })
             .andWhere('tx.date BETWEEN :start AND :end', { start, end })
             .getRawOne();
 
@@ -73,8 +71,8 @@ export class DashboardService {
                 growthPercentage: membersCount > 0 ? Math.round((newMembersLast30Days / membersCount) * 100) : 0
             },
             groups: {
-                total: groupsCount,
-                active: groupsCount, // Assuming all are active for now
+                total: totalGroups,
+                active: totalGroups, // Assuming all are active for now
             },
             treasury: {
                 monthlyIncome: monthlyIncome,
@@ -105,7 +103,7 @@ export class DashboardService {
                 church: { id: churchId },
                 startDate: MoreThan(new Date())
             },
-            relations: ['session', 'session.course'], // Load relations
+            relations: ['organizer', 'group', 'ministry'], // Load relations
             take: 5,
             order: { startDate: 'ASC' }
         });
@@ -121,21 +119,26 @@ export class DashboardService {
                 link: `/worship/${s.id}`,
                 meta: {}
             })),
-            ...events.map(e => {
+            ...events.map(event => {
                 let link = '/calendar';
-                if (e.session?.course) {
-                    if (e.type === 'ACTIVITY') link = `/activities/${e.session.course.id}`;
-                    else if (e.type === 'COURSE') link = `/courses/${e.session.course.id}`;
+                if (event.group) {
+                    link = `/groups/${event.group.id}/events`;
+                } else if (event.ministry) {
+                    link = `/ministries/${event.ministry.id}/events`;
                 }
 
                 return {
-                    id: e.id,
-                    type: e.type,
-                    title: e.title,
-                    date: e.startDate,
-                    location: e.location,
+                    id: event.id,
+                    type: event.type,
+                    title: event.title,
+                    date: event.startDate,
+                    location: event.location,
                     link, // Generated link
-                    meta: { courseId: e.session?.course?.id }
+                    meta: {
+                        groupId: event.group?.id,
+                        ministryId: event.ministry?.id
+                    },
+                    group: event.group ? { id: event.group.id, name: event.group.name } : null,
                 };
             })
         ];

@@ -1,9 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, Index, DeleteDateColumn, JoinColumn } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
-import { ChurchMember } from '../../members/entities/church-member.entity';
+import { ChurchPerson } from '../../members/entities/church-person.entity';
 import { BookOwnershipType, BookStatus } from '../../common/enums/library.enums';
+import { BookCategory } from './book-category.entity';
 
 @Entity('books')
+@Index(['church', 'title'])
+@Index(['church', 'status'])
+@Index(['church', 'category']) // FK index
 export class Book {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -14,8 +18,15 @@ export class Book {
     @Column()
     author: string;
 
+    // OLD: @Column({ nullable: true }) category: string; 
+    // MIGRATION NOTE: Old string categories must be migrated. For now, we add the relation.
+
+    @ManyToOne(() => BookCategory, { nullable: true }) // Nullable for migration/transition
+    @JoinColumn({ name: 'categoryId' })
+    category: BookCategory;
+
     @Column({ nullable: true })
-    category: string; // Tema / Categoría
+    categoryId: string;
 
     @Column({ nullable: true, type: 'text' })
     description: string;
@@ -33,6 +44,10 @@ export class Book {
     })
     ownershipType: BookOwnershipType;
 
+    @Column({ default: true })
+    isChurchOwned: boolean;
+
+    // Computed status via Loans, but kept for cache/quick access if synced transactionally
     @Column({
         type: 'enum',
         enum: BookStatus,
@@ -40,25 +55,35 @@ export class Book {
     })
     status: BookStatus;
 
-    // Si es propiedad de la iglesia, esto idealmente es null. Si es de un miembro, es obligatorio.
-    // Aunque en la práctica, para simplificar, permitimos null.
-    @ManyToOne(() => ChurchMember, { nullable: true })
-    ownerMember: ChurchMember;
+    @ManyToOne(() => ChurchPerson, { nullable: true })
+    @JoinColumn({ name: 'ownerMemberId' })
+    ownerMember: ChurchPerson;
 
-    // Código interno opcional (ej: LIB-001)
+    @Column({ nullable: true })
+    ownerMemberId: string;
+
     @Column({ nullable: true })
     code: string;
 
-    // Estado físico / Notas
     @Column({ nullable: true, type: 'text' })
     condition: string;
 
+    @Column({ nullable: true })
+    location: string;
+
     @ManyToOne(() => Church, { nullable: false })
+    @JoinColumn({ name: 'churchId' })
     church: Church;
+
+    @Column()
+    churchId: string;
 
     @CreateDateColumn()
     createdAt: Date;
 
     @UpdateDateColumn()
     updatedAt: Date;
+
+    @DeleteDateColumn()
+    deletedAt: Date;
 }

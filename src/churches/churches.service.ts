@@ -2,17 +2,18 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Church } from './entities/church.entity';
-import { ChurchMember } from '../members/entities/church-member.entity';
+import { ChurchPerson } from '../members/entities/church-person.entity';
 import { User } from '../users/entities/user.entity';
 import { Person } from '../users/entities/person.entity';
 import { CreateChurchDto } from './dto/create-church.dto';
-import { PlanType, SubscriptionStatus, MembershipStatus, EcclesiasticalRole } from '../common/enums';
+import { PlanType, SubscriptionStatus, EcclesiasticalRole, FunctionalRole } from '../common/enums';
+import { MembershipStatus } from '../members/enums/membership-status.enum';
 
 @Injectable()
 export class ChurchesService {
     constructor(
         @InjectRepository(Church) private churchRepository: Repository<Church>,
-        @InjectRepository(ChurchMember) private memberRepository: Repository<ChurchMember>,
+        @InjectRepository(ChurchPerson) private memberRepository: Repository<ChurchPerson>,
         @InjectRepository(User) private userRepository: Repository<User>,
         @InjectRepository(Person) private personRepository: Repository<Person>,
     ) { }
@@ -82,8 +83,8 @@ export class ChurchesService {
             person: user.person,
             church: savedChurch,
             ecclesiasticalRole: EcclesiasticalRole.PASTOR, // Default for creator
-            status: MembershipStatus.MEMBER,
-            isAuthorizedCounselor: true // Creator is counselor by default
+            functionalRoles: [FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR, FunctionalRole.COUNSELOR, FunctionalRole.MINISTRY_LEADER], // Full access
+            membershipStatus: MembershipStatus.MEMBER
         });
         await this.memberRepository.save(member);
         console.log('Membership saved');

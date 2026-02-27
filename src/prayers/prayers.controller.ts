@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Put, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Put, Query, Delete } from '@nestjs/common';
 import { PrayersService } from './prayers.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -83,5 +83,13 @@ export class PrayersController {
         @Body() body: { isHidden: boolean }
     ) {
         return this.prayersService.toggleHidden(id, body.isHidden);
+    }
+
+    @Delete(':id')
+    delete(
+        @Param('id') id: string,
+        @CurrentUser() user: any
+    ) {
+        return this.prayersService.delete(id, user.memberId, user.roles);
     }
 }

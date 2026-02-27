@@ -4,28 +4,25 @@ import { AgendaController } from './agenda.controller';
 import { AgendaService } from './agenda.service';
 import { CareSession } from '../counseling/entities/care-session.entity';
 import { CareTask } from '../counseling/entities/care-task.entity';
-import { ChurchMember } from '../members/entities/church-member.entity';
+import { ChurchPerson } from '../members/entities/church-person.entity';
 
 import { CareProcess } from '../counseling/entities/care-process.entity';
 import { CareParticipant } from '../counseling/entities/care-participant.entity';
 import { Person } from '../users/entities/person.entity';
 import { CalendarEvent } from './entities/calendar-event.entity';
 
-import { Ministry } from '../ministries/entities/ministry.entity';
-import { SmallGroup } from '../small-groups/entities/small-group.entity';
-import { SmallGroupMember } from '../small-groups/entities/small-group-member.entity';
-import { SmallGroupGuest } from '../small-groups/entities/small-group-guest.entity';
-
 import { MinistryRoleAssignment } from '../ministries/entities/ministry-role-assignment.entity';
-import { FollowUpPerson } from '../follow-ups/entities/follow-up-person.entity';
-import { PersonInvited } from '../courses/entities/person-invited.entity';
+import { FollowUp } from '../follow-ups/entities/follow-up.entity';
+import { Ministry } from '../ministries/entities/ministry.entity';
+import { Group } from '../groups/entities/group.entity';
+import { GroupParticipant } from '../groups/entities/group-participant.entity';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([
-            CareSession, CareTask, ChurchMember, CareProcess, CareParticipant,
-            Person, CalendarEvent, Ministry, SmallGroup, SmallGroupMember,
-            MinistryRoleAssignment, FollowUpPerson, PersonInvited, SmallGroupGuest
+            CareSession, CareTask, ChurchPerson, CareProcess, CareParticipant,
+            Person, CalendarEvent, Ministry, Group, GroupParticipant,
+            MinistryRoleAssignment, FollowUp
         ]),
     ],
     controllers: [AgendaController],

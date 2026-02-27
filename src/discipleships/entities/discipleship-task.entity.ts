@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { DiscipleshipMeeting } from './discipleship-meeting.entity';
 import { DiscipleshipTaskStatus } from '../../common/enums';
-import { ChurchMember } from '../../members/entities/church-member.entity';
+import { ChurchPerson } from '../../members/entities/church-person.entity';
 
 @Entity('discipleship_tasks')
 export class DiscipleshipTask {
@@ -24,9 +24,9 @@ export class DiscipleshipTask {
     @Column({ type: 'text', nullable: true })
     disciplerFeedback: string;
 
-    @ManyToOne(() => ChurchMember, { nullable: true })
+    @ManyToOne(() => ChurchPerson, { nullable: true })
     @JoinColumn({ name: 'assigned_to_id' })
-    assignedTo: ChurchMember;
+    assignedTo: ChurchPerson;
 
     @Column({
         type: 'enum',

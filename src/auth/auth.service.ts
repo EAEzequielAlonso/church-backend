@@ -6,10 +6,11 @@ import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
 import { Person } from '../users/entities/person.entity';
 import { Church } from '../churches/entities/church.entity';
-import { ChurchMember } from '../members/entities/church-member.entity';
+import { ChurchPerson } from '../members/entities/church-person.entity';
 import { RegisterChurchDto, JoinChurchDto, LoginDto, RegisterUserDto } from './dto/dto';
 import { SocialLoginDto } from './dto/social-login.dto';
-import { MembershipStatus, EcclesiasticalRole, FunctionalRole, PlanType, SubscriptionStatus, SystemRole } from '../common/enums';
+import { EcclesiasticalRole, FunctionalRole, PlanType, SubscriptionStatus, SystemRole } from '../common/enums';
+import { MembershipStatus } from '../members/enums/membership-status.enum';
 import { JwtPayload } from './interfaces';
 
 @Injectable()
@@ -18,7 +19,7 @@ export class AuthService {
         @InjectRepository(User) private userRepository: Repository<User>,
         @InjectRepository(Person) private personRepository: Repository<Person>,
         @InjectRepository(Church) private churchRepository: Repository<Church>,
-        @InjectRepository(ChurchMember) private memberRepository: Repository<ChurchMember>,
+        @InjectRepository(ChurchPerson) private memberRepository: Repository<ChurchPerson>,
         private jwtService: JwtService,
     ) { }
 
@@ -64,14 +65,13 @@ export class AuthService {
         });
         await this.userRepository.save(user);
 
-        // 6. Create ChurchMember (Admin)
+        // 6. Create ChurchPerson (Admin)
         const member = this.memberRepository.create({
             person: savedPerson,
             church: savedChurch,
             ecclesiasticalRole: EcclesiasticalRole.PASTOR, // Default for creator
             functionalRoles: [FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR, FunctionalRole.COUNSELOR, FunctionalRole.MINISTRY_LEADER], // Full access
-            status: MembershipStatus.MEMBER,
-            isAuthorizedCounselor: true // Admin is counselor by default
+            membershipStatus: MembershipStatus.MEMBER
         });
         await this.memberRepository.save(member);
 
@@ -159,7 +159,7 @@ export class AuthService {
             person: person,
             church,
             ecclesiasticalRole: EcclesiasticalRole.NONE,
-            status: MembershipStatus.MEMBER,
+            membershipStatus: MembershipStatus.MEMBER,
         });
         await this.memberRepository.save(member);
 
@@ -183,7 +183,7 @@ export class AuthService {
 
         let churchId = null;
         let authRoles: string[] = []; // Strings for JWT
-        let membership: ChurchMember | null = null;
+        let membership: ChurchPerson | null = null;
 
         // If churchSlug provided, validate membership
         if (dto.churchSlug) {

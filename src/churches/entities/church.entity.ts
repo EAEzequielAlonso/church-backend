@@ -1,12 +1,12 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { ChurchMember } from '../../members/entities/church-member.entity';
+import { ChurchPerson } from '../../members/entities/church-person.entity';
 import { PlanType, SubscriptionStatus } from '../../common/enums';
 import { Ministry } from '../../ministries/entities/ministry.entity';
 import { TreasuryTransaction } from '../../treasury/entities/treasury-transaction.entity';
 import { CareProcess } from '../../counseling/entities/care-process.entity';
-import { SmallGroup } from '../../small-groups/entities/small-group.entity';
+import { Group } from '../../groups/entities/group.entity';
 import { Family } from '../../families/entities/family.entity';
-import { FollowUpPerson } from '../../follow-ups/entities/follow-up-person.entity';
+import { FollowUp } from '../../follow-ups/entities/follow-up.entity';
 import { Account } from '../../treasury/entities/account.entity';
 import { Subscription } from '../../subscriptions/entities/subscription.entity';
 import { CalendarEvent } from '../../agenda/entities/calendar-event.entity';
@@ -50,8 +50,8 @@ export class Church {
     @Column({ nullable: true })
     trialEndsAt: Date;
 
-    @OneToMany(() => ChurchMember, (member) => member.church)
-    members: ChurchMember[];
+    @OneToMany(() => ChurchPerson, (member) => member.church)
+    members: ChurchPerson[];
 
     @OneToMany(() => Ministry, (ministry) => ministry.church)
     ministries: Ministry[];
@@ -62,14 +62,14 @@ export class Church {
     @OneToMany(() => CareProcess, (process) => process.church)
     careProcesses: CareProcess[];
 
-    @OneToMany(() => SmallGroup, (group) => group.church)
-    smallGroups: SmallGroup[];
+    @OneToMany(() => Group, (group) => group.church)
+    groups: Group[];
 
     @OneToMany(() => Family, (family) => family.church)
     families: Family[];
 
-    @OneToMany(() => FollowUpPerson, (followUp) => followUp.church)
-    followUps: FollowUpPerson[];
+    @OneToMany(() => FollowUp, (followUp) => followUp.church)
+    followUps: FollowUp[];
 
     @OneToMany(() => Account, (acc) => acc.church)
     accounts: Account[];

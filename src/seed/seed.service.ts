@@ -10,12 +10,15 @@ import { User } from '../users/entities/user.entity';
 // ... (rest of imports same)
 import { Person } from '../users/entities/person.entity';
 import { Church } from '../churches/entities/church.entity';
-import { ChurchMember } from '../members/entities/church-member.entity';
-import { SmallGroup } from '../small-groups/entities/small-group.entity';
-import { SmallGroupMember } from '../small-groups/entities/small-group-member.entity';
+import { ChurchPerson } from '../members/entities/church-person.entity';
+import { Group } from '../groups/entities/group.entity';
+import { GroupParticipant } from '../groups/entities/group-participant.entity';
+import { GroupMeeting } from '../groups/entities/group-meeting.entity';
+import { GroupType, GroupRole, GroupVisibility } from '../groups/enums/group.enums';
 import { Family } from '../families/entities/family.entity';
 import { FamilyMember } from '../families/entities/family-member.entity';
-import { TreasuryTransaction, TransactionStatus } from '../treasury/entities/treasury-transaction.entity';
+import { TreasuryTransaction } from '../treasury/entities/treasury-transaction.entity';
+import { TransactionStatus, AccountType, TransactionType } from '../treasury/enums/treasury.enums';
 import { Account } from '../treasury/entities/account.entity';
 import { CareProcess } from '../counseling/entities/care-process.entity';
 import { CareParticipant } from '../counseling/entities/care-participant.entity';
@@ -23,9 +26,15 @@ import { CareNote } from '../counseling/entities/care-note.entity';
 import { CareSession } from '../counseling/entities/care-session.entity';
 import { Book } from '../library/entities/book.entity';
 import { Loan } from '../library/entities/loan.entity';
-import { FollowUpPerson } from '../follow-ups/entities/follow-up-person.entity';
-import { PersonInvited } from '../courses/entities/person-invited.entity';
-import { PlanType, SubscriptionStatus, MembershipStatus, EcclesiasticalRole, FunctionalRole, SystemRole, Sex, MaritalStatus, SmallGroupRole, FamilyRole, TransactionType, AccountType, CareProcessType, CareProcessStatus, CareParticipantRole, CareNoteVisibility, FollowUpStatus } from '../common/enums';
+import { FollowUp } from '../follow-ups/entities/follow-up.entity';
+
+import { TransactionCategory } from '../treasury/entities/transaction-category.entity';
+import { Ministry } from '../ministries/entities/ministry.entity';
+import { MinistryMember } from '../ministries/entities/ministry-member.entity';
+import { ServiceDuty } from '../ministries/entities/service-duty.entity';
+import { ServiceDutyBehavior } from '../ministries/enums/service-duty-behavior.enum';
+import { PlanType, SubscriptionStatus, EcclesiasticalRole, FunctionalRole, SystemRole, Sex, MaritalStatus, FamilyRole, CareProcessType, CareProcessStatus, CareParticipantRole, CareNoteVisibility, FollowUpStatus, MinistryRole } from '../common/enums';
+import { MembershipStatus } from '../members/enums/membership-status.enum';
 import { BookOwnershipType, BookStatus, LoanStatus } from '../common/enums/library.enums';
 
 @Injectable()
@@ -37,23 +46,28 @@ export class SeedService {
         @InjectRepository(User) private userRepository: Repository<User>,
         @InjectRepository(Person) private personRepository: Repository<Person>,
         @InjectRepository(Church) private churchRepository: Repository<Church>,
-        @InjectRepository(ChurchMember) private memberRepository: Repository<ChurchMember>,
-        @InjectRepository(SmallGroup) private groupRepository: Repository<SmallGroup>,
-        @InjectRepository(SmallGroupMember) private groupMemberRepository: Repository<SmallGroupMember>,
+        @InjectRepository(ChurchPerson) private memberRepository: Repository<ChurchPerson>,
+        @InjectRepository(Group) private groupRepository: Repository<Group>,
+        @InjectRepository(GroupParticipant) private groupMemberRepository: Repository<GroupParticipant>,
         @InjectRepository(Family) private familyRepository: Repository<Family>,
         @InjectRepository(FamilyMember) private familyMemberRepository: Repository<FamilyMember>,
         @InjectRepository(TreasuryTransaction) private treasuryRepository: Repository<TreasuryTransaction>,
         @InjectRepository(Account) private accountRepository: Repository<Account>,
+        @InjectRepository(TransactionCategory) private categoryRepository: Repository<TransactionCategory>,
         @InjectRepository(CareProcess) private careProcessRepository: Repository<CareProcess>,
         @InjectRepository(CareParticipant) private careParticipantRepository: Repository<CareParticipant>,
         @InjectRepository(CareNote) private careNoteRepository: Repository<CareNote>,
         @InjectRepository(Book) private bookRepository: Repository<Book>,
         @InjectRepository(Loan) private loanRepository: Repository<Loan>,
-        @InjectRepository(FollowUpPerson) private followUpRepository: Repository<FollowUpPerson>,
-        @InjectRepository(PersonInvited) private invitedRepository: Repository<PersonInvited>,
+        @InjectRepository(FollowUp) private followUpRepository: Repository<FollowUp>,
+
+        @InjectRepository(Ministry) private ministryRepository: Repository<Ministry>,
+        @InjectRepository(MinistryMember) private ministryMemberRepository: Repository<MinistryMember>,
+        @InjectRepository(ServiceDuty) private serviceDutyRepository: Repository<ServiceDuty>,
     ) { }
 
     async run() {
+        console.error('!!!! SEED RUNNING !!!!');
         this.logger.log('Starting seeding process...');
 
         // Use path.resolve to point to the actual SOURCE file, NOT the compiled one in dist, 
@@ -126,29 +140,25 @@ export class SeedService {
 
                 // Church Admin Membership
                 let adminMember = await this.memberRepository.findOne({
-                    where: { person: { id: adminPerson.id }, church: { id: savedChurch.id } }
+                    where: { person: { id: adminPerson.id }, church: { id: savedChurch.id } },
+                    relations: ['person', 'church']
                 });
 
                 if (!adminMember) {
                     adminMember = this.memberRepository.create({
                         person: adminPerson,
                         church: savedChurch,
+                        membershipStatus: MembershipStatus.MEMBER,
                         ecclesiasticalRole: EcclesiasticalRole.PASTOR,
-                        functionalRoles: [FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR, FunctionalRole.COUNSELOR, FunctionalRole.MINISTRY_LEADER],
-                        status: MembershipStatus.MEMBER,
-                        isAuthorizedCounselor: true,
+                        functionalRoles: [FunctionalRole.ADMIN_CHURCH, FunctionalRole.MINISTRY_LEADER],
                         joinedAt: new Date()
                     });
                     await queryRunner.manager.save(adminMember);
                 } else {
                     // FIX: Ensure roles are populated for Admin if empty or just NONE (migration fix)
                     let updated = false;
-                    if (!adminMember.ecclesiasticalRole || adminMember.ecclesiasticalRole === EcclesiasticalRole.NONE) {
-                        adminMember.ecclesiasticalRole = EcclesiasticalRole.PASTOR;
-                        updated = true;
-                    }
-                    if (!adminMember.functionalRoles || adminMember.functionalRoles.length <= 1) { // Default is [MEMBER]
-                        adminMember.functionalRoles = [FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR, FunctionalRole.COUNSELOR, FunctionalRole.MINISTRY_LEADER];
+                    if (!adminMember.functionalRoles || !adminMember.functionalRoles.includes(FunctionalRole.ADMIN_CHURCH)) {
+                        adminMember.functionalRoles = [FunctionalRole.ADMIN_CHURCH, FunctionalRole.MINISTRY_LEADER];
                         updated = true;
                     }
                     if (updated) await queryRunner.manager.save(adminMember);
@@ -160,7 +170,7 @@ export class SeedService {
 
                 // Map to store Users for Group/Family seeding
                 const emailToUserMap = new Map<string, User>();
-                const emailToMemberMap = new Map<string, ChurchMember>();
+                const emailToMemberMap = new Map<string, ChurchPerson>();
                 emailToUserMap.set(churchData.adminEmail, adminUser); // Add admin
                 emailToMemberMap.set(churchData.adminEmail, adminMember);
 
@@ -199,33 +209,16 @@ export class SeedService {
                     emailToUserMap.set(mData.email, user);
 
                     let member = await this.memberRepository.findOne({
-                        where: { person: { id: person.id }, church: { id: savedChurch.id } }
+                        where: { person: { id: person.id }, church: { id: savedChurch.id } },
+                        relations: ['person', 'church']
                     });
 
                     if (member) {
-                        const shouldUpdate = !member.ecclesiasticalRole ||
-                            member.ecclesiasticalRole === EcclesiasticalRole.NONE && mData.ecclesiasticalRole !== EcclesiasticalRole.NONE;
+                        const shouldUpdate = !member.ecclesiasticalRole;
 
-                        // Migration logic for functional roles
-                        const shouldMigrate = !member.functionalRoles || member.functionalRoles.length === 1 && member.functionalRoles[0] === FunctionalRole.MEMBER;
-
-                        if (shouldUpdate || shouldMigrate) {
-                            if (shouldUpdate) {
-                                member.ecclesiasticalRole = mData.ecclesiasticalRole as EcclesiasticalRole || EcclesiasticalRole.NONE;
-                            }
-                            // Auto-assign functional roles based on ecclesiastical for migration
-                            if (member.ecclesiasticalRole === EcclesiasticalRole.PASTOR) {
-                                member.functionalRoles = [FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR, FunctionalRole.COUNSELOR];
-                            }
-                            // Map old ecclesiastical roles to functional roles if needed
-                            /*
-                            if (member.ecclesiasticalRole === 'TREASURER') {
-                                functionalRoles.push(FunctionalRole.TREASURER); 
-                            }
-                            */ else {
-                                member.functionalRoles = [FunctionalRole.MEMBER];
-                            }
-
+                        if (shouldUpdate) {
+                            member.ecclesiasticalRole = EcclesiasticalRole.NONE;
+                            member.functionalRoles = [FunctionalRole.MEMBER];
                             await queryRunner.manager.save(member);
                             this.logger.log(`Updated roles for member: ${mData.email}`);
                         }
@@ -233,10 +226,9 @@ export class SeedService {
                         member = this.memberRepository.create({
                             person: person,
                             church: savedChurch,
-                            ecclesiasticalRole: mData.ecclesiasticalRole as EcclesiasticalRole || EcclesiasticalRole.NONE,
-                            functionalRoles: mData.functionalRoles?.map(r => FunctionalRole[r as keyof typeof FunctionalRole]) || [FunctionalRole.MEMBER],
-                            status: mData.status as MembershipStatus || MembershipStatus.MEMBER,
-                            isAuthorizedCounselor: mData.isCounselor || false,
+                            membershipStatus: mData.status as MembershipStatus || MembershipStatus.MEMBER,
+                            ecclesiasticalRole: EcclesiasticalRole.NONE,
+                            functionalRoles: [FunctionalRole.MEMBER],
                             joinedAt: faker.date.past()
                         });
                         member = await queryRunner.manager.save(member);
@@ -248,6 +240,34 @@ export class SeedService {
                 if (churchData.treasury) {
                     this.logger.log(`Creating Treasury data for ${churchData.name}...`);
                     const accountMap = new Map<string, Account>();
+                    const categoryMap = new Map<string, TransactionCategory>();
+
+                    // 1. Categories
+                    if (churchData.treasury.categories) {
+                        for (const catData of churchData.treasury.categories) {
+                            let category = await this.categoryRepository.findOne({
+                                where: { name: catData.name, church: { id: savedChurch.id } }
+                            });
+
+                            if (!category) {
+                                category = this.categoryRepository.create({
+                                    name: catData.name,
+                                    type: catData.type as TransactionType,
+                                    color: catData.color,
+                                    church: savedChurch
+                                });
+                                category = await queryRunner.manager.save(category);
+                            }
+                            categoryMap.set(catData.name, category);
+                        }
+                    }
+
+                    // Wait, I need to check if TransactionCategory repository is available.
+                    // It is NOT in the constructor args I saw earlier.
+                    // I should probably add it.
+
+                    // For now, let's fix the Critical missing fields: Type and AmountBaseCurrency.
+                    // And try to map accounts correctly.
 
                     for (const accData of churchData.treasury.accounts) {
                         let account = await this.accountRepository.findOne({
@@ -267,37 +287,50 @@ export class SeedService {
                     }
 
                     for (const txData of churchData.treasury.transactions) {
-                        const sourceAcc = accountMap.get(txData.source);
-                        const destAcc = accountMap.get(txData.dest);
+                        // Handle potential optional source/dest based on type
+                        const sourceAcc = txData.source ? accountMap.get(txData.source) : null;
+                        const destAcc = txData.dest ? accountMap.get(txData.dest) : null;
+                        const category = txData.category ? categoryMap.get(txData.category) : null;
 
-                        if (sourceAcc && destAcc) {
-                            // Deduplication Check
-                            const existingTx = await this.treasuryRepository.findOne({
-                                where: {
-                                    description: txData.description,
-                                    amount: txData.amount,
-                                    sourceAccount: { id: sourceAcc.id },
-                                    destinationAccount: { id: destAcc.id },
-                                    church: { id: savedChurch.id }
-                                }
-                            });
+                        console.error(`Checking tx: ${txData.description} | Type: ${txData.type}`);
+                        // Strict check? 
+                        if ((txData.type === 'expense' && !sourceAcc) || (txData.type === 'income' && !destAcc)) {
+                            // Skip invalid
+                            console.error(`Skipping invalid tx: ${txData.description} | Type: ${txData.type} | Src: ${!!sourceAcc} | Dest: ${!!destAcc}`);
+                            continue;
+                        }
 
-                            if (!existingTx) {
-                                const tx = this.treasuryRepository.create({
-                                    description: txData.description,
-                                    amount: txData.amount,
-                                    currency: txData.currency,
-                                    exchangeRate: txData.rate || 1,
-                                    sourceAccount: sourceAcc,
-                                    destinationAccount: destAcc,
-                                    church: savedChurch,
-                                    status: TransactionStatus.COMPLETED,
-                                    date: new Date()
-                                });
-                                await queryRunner.manager.save(tx);
-                            } else {
-                                this.logger.log(`Skipping existing transaction: ${txData.description}`);
+                        console.error(`Processing tx: ${txData.description}`);
+
+                        // Deduplication Check
+                        const existingTx = await this.treasuryRepository.findOne({
+                            where: {
+                                description: txData.description,
+                                amount: txData.amount,
+                                church: { id: savedChurch.id },
+                                date: new Date(txData.date) // Check by date too
                             }
+                        });
+
+                        if (!existingTx) {
+                            const rate = txData.rate || 1;
+                            const tx = this.treasuryRepository.create({
+                                description: txData.description,
+                                amount: txData.amount,
+                                amountBaseCurrency: txData.amount * rate,
+                                currency: txData.currency,
+                                exchangeRate: rate,
+                                type: txData.type as TransactionType,
+                                sourceAccount: sourceAcc,
+                                destinationAccount: destAcc,
+                                category: category,
+                                church: savedChurch,
+                                status: TransactionStatus.COMPLETED,
+                                date: new Date(txData.date), // Fix Date
+                            });
+                            await queryRunner.manager.save(tx);
+                        } else {
+                            this.logger.log(`Skipping existing transaction: ${txData.description}`);
                         }
                     }
                 }
@@ -354,7 +387,6 @@ export class SeedService {
                     }
                 }
 
-                // Seed Library
                 if (churchData.library) {
                     this.logger.log(`📚 Found Library section with ${churchData.library.books.length} books. Processing...`);
                     const bookMap = new Map<string, Book>();
@@ -398,7 +430,7 @@ export class SeedService {
                                     const loan = this.loanRepository.create({
                                         book: book,
                                         borrower: member,
-                                        outDate: new Date(),
+                                        deliveredAt: new Date(),
                                         dueDate: faker.date.future(),
                                         status: LoanStatus.ACTIVE
                                     });
@@ -413,9 +445,11 @@ export class SeedService {
                     }
                 }
 
-                // Seed Small Groups
+
+
+                // Seed Groups
                 if (churchData.smallGroups) {
-                    this.logger.log(`Creating Small Groups for ${churchData.name}...`);
+                    this.logger.log(`Creating Groups for ${churchData.name}...`);
                     for (const groupData of churchData.smallGroups) {
                         let savedGroup = await this.groupRepository.findOne({
                             where: { name: groupData.name, church: { id: savedChurch.id } }
@@ -429,13 +463,8 @@ export class SeedService {
                         const group = this.groupRepository.create({
                             name: groupData.name,
                             description: groupData.description || 'Grupo de Crecimiento',
-                            objective: groupData.objective,
-                            studyMaterial: groupData.studyMaterial,
-                            currentTopic: groupData.currentTopic,
-                            meetingDay: groupData.meetingDay,
-                            meetingTime: groupData.meetingTime,
-                            address: groupData.address,
-                            openEnrollment: groupData.openEnrollment || false,
+                            type: groupData.type || GroupType.SMALL_GROUP,
+                            visibility: GroupVisibility.PUBLIC,
                             church: savedChurch
                         });
                         savedGroup = await queryRunner.manager.save(group);
@@ -443,13 +472,13 @@ export class SeedService {
                         // Add Leader
                         const leaderMember = emailToMemberMap.get(groupData.leaderEmail);
                         if (leaderMember) {
-                            const groupMember = this.groupMemberRepository.create({
-                                member: leaderMember,
+                            const groupParticipant = this.groupMemberRepository.create({
+                                churchPerson: leaderMember,
                                 group: savedGroup,
-                                role: SmallGroupRole.MODERATOR,
+                                role: GroupRole.LEADER,
                                 joinedAt: new Date()
                             });
-                            await queryRunner.manager.save(groupMember);
+                            await queryRunner.manager.save(groupParticipant);
                         }
 
                         // Add Members
@@ -457,13 +486,13 @@ export class SeedService {
                             for (const email of groupData.membersEmails) {
                                 const member = emailToMemberMap.get(email);
                                 if (member) {
-                                    const groupMember = this.groupMemberRepository.create({
-                                        member: member,
+                                    const groupParticipant = this.groupMemberRepository.create({
+                                        churchPerson: member,
                                         group: savedGroup,
-                                        role: SmallGroupRole.PARTICIPANT,
+                                        role: GroupRole.MEMBER,
                                         joinedAt: new Date()
                                     });
-                                    await queryRunner.manager.save(groupMember);
+                                    await queryRunner.manager.save(groupParticipant);
                                 }
                             }
                         }
@@ -474,24 +503,39 @@ export class SeedService {
                 if (churchData.followUpPeople) {
                     this.logger.log(`Creating FollowUp People for ${churchData.name}...`);
                     for (const fpData of churchData.followUpPeople) {
-                        // Check strict duplicity by email or first+last name if no email
-                        let existing = null;
-                        if (fpData.email) {
-                            existing = await this.followUpRepository.findOne({
-                                where: { email: fpData.email, church: { id: savedChurch.id } }
+                        // For a clean seed, creating a person and churchperson for each mockup followup
+                        let person = await this.personRepository.findOne({ where: { email: fpData.email } });
+                        if (!person) {
+                            person = this.personRepository.create({
+                                firstName: fpData.firstName,
+                                lastName: fpData.lastName,
+                                fullName: fpData.firstName + ' ' + fpData.lastName,
+                                email: fpData.email,
+                                phoneNumber: fpData.phone,
                             });
-                        } else {
-                            existing = await this.followUpRepository.findOne({
-                                where: { firstName: fpData.firstName, lastName: fpData.lastName, church: { id: savedChurch.id } }
-                            });
+                            person = await queryRunner.manager.save(person);
                         }
+
+                        let cp = await this.memberRepository.findOne({ where: { person: { id: person.id }, church: { id: savedChurch.id } } });
+                        if (!cp) {
+                            cp = this.memberRepository.create({
+                                person: person,
+                                church: savedChurch,
+                                membershipStatus: MembershipStatus.VISITOR,
+                                ecclesiasticalRole: EcclesiasticalRole.NONE,
+                                functionalRoles: [FunctionalRole.MEMBER],
+                                joinedAt: new Date()
+                            });
+                            cp = await queryRunner.manager.save(cp);
+                        }
+
+                        let existing = await this.followUpRepository.findOne({
+                            where: { churchPerson: { id: cp.id }, church: { id: savedChurch.id } }
+                        });
 
                         if (!existing) {
                             const followUp = this.followUpRepository.create({
-                                firstName: fpData.firstName,
-                                lastName: fpData.lastName,
-                                email: fpData.email,
-                                phone: fpData.phone,
+                                churchPerson: cp,
                                 status: fpData.status as FollowUpStatus || FollowUpStatus.VISITOR,
                                 church: savedChurch,
                                 firstVisitDate: faker.date.past()
@@ -501,33 +545,8 @@ export class SeedService {
                     }
                 }
 
-                // Seed PersonInvited (Just global history, but unrelated to specific church in entity definition... 
-                // Wait, PersonInvited schema does NOT have Church relation in the entity provided above.
-                // Checking PersonInvited entity definition confirms NO church column.
-                // Assuming global or implicitly handled? For now just seeding them raw if they don't exist.)
-                if (churchData.invitedPeople) {
-                    this.logger.log(`Creating Invited People History...`);
-                    for (const ipData of churchData.invitedPeople) {
-                        let existing = null;
-                        if (ipData.email) {
-                            existing = await this.invitedRepository.findOne({ where: { email: ipData.email } });
-                        }
-
-                        if (!existing) {
-                            const invited = this.invitedRepository.create({
-                                firstName: ipData.firstName,
-                                lastName: ipData.lastName,
-                                email: ipData.email,
-                                phone: ipData.phone
-                            });
-                            await queryRunner.manager.save(invited);
-                        }
-                    }
-                }
-
-                // Seed Families
-
-                // Seed Families
+                // Families block...
+                // Fam block starts
                 if (churchData.families) {
                     this.logger.log(`Creating Families for ${churchData.name}...`);
                     for (const familyData of churchData.families) {
@@ -541,13 +560,13 @@ export class SeedService {
                         // Add Head
                         const headUser = emailToUserMap.get(familyData.headEmail);
                         if (headUser) {
-                            const headChurchMember = await queryRunner.manager.findOne(ChurchMember, {
+                            const headChurchPerson = await queryRunner.manager.findOne(ChurchPerson, {
                                 where: { person: { user: { id: headUser.id } }, church: { id: savedChurch.id } }
                             });
 
-                            if (headChurchMember) {
+                            if (headChurchPerson) {
                                 const headMember = this.familyMemberRepository.create({
-                                    member: headChurchMember,
+                                    member: headChurchPerson,
                                     family: savedFamily,
                                     role: FamilyRole.FATHER,
                                     joinedAt: new Date()
@@ -561,13 +580,13 @@ export class SeedService {
                             for (const email of familyData.membersEmails) {
                                 const memberUser = emailToUserMap.get(email);
                                 if (memberUser) {
-                                    const churchMember = await queryRunner.manager.findOne(ChurchMember, {
+                                    const memberChurchPerson = await queryRunner.manager.findOne(ChurchPerson, {
                                         where: { person: { user: { id: memberUser.id } }, church: { id: savedChurch.id } }
                                     });
 
-                                    if (churchMember) {
+                                    if (memberChurchPerson) {
                                         const famMember = this.familyMemberRepository.create({
-                                            member: churchMember,
+                                            member: memberChurchPerson,
                                             family: savedFamily,
                                             role: FamilyRole.CHILD, // Default to CHILD for now
                                             joinedAt: new Date()
@@ -579,7 +598,119 @@ export class SeedService {
                         }
                     }
                 }
+
+
+
+                // Seed Ministries
+                if (churchData.ministries) {
+                    this.logger.log(`Creating Ministries for ${churchData.name}...`);
+                    for (const minData of churchData.ministries) {
+                        let savedMinistry = await this.ministryRepository.findOne({
+                            where: { name: minData.name, church: { id: savedChurch.id } }
+                        });
+
+                        if (!savedMinistry) {
+                            const ministry = this.ministryRepository.create({
+                                name: minData.name,
+                                description: `Ministerio de ${minData.name}`,
+                                status: 'active',
+                                church: savedChurch
+                            });
+                            savedMinistry = await queryRunner.manager.save(ministry);
+                        }
+
+                        // Assign Leader
+                        if (minData.leaderEmail) {
+                            const leaderUser = emailToUserMap.get(minData.leaderEmail);
+                            if (leaderUser) {
+                                const leaderMember = await queryRunner.manager.findOne(ChurchPerson, {
+                                    where: { person: { user: { id: leaderUser.id } }, church: { id: savedChurch.id } }
+                                });
+                                if (leaderMember) {
+                                    // Check if already a member of this ministry
+                                    const existingMembership = await this.ministryMemberRepository.findOne({
+                                        where: {
+                                            ministry: { id: savedMinistry.id },
+                                            member: { id: leaderMember.id }
+                                        }
+                                    });
+
+                                    if (!existingMembership) {
+                                        const membership = this.ministryMemberRepository.create({
+                                            ministry: savedMinistry,
+                                            member: leaderMember,
+                                            roleInMinistry: MinistryRole.LEADER,
+                                            status: 'active',
+                                            joinedAt: new Date()
+                                        });
+                                        await queryRunner.manager.save(membership);
+
+                                        // Update Ministry Leader reference
+                                        savedMinistry.leader = leaderMember;
+                                        await queryRunner.manager.save(savedMinistry);
+                                    }
+                                }
+                            }
+                        }
+
+                        // Assign 6 Random Members
+                        const allMembers = await queryRunner.manager.find(ChurchPerson, { where: { church: { id: savedChurch.id } }, relations: ['person'] });
+                        // Filter out leader if exists
+                        const potentialMembers = allMembers.filter(m => minData.leaderEmail ? m.person?.email !== minData.leaderEmail : true);
+
+                        // Shuffle Array
+                        const shuffled = potentialMembers.sort(() => 0.5 - Math.random());
+                        const selectedMembers = shuffled.slice(0, 6);
+
+                        for (const member of selectedMembers) {
+                            const existingMembership = await this.ministryMemberRepository.findOne({
+                                where: {
+                                    ministry: { id: savedMinistry.id },
+                                    member: { id: member.id }
+                                }
+                            });
+
+                            if (!existingMembership) {
+                                const membership = this.ministryMemberRepository.create({
+                                    ministry: savedMinistry,
+                                    member: member,
+                                    roleInMinistry: MinistryRole.TEAM_MEMBER,
+                                    status: 'active',
+                                    joinedAt: faker.date.past() // Random past date
+                                });
+                                await queryRunner.manager.save(membership);
+                            }
+                        }
+
+                        // Create Roles (ServiceDuty)
+                        if (minData.roles) {
+                            for (const roleData of minData.roles) {
+                                const existingRole = await this.serviceDutyRepository.findOne({
+                                    where: {
+                                        name: roleData.name,
+                                        ministry: { id: savedMinistry.id }
+                                    }
+                                });
+
+                                if (!existingRole) {
+                                    const duty = this.serviceDutyRepository.create({
+                                        name: roleData.name,
+                                        behaviorType: roleData.behavior as ServiceDutyBehavior || ServiceDutyBehavior.STANDARD,
+                                        ministry: savedMinistry
+                                    });
+                                    await queryRunner.manager.save(duty);
+                                }
+                            }
+                        }
+                    }
+                }
+
             }
+
+
+            // FINAL LOG
+            const txCount = await this.treasuryRepository.count();
+            this.logger.log(`✅ SEEDING COMPLETE. Treasury Transactions in DB: ${txCount}`);
 
             await queryRunner.commitTransaction();
             this.logger.log('Seeding completed successfully! (Churches, Members and Library updated)');

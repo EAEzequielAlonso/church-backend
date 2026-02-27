@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'ty
 import { Church } from '../../churches/entities/church.entity';
 import { MinistryMember } from './ministry-member.entity';
 import { CalendarEvent } from '../../agenda/entities/calendar-event.entity';
-import { ChurchMember } from '../../members/entities/church-member.entity';
+import { ChurchPerson } from '../../members/entities/church-person.entity';
 import { MinistryTask } from './ministry-task.entity';
 import { ServiceDuty } from './service-duty.entity';
 import { MinistryRoleAssignment } from './ministry-role-assignment.entity';
@@ -24,8 +24,8 @@ export class Ministry {
     @Column({ default: 'active' })
     status: 'active' | 'inactive';
 
-    @ManyToOne(() => ChurchMember, { nullable: true })
-    leader: ChurchMember; // Main leader reference
+    @ManyToOne(() => ChurchPerson, { nullable: true })
+    leader: ChurchPerson; // Main leader reference
 
     @ManyToOne(() => Church, (church) => church.ministries)
     church: Church;

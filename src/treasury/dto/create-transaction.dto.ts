@@ -1,30 +1,52 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { TransactionType } from '../../common/enums';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { Currency, TransactionType } from '../enums/treasury.enums';
 
 export class CreateTransactionDto {
-    @ApiProperty({ enum: TransactionType })
     @IsEnum(TransactionType)
     @IsNotEmpty()
     type: TransactionType;
 
-    @ApiProperty({ example: 1000 })
     @IsNumber()
+    @Min(0.01)
     @IsNotEmpty()
     amount: number;
 
-    @ApiProperty({ example: 'Ofrenda dominical' })
+    @IsEnum(Currency)
+    @IsNotEmpty()
+    currency: Currency;
+
+    @IsNumber()
+    @Min(0.00000001)
+    @IsOptional()
+    exchangeRate?: number; // Defaults to 1 if not provided
+
     @IsString()
     @IsNotEmpty()
     description: string;
 
-    @ApiProperty({ example: 'Alquiler' })
-    @IsString()
     @IsOptional()
-    category?: string;
+    @IsString()
+    reference?: string;
 
-    @ApiProperty({ example: '2023-10-27T10:00:00Z' })
-    @IsString()
     @IsOptional()
-    date?: string;
+    @IsString()
+    date?: string; // ISO Date string
+
+    // --- Relationships ---
+
+    @IsOptional()
+    @IsUUID()
+    sourceAccountId?: string; // Required for EXPENSE, TRANSFER
+
+    @IsOptional()
+    @IsUUID()
+    destinationAccountId?: string; // Required for INCOME, TRANSFER
+
+    @IsOptional()
+    @IsUUID()
+    categoryId?: string; // Required for INCOME, EXPENSE. Null for TRANSFER.
+
+    @IsOptional()
+    @IsUUID()
+    ministryId?: string;
 }

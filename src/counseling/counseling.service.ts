@@ -4,9 +4,9 @@ import { Repository, In } from 'typeorm';
 import { CareProcess } from './entities/care-process.entity';
 import { CareParticipant } from './entities/care-participant.entity';
 import { CareNote } from './entities/care-note.entity';
-import { ChurchMember as Member } from '../members/entities/church-member.entity';
+import { ChurchPerson as Member } from '../members/entities/church-person.entity';
 import { Church } from '../churches/entities/church.entity';
-import { CareProcessType, CareProcessStatus, CareParticipantRole, CareNoteVisibility, CareSessionStatus, CareTaskStatus, SystemRole } from '../common/enums';
+import { CareProcessType, CareProcessStatus, CareParticipantRole, CareNoteVisibility, CareSessionStatus, CareTaskStatus, SystemRole, FunctionalRole } from '../common/enums';
 import { AppPermission } from '../auth/authorization/permissions.enum';
 import { getPermissionsForRoles } from '../auth/authorization/role-permissions.config';
 import { CareSession } from './entities/care-session.entity';
@@ -42,7 +42,7 @@ export class CounselingService {
 
         const counselor = await this.memberRep.findOne({
             where: { id: counselorMemberId, church: { id: churchId } },
-            relations: ['person', 'person.user', 'roles']
+            relations: ['person', 'person.user'] // Removed 'roles' as it is not a relation on ChurchPerson
         });
         if (!counselor) throw new NotFoundException('Consejero no encontrado');
 
@@ -51,7 +51,7 @@ export class CounselingService {
             const isPlatformAdmin = counselor.person?.user?.systemRole === SystemRole.ADMIN_APP || false;
             // Check if user is Church Admin (Role name 'ADMIN') or Pastor
             const isChurchAdmin = counselor.ecclesiasticalRole === 'PASTOR'; // Using string or Enum logic
-            const isAuthorized = counselor.isAuthorizedCounselor || isPlatformAdmin || isChurchAdmin;
+            const isAuthorized = counselor.functionalRoles?.includes(FunctionalRole.COUNSELOR) || isPlatformAdmin || isChurchAdmin;
 
             if (!isAuthorized) {
                 throw new ForbiddenException('No tienes autorización para iniciar un acompañamiento formal. Por favor contacta al administrador.');
@@ -385,13 +385,52 @@ export class CounselingService {
 
     async findAllSessions(processId: string, memberId: string, personId: string, roles: string[] = []) {
         // Enforce the same access check as findOne (to ensure read-only or participant access)
-        await this.findOne(processId, memberId, personId, roles);
+        const process = await this.findOne(processId, memberId, personId, roles);
 
-        return this.sessionRepository.find({
+        // Determine if user is a participant
+        const myParticipant = process.participants.find(p => {
+            if (memberId && p.member.id === memberId) return true;
+            if (personId && p.member.person?.id === personId) return true;
+            return false;
+        });
+
+        // If NOT participant (meaning they are a Supervisor/Admin viewing via permission), 
+        // they should NOT see tasks.
+        const isSupervisorOnly = !myParticipant;
+
+        const relations = ['notes', 'notes.author', 'notes.author.person'];
+        if (!isSupervisorOnly) {
+            relations.push('tasks');
+        }
+
+        const sessions = await this.sessionRepository.find({
             where: { process: { id: processId } },
-            relations: ['tasks', 'notes', 'notes.author', 'notes.author.person'],
+            relations,
             order: { date: 'ASC' }
         });
+
+        if (isSupervisorOnly) {
+            // Additional filtering for session notes if needed, 
+            // though findOne filters process-level notes, sessions have their own notes relation?
+            // The structure shows sessions have notes. We need to filter those too.
+            // Currently findOne filters `process.notes`. `sessions.notes` are separate.
+
+            sessions.forEach(session => {
+                if (session.notes) {
+                    session.notes = session.notes.filter(note => {
+                        // Supervisor sees ONLY SUPERVISION notes
+                        if (note.visibility === CareNoteVisibility.SUPERVISION) return true;
+                        // Author sees their own notes (unlikely for pure supervisor in session unless they wrote it)
+                        if (memberId && note.author.id === memberId) return true;
+                        return false;
+                    });
+                }
+                // Double check tasks are gone (though we didn't include relation, safe to ensure)
+                delete session.tasks;
+            });
+        }
+
+        return sessions;
     }
 
     async addTask(sessionId: string, description: string, title?: string) {

@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
-import { ChurchMember } from '../../members/entities/church-member.entity';
+import { ChurchPerson } from '../../members/entities/church-person.entity';
 import { DiscipleshipStatus } from '../../common/enums';
 import { DiscipleshipParticipant } from './discipleship-participant.entity';
 import { DiscipleshipMeeting } from './discipleship-meeting.entity';
@@ -37,9 +37,9 @@ export class Discipleship {
     @Column({ type: 'date', nullable: true })
     endDate: Date;
 
-    @ManyToOne(() => ChurchMember, { nullable: true })
+    @ManyToOne(() => ChurchPerson, { nullable: true })
     @JoinColumn({ name: 'created_by_id' })
-    createdBy: ChurchMember; // The supervisor/admin who created it
+    createdBy: ChurchPerson; // The supervisor/admin who created it
 
     @OneToMany(() => DiscipleshipParticipant, (participant) => participant.discipleship, { cascade: true })
     participants: DiscipleshipParticipant[];

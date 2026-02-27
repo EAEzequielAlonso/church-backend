@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { CareProcess } from './care-process.entity';
-import { ChurchMember as Member } from '../../members/entities/church-member.entity';
+import { ChurchPerson as Member } from '../../members/entities/church-person.entity';
 import { CareParticipantRole } from '../../common/enums';
 
 @Entity('care_participants')

@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Ministry } from './ministry.entity';
-import { ChurchMember } from '../../members/entities/church-member.entity';
+import { ChurchPerson } from '../../members/entities/church-person.entity';
 
 @Entity('ministry_tasks')
 export class MinistryTask {
@@ -16,8 +16,11 @@ export class MinistryTask {
     @Column({ type: 'text', nullable: true })
     description: string;
 
-    @ManyToOne(() => ChurchMember, { nullable: true })
-    assignedTo: ChurchMember;
+    @Column({ type: 'text', nullable: true })
+    observation: string;
+
+    @ManyToOne(() => ChurchPerson, { nullable: true })
+    assignedTo: ChurchPerson;
 
     @Column({ type: 'timestamp', nullable: true })
     dueDate: Date;

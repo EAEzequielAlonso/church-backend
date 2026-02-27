@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
 import { Ministry } from './ministry.entity';
-import { ChurchMember } from '../../members/entities/church-member.entity';
+import { ChurchPerson } from '../../members/entities/church-person.entity';
 import { MinistryRole } from '../../common/enums';
 
 @Entity('ministry_members')
@@ -11,8 +11,8 @@ export class MinistryMember {
     @ManyToOne(() => Ministry, (ministry) => ministry.members)
     ministry: Ministry;
 
-    @ManyToOne(() => ChurchMember, (member) => member.ministries)
-    member: ChurchMember;
+    @ManyToOne(() => ChurchPerson, (member) => member.ministries)
+    member: ChurchPerson;
 
     @Column({
         type: 'enum',

@@ -95,6 +95,12 @@ export class MinistriesController {
         return this.ministriesService.updateTask(taskId, body);
     }
 
+    @Delete(':id/tasks/:taskId')
+    @RequirePermissions(AppPermission.MINISTRY_MANAGE)
+    deleteTask(@Param('id') id: string, @Param('taskId') taskId: string) {
+        return this.ministriesService.deleteTask(id, taskId);
+    }
+
     // --- NOTES ---
 
     @Get('events/:eventId/notes')

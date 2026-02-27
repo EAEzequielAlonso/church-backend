@@ -7,7 +7,7 @@ import { DiscipleshipParticipant } from './entities/discipleship-participant.ent
 import { DiscipleshipMeeting } from './entities/discipleship-meeting.entity';
 import { DiscipleshipNote } from './entities/discipleship-note.entity';
 import { DiscipleshipTask } from './entities/discipleship-task.entity';
-import { ChurchMember as Member } from '../members/entities/church-member.entity';
+import { ChurchPerson as Member } from '../members/entities/church-person.entity';
 import { Church } from '../churches/entities/church.entity';
 import { Person } from '../users/entities/person.entity';
 import { User } from '../users/entities/user.entity';

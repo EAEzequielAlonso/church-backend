@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsOptional, IsString, IsArray, IsUUID } from 'class-validator';
-import { MembershipStatus, EcclesiasticalRole, FunctionalRole } from '../../common/enums';
+import { EcclesiasticalRole, FunctionalRole } from '../../common/enums';
+import { MembershipStatus } from '../enums/membership-status.enum';
 
 export class CreateMemberDto {
     @ApiProperty({ example: 'john@example.com', required: false })

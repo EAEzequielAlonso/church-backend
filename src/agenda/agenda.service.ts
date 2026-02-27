@@ -5,16 +5,15 @@ import { CareSession } from '../counseling/entities/care-session.entity';
 import { CareTask } from '../counseling/entities/care-task.entity';
 import { CareTaskStatus, CareSessionStatus, CalendarEventType, MinistryRole, EcclesiasticalRole } from '../common/enums';
 import { CalendarEvent } from './entities/calendar-event.entity';
-import { ChurchMember } from '../members/entities/church-member.entity';
+import { ChurchPerson } from '../members/entities/church-person.entity';
 import { Person } from '../users/entities/person.entity';
 import { Ministry } from '../ministries/entities/ministry.entity';
-import { SmallGroupMember } from '../small-groups/entities/small-group-member.entity';
-import { SmallGroup } from '../small-groups/entities/small-group.entity';
-import { SmallGroupGuest } from '../small-groups/entities/small-group-guest.entity';
+import { Group } from '../groups/entities/group.entity';
+import { GroupParticipant } from '../groups/entities/group-participant.entity';
+import { GroupRole, GroupType } from '../groups/enums/group.enums';
 import { MinistryRoleAssignment } from '../ministries/entities/ministry-role-assignment.entity';
+import { FollowUp } from '../follow-ups/entities/follow-up.entity';
 import { CreateCalendarEventDto } from './dto/create-calendar-event.dto';
-import { FollowUpPerson } from '../follow-ups/entities/follow-up-person.entity';
-import { PersonInvited } from '../courses/entities/person-invited.entity';
 
 @Injectable()
 export class AgendaService {
@@ -25,24 +24,20 @@ export class AgendaService {
         private readonly taskRepository: Repository<CareTask>,
         @InjectRepository(CalendarEvent)
         private readonly eventRepository: Repository<CalendarEvent>,
-        @InjectRepository(ChurchMember)
-        private readonly memberRepository: Repository<ChurchMember>,
+        @InjectRepository(ChurchPerson)
+        private readonly memberRepository: Repository<ChurchPerson>,
         @InjectRepository(Person)
         private readonly personRepository: Repository<Person>,
         @InjectRepository(Ministry)
         private readonly ministryRepository: Repository<Ministry>,
-        @InjectRepository(SmallGroupMember)
-        private readonly smallGroupMemberRepository: Repository<SmallGroupMember>,
-        @InjectRepository(SmallGroup)
-        private readonly smallGroupRepository: Repository<SmallGroup>,
+        @InjectRepository(GroupParticipant)
+        private readonly groupParticipantRepository: Repository<GroupParticipant>,
+        @InjectRepository(Group)
+        private readonly groupRepository: Repository<Group>,
         @InjectRepository(MinistryRoleAssignment)
         private readonly assignmentRepository: Repository<MinistryRoleAssignment>,
-        @InjectRepository(FollowUpPerson)
-        private readonly followUpRepository: Repository<FollowUpPerson>,
-        @InjectRepository(PersonInvited)
-        private readonly invitedRepository: Repository<PersonInvited>,
-        @InjectRepository(SmallGroupGuest)
-        private readonly guestRepository: Repository<SmallGroupGuest>,
+        @InjectRepository(FollowUp)
+        private readonly followUpRepository: Repository<FollowUp>,
     ) { }
 
     async getUpcomingActivities(personId: string, memberId?: string, churchId?: string) {
@@ -94,18 +89,18 @@ export class AgendaService {
                 }
             }
 
-            // Find my Small Group IDs
-            let smallGroupIds: string[] = [];
-            if (personId) { // User is linked to Person
-                const memberships = await this.smallGroupMemberRepository.find({
-                    where: { member: { person: { id: personId } } },
+            // Find my Group IDs (formerly SmallGroupIds)
+            let groupIds: string[] = [];
+            if (memberId) { // User is linked to ChurchPerson
+                const memberships = await this.groupParticipantRepository.find({
+                    where: { churchPerson: { id: memberId } },
                     relations: ['group']
                 });
-                smallGroupIds = memberships.map(m => m.group.id);
+                groupIds = memberships.map(m => m.group.id);
             }
 
             const eventsQuery = this.eventRepository.createQueryBuilder('event')
-                .leftJoinAndSelect('event.smallGroup', 'smallGroup')
+                .leftJoinAndSelect('event.group', 'group')
                 .leftJoinAndSelect('event.discipleshipMeeting', 'dm')
                 .leftJoinAndSelect('dm.discipleship', 'discipleship')
                 .leftJoin('event.church', 'church')
@@ -121,9 +116,9 @@ export class AgendaService {
                                 ministryType: 'MINISTRY',
                                 ministryIds: ministryIds.length > 0 ? ministryIds : ['00000000-0000-0000-0000-000000000000']
                             })
-                            .orWhere('(event.type = :smallGroupType AND smallGroup.id IN (:...smallGroupIds))', {
-                                smallGroupType: 'SMALL_GROUP',
-                                smallGroupIds: smallGroupIds.length > 0 ? smallGroupIds : ['00000000-0000-0000-0000-000000000000']
+                            .orWhere('(event.type = :groupType AND group.id IN (:...groupIds))', {
+                                groupType: 'SMALL_GROUP',
+                                groupIds: groupIds.length > 0 ? groupIds : ['00000000-0000-0000-0000-000000000000']
                             })
                             .orWhere('(event.type = :discipleshipType AND (organizer.id = :personId OR attendee.id = :personId))', {
                                 discipleshipType: 'DISCIPLESHIP',
@@ -187,7 +182,7 @@ export class AgendaService {
                 color: e.color,
                 isAllDay: e.isAllDay,
                 ministry: e.ministry ? { id: e.ministry.id, name: e.ministry.name } : null,
-                smallGroup: e.smallGroup ? { id: e.smallGroup.id, name: e.smallGroup.name } : null,
+                group: e.group ? { id: e.group.id, name: e.group.name } : null,
                 discipleship: e.discipleshipMeeting?.discipleship ? {
                     id: e.discipleshipMeeting.discipleship.id,
                     name: e.discipleshipMeeting.discipleship.name
@@ -296,53 +291,32 @@ export class AgendaService {
                 }
             }
         } else if (type === CalendarEventType.SMALL_GROUP) {
-            if (!createDto.smallGroupId) throw new ForbiddenException('Small Group ID required');
+            if (!createDto.groupId) throw new ForbiddenException('Group ID required');
 
-            const group = await this.smallGroupRepository.findOne({
-                where: { id: createDto.smallGroupId },
-                relations: ['members', 'members.member', 'members.member.person']
+            const group = await this.groupRepository.findOne({
+                where: { id: createDto.groupId },
+                relations: ['participants', 'participants.churchPerson', 'participants.churchPerson.person']
             });
 
-            if (!group) throw new NotFoundException('Grupo pequeño no encontrado');
-            event.smallGroup = group;
+            if (!group) throw new NotFoundException('Grupo no encontrado');
+            event.group = group;
 
-            // Permission Check: Must be MODERATOR of the group
+            // Permission Check: Must be LEADER of the group
             let isModerator = false;
             // Global override? Maybe CHURCH_MANAGE
             const hasGlobalOverride = permissions.includes('AGENDA_CREATE_CHURCH') || roles.includes('ADMIN_CHURCH') || roles.includes('AUDITOR');
 
             if (!hasGlobalOverride) {
                 if (memberId) {
-                    const membership = group.members.find(m => m.member.person.id === personId); // smallGroupMember links to User not ChurchMember directly maybe?
-                    // Wait, smallGroupMember links to User. personId passed here is likely Person ID.
-                    // Let's check relation. SmallGroupMember -> User. User -> Person.
-                    // The personId argument to createEvent comes from `req.user.personId` usually.
-                    // But let's check how we find the membership.
-                    // group.members has user. We need to match user.person.id or user.id
-                    // The `personId` arg is `Person` ID.
-                    // The `memberId` arg is `ChurchMember` ID.
+                    const membership = group.participants.find(m => m.churchPerson.id === memberId);
 
-                    // SmallGroupMember is linked to User.
-                    // We need to fetch User ID from Person ID or use the User ID if available in request.
-                    // `createEvent` signature has `personId`.
-                    // Let's assume we can traverse. Or simpler:
-                    // We need to know if the CURRENT USER is a moderator.
-                    // The `personId` passed is the ID of the Person entity.
-                    const person = await this.personRepository.findOne({
-                        where: { id: personId },
-                        relations: ['user', 'user.person']
-                    });
-
-                    if (person && person.user) {
-                        const membership = group.members.find(m => m.member.person.id === person.id);
-                        if (membership && membership.role === 'MODERATOR') {
-                            isModerator = true;
-                        }
+                    if (membership && membership.role === GroupRole.LEADER) {
+                        isModerator = true;
                     }
                 }
 
                 if (!isModerator) {
-                    throw new ForbiddenException('No eres líder de este grupo pequeño');
+                    throw new ForbiddenException('No eres líder de este grupo');
                 }
             }
         }
@@ -371,52 +345,10 @@ export class AgendaService {
             let person = await this.personRepository.findOne({ where: { id } });
 
             if (!person) {
-                // 2. Try to find as FollowUpPerson (Visitor)
-                const followUp = await this.followUpRepository.findOne({
-                    where: { id },
-                    relations: ['personInvited']
-                });
-
-                if (followUp) {
-                    person = await this.resolvePersonForVisitor(followUp);
-                } else {
-                    // 3. Try to find as PersonInvited (Guest)
-                    const invited = await this.invitedRepository.findOne({ where: { id } });
-                    if (invited) {
-                        person = await this.ensurePersonForInvited(invited);
-                    } else {
-                        // 4. Try to find as SmallGroupGuest
-                        const guest = await this.guestRepository.findOne({
-                            where: { id },
-                            relations: ['followUpPerson', 'personInvited']
-                        });
-
-                        if (guest) {
-                            if (guest.followUpPerson) {
-                                person = await this.resolvePersonForVisitor(guest.followUpPerson);
-                            } else if (guest.personInvited) {
-                                person = await this.ensurePersonForInvited(guest.personInvited);
-                            } else {
-                                // Pure guest: Create a shadow PersonInvited
-                                const nameParts = guest.fullName.split(' ');
-                                const firstName = nameParts[0] || 'Invitado';
-                                const lastName = nameParts.slice(1).join(' ') || '';
-
-                                const newInvited = this.invitedRepository.create({
-                                    firstName,
-                                    lastName,
-                                    email: guest.email,
-                                    phone: guest.phone
-                                });
-                                const savedInvited = await this.invitedRepository.save(newInvited);
-
-                                guest.personInvited = savedInvited;
-                                await this.guestRepository.save(guest);
-
-                                person = await this.ensurePersonForInvited(savedInvited);
-                            }
-                        }
-                    }
+                // fallback to ChurchPerson search directly
+                const cp = await this.memberRepository.findOne({ where: { id }, relations: ['person'] });
+                if (cp && cp.person) {
+                    person = cp.person;
                 }
             }
 
@@ -428,21 +360,6 @@ export class AgendaService {
         event.attendees = Array.from(attendeesMap.values());
         return this.eventRepository.save(event);
     }
-
-    private async resolvePersonForVisitor(followUp: FollowUpPerson): Promise<Person> {
-        if (!followUp.personInvited) {
-            const invited = this.invitedRepository.create({
-                firstName: followUp.firstName,
-                lastName: followUp.lastName,
-                email: followUp.email,
-                phone: followUp.phone
-            });
-            followUp.personInvited = await this.invitedRepository.save(invited);
-            await this.followUpRepository.save(followUp);
-        }
-        return this.ensurePersonForInvited(followUp.personInvited);
-    }
-
     async updateEvent(id: string, updateDto: any, personId: string, roles: string[]) {
         const event = await this.eventRepository.findOne({
             where: { id },
@@ -457,21 +374,14 @@ export class AgendaService {
 
         // Moderator Check
         let isModerator = false;
-        if (event.type === CalendarEventType.SMALL_GROUP && event.smallGroup) {
-            // Need to fetch group members if not loaded? event.smallGroup has ID.
-            // But we need to check if USER is moderator of THIS group.
-            // We can check via SmallGroupMember repository or if we load relations.
-            // event relations: ['organizer', 'smallGroup', 'ministry', 'attendees']
-            // 'smallGroup' is loaded. Does it have members?
-            // Usually not fully loaded in Event entity unless specified.
-            // Better to query membership.
-            const membership = await this.smallGroupMemberRepository.findOne({
+        if (event.type === CalendarEventType.SMALL_GROUP && event.group) {
+            const membership = await this.groupParticipantRepository.findOne({
                 where: {
-                    group: { id: event.smallGroup.id },
-                    member: { person: { id: personId } }
+                    group: { id: event.group.id },
+                    churchPerson: { id: personId }
                 }
             });
-            if (membership && membership.role === 'MODERATOR') {
+            if (membership && membership.role === GroupRole.LEADER) {
                 isModerator = true;
             }
         }
@@ -503,16 +413,15 @@ export class AgendaService {
         const isAdmin = roles.includes('ADMIN_CHURCH') || roles.includes('AUDITOR');
         const isOrganizer = event.organizer?.id === personId;
 
-        // Moderator Check
         let isModerator = false;
-        if (event.type === CalendarEventType.SMALL_GROUP && event.smallGroup) {
-            const membership = await this.smallGroupMemberRepository.findOne({
+        if (event.type === CalendarEventType.SMALL_GROUP && event.group) {
+            const membership = await this.groupParticipantRepository.findOne({
                 where: {
-                    group: { id: event.smallGroup.id },
-                    member: { person: { id: personId } }
+                    group: { id: event.group.id },
+                    churchPerson: { id: personId }
                 }
             });
-            if (membership && membership.role === 'MODERATOR') {
+            if (membership && membership.role === GroupRole.LEADER) {
                 isModerator = true;
             }
         }
@@ -522,28 +431,5 @@ export class AgendaService {
         }
 
         return this.eventRepository.remove(event);
-    }
-
-    private async ensurePersonForInvited(invited: PersonInvited): Promise<Person> {
-        // Check if already has a shadow person
-        let person = await this.personRepository.findOne({
-            where: { personInvited: { id: invited.id } }
-        });
-
-        if (!person) {
-            // Create a minimal Person record to track attendance/UI
-            person = this.personRepository.create({
-                firstName: invited.firstName,
-                lastName: invited.lastName,
-                fullName: `${invited.firstName} ${invited.lastName}`.trim(),
-                email: invited.email,
-                phoneNumber: invited.phone,
-                personInvited: invited,
-                isActive: true
-            });
-            person = await this.personRepository.save(person);
-        }
-
-        return person;
     }
 }
