@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Ministry } from './ministry.entity';
 import { MinistryRoleAssignment } from './ministry-role-assignment.entity';
 
@@ -6,28 +14,30 @@ import { ServiceDutyBehavior } from '../enums/service-duty-behavior.enum';
 
 @Entity('service_duties')
 export class ServiceDuty {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column()
-    name: string; // e.g. "Predicación", "Audio", "Ujier"
+  @Column()
+  name: string; // e.g. "Predicación", "Audio", "Ujier"
 
-    @Column({
-        type: 'enum',
-        enum: ServiceDutyBehavior,
-        default: ServiceDutyBehavior.STANDARD
-    })
-    behaviorType: ServiceDutyBehavior;
+  @Column({
+    type: 'enum',
+    enum: ServiceDutyBehavior,
+    default: ServiceDutyBehavior.STANDARD,
+  })
+  behaviorType: ServiceDutyBehavior;
 
-    @ManyToOne(() => Ministry, (ministry) => ministry.serviceDuties, { onDelete: 'CASCADE' })
-    ministry: Ministry;
+  @ManyToOne(() => Ministry, (ministry) => ministry.serviceDuties, {
+    onDelete: 'CASCADE',
+  })
+  ministry: Ministry;
 
-    @OneToMany(() => MinistryRoleAssignment, (assignment) => assignment.role)
-    assignments: MinistryRoleAssignment[];
+  @OneToMany(() => MinistryRoleAssignment, (assignment) => assignment.role)
+  assignments: MinistryRoleAssignment[];
 
-    @CreateDateColumn()
-    createdAt: Date;
+  @CreateDateColumn()
+  createdAt: Date;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

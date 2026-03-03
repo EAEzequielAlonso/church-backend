@@ -5,22 +5,25 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChurchPerson } from '../members/entities/church-person.entity';
 import { Group } from '../groups/entities/group.entity';
 import { TreasuryTransaction } from '../treasury/entities/treasury-transaction.entity';
-import { FollowUp } from '../follow-ups/entities/follow-up.entity';
 import { WorshipService } from '../worship/entities/worship-service.entity';
 import { CalendarEvent } from '../agenda/entities/calendar-event.entity';
+import { MentorshipProcess } from '../mentorship/infrastructure/entities/mentorship-process.entity';
+import { MinistryMember } from '../ministries/entities/ministry-member.entity';
+import { GroupParticipant } from '../groups/entities/group-participant.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       ChurchPerson,
-      Group, // Replaced SmallGroup with Group
-      TreasuryTransaction,
-      FollowUp,
-      WorshipService, // Imported
-      CalendarEvent   // Imported
-    ])
+      Group,
+      WorshipService,
+      CalendarEvent,
+      MentorshipProcess,
+      MinistryMember,
+      GroupParticipant,
+    ]),
   ],
   controllers: [DashboardController],
-  providers: [DashboardService]
+  providers: [DashboardService],
 })
-export class DashboardModule { }
+export class DashboardModule {}

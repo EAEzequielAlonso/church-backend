@@ -8,16 +8,16 @@ import { Ministry } from '../ministries/entities/ministry.entity';
 import { User } from '../users/entities/user.entity';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            InventoryItem,
-            InventoryMovement,
-            Ministry,
-            User
-        ])
-    ],
-    controllers: [InventoryController],
-    providers: [InventoryService],
-    exports: [InventoryService]
+  imports: [
+    TypeOrmModule.forFeature([
+      InventoryItem,
+      InventoryMovement,
+      Ministry,
+      User,
+    ]),
+  ],
+  controllers: [InventoryController],
+  providers: [InventoryService],
+  exports: [InventoryService],
 })
-export class InventoryModule { }
+export class InventoryModule {}

@@ -8,9 +8,16 @@ import { GroupMeeting } from './entities/group-meeting.entity';
 import { GroupAttendance } from './entities/group-attendance.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Group, GroupParticipant, GroupMeeting, GroupAttendance])],
-    controllers: [GroupsController],
-    providers: [GroupsService],
-    exports: [GroupsService],
+  imports: [
+    TypeOrmModule.forFeature([
+      Group,
+      GroupParticipant,
+      GroupMeeting,
+      GroupAttendance,
+    ]),
+  ],
+  controllers: [GroupsController],
+  providers: [GroupsService],
+  exports: [GroupsService],
 })
-export class GroupsModule { }
+export class GroupsModule {}

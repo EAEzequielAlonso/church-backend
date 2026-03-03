@@ -1,50 +1,93 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsBoolean, IsUUID } from 'class-validator';
-import { BookOwnershipType } from '../../common/enums/library.enums';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsUUID,
+} from 'class-validator';
+import { BookOwnershipType } from '../enums/library.enums';
 
 export class CreateBookDto {
-    @IsString()
-    @IsNotEmpty()
-    title: string;
+  @IsString()
+  @IsNotEmpty()
+  title: string;
 
-    @IsString()
-    @IsNotEmpty()
-    author: string;
+  @IsString()
+  @IsNotEmpty()
+  author: string;
 
-    @IsUUID()
-    @IsNotEmpty()
-    categoryId: string;
+  @IsUUID()
+  @IsNotEmpty()
+  categoryId: string;
 
-    @IsString()
-    @IsOptional()
-    description?: string;
+  @IsString()
+  @IsOptional()
+  description?: string;
 
-    @IsString()
-    @IsOptional()
-    isbn?: string;
+  @IsString()
+  @IsOptional()
+  isbn?: string;
 
-    @IsString()
-    @IsOptional()
-    coverUrl?: string;
+  @IsString()
+  @IsOptional()
+  coverUrl?: string;
 
-    @IsEnum(BookOwnershipType)
-    @IsOptional()
-    ownershipType?: BookOwnershipType; // Defaults to CHURCH if not active member? Or logic in controller.
+  /**
+   * CHURCH = libro institucional (requiere rol LIBRARIAN).
+   * MEMBER = libro personal del solicitante.
+   * Default: CHURCH
+   */
+  @IsEnum(BookOwnershipType)
+  @IsOptional()
+  ownershipType?: BookOwnershipType;
 
-    @IsBoolean()
-    @IsOptional()
-    isChurchOwned?: boolean; // Logic in UseCase to set strict
+  @IsString()
+  @IsOptional()
+  code?: string;
 
-    @IsString()
-    @IsOptional()
-    code?: string;
+  @IsString()
+  @IsOptional()
+  condition?: string;
 
-    @IsString()
-    @IsOptional()
-    condition?: string;
-
-    @IsString()
-    @IsOptional()
-    location?: string;
+  @IsString()
+  @IsOptional()
+  location?: string;
 }
 
-export class UpdateBookDto extends CreateBookDto { }
+export class UpdateBookDto {
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @IsString()
+  @IsOptional()
+  author?: string;
+
+  @IsUUID()
+  @IsOptional()
+  categoryId?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  isbn?: string;
+
+  @IsString()
+  @IsOptional()
+  coverUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  code?: string;
+
+  @IsString()
+  @IsOptional()
+  condition?: string;
+
+  @IsString()
+  @IsOptional()
+  location?: string;
+}

@@ -1,8 +1,20 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Query, Put, Delete, Request, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+  Put,
+  Delete,
+  Request,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
-import { EcclesiasticalRole, FunctionalRole } from '../common/enums';
 import { CurrentChurch } from '../common/decorators';
+import { FunctionalRole } from '../common/enums';
 
 import { CreateBookDto, UpdateBookDto } from './dto/create-book.dto';
 import { RequestLoanDto, LoanActionDto } from './dto/loan.dto';
@@ -19,132 +31,238 @@ import { RequestLoanUseCase } from './use-cases/request-loan.use-case';
 import { ApproveLoanUseCase } from './use-cases/approve-loan.use-case';
 import { MarkLoanDeliveredUseCase } from './use-cases/mark-loan-delivered.use-case';
 import { MarkLoanReturnedUseCase } from './use-cases/mark-loan-returned.use-case';
-import { BookStatus, LoanStatus } from '../common/enums/library.enums';
+import { RejectLoanUseCase } from './use-cases/reject-loan.use-case';
+import { CancelLoanUseCase } from './use-cases/cancel-loan.use-case';
+import { BookStatus, LoanStatus } from './enums/library.enums';
 
 @Controller('library')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LibraryController {
-    constructor(
-        private readonly getCategories: GetCategoriesUseCase,
-        private readonly getBooks: GetBooksUseCase,
-        private readonly createBook: CreateBookUseCase,
-        private readonly updateBook: UpdateBookUseCase,
-        private readonly deleteBook: SoftDeleteBookUseCase,
+  constructor(
+    private readonly getCategories: GetCategoriesUseCase,
+    private readonly getBooks: GetBooksUseCase,
+    private readonly createBook: CreateBookUseCase,
+    private readonly updateBook: UpdateBookUseCase,
+    private readonly deleteBook: SoftDeleteBookUseCase,
 
-        private readonly getLoans: GetLoansUseCase,
-        private readonly getMyLoans: GetMyLoansUseCase,
-        private readonly requestLoan: RequestLoanUseCase,
-        private readonly approveLoan: ApproveLoanUseCase,
-        private readonly markDelivered: MarkLoanDeliveredUseCase,
-        private readonly markReturned: MarkLoanReturnedUseCase,
-    ) { }
+    private readonly getLoans: GetLoansUseCase,
+    private readonly getMyLoans: GetMyLoansUseCase,
+    private readonly requestLoan: RequestLoanUseCase,
+    private readonly approveLoan: ApproveLoanUseCase,
+    private readonly markDelivered: MarkLoanDeliveredUseCase,
+    private readonly markReturned: MarkLoanReturnedUseCase,
+    private readonly rejectLoan: RejectLoanUseCase,
+    private readonly cancelLoan: CancelLoanUseCase,
+  ) { }
 
-    // --- CATEGORIES ---
-    @Get('categories')
-    async findAllCategories() {
-        return this.getCategories.execute();
-    }
+  // ─── CATEGORIES ────────────────────────────────────────────────────────────
 
-    // --- BOOKS ---
-    @Get('books')
-    async findAllBooks(
-        @CurrentChurch() churchId: string,
-        @Query('search') search?: string,
-        @Query('categoryId') categoryId?: string,
-        @Query('status') status?: BookStatus,
-        @Query('availability') availability?: 'AVAILABLE' | 'UNAVAILABLE',
-        @Query('page') page: number = 1,
-        @Query('limit') limit: number = 10
-    ) {
-        return this.getBooks.execute(churchId, { search, categoryId, status, availability }, page, limit);
-    }
+  @Get('categories')
+  findAllCategories() {
+    return this.getCategories.execute();
+  }
 
-    @Post('books')
-    async create(
-        @CurrentChurch() churchId: string,
-        @Request() req,
-        @Body() dto: CreateBookDto
-    ) {
-        // Pass userId and memberId (from token)
-        return this.createBook.execute(churchId, req.user.id, req.user.memberId, req.user.roles, dto);
-    }
+  // ─── BOOKS ─────────────────────────────────────────────────────────────────
 
-    @Put('books/:id')
-    async update(
-        @CurrentChurch() churchId: string,
-        @Param('id', ParseUUIDPipe) id: string,
-        @Request() req,
-        @Body() dto: UpdateBookDto
-    ) {
-        return this.updateBook.execute(churchId, id, req.user.memberId, dto);
-    }
+  @Get('books')
+  findAllBooks(
+    @CurrentChurch() churchId: string,
+    @Query('search') search?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('status') status?: BookStatus,
+    @Query('availability') availability?: 'AVAILABLE' | 'UNAVAILABLE',
+    @Query('ownerMemberId') ownerMemberId?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.getBooks.execute(
+      churchId,
+      { search, categoryId, status, availability, ownerMemberId },
+      page,
+      limit,
+    );
+  }
 
-    @Delete('books/:id')
-    async remove(
-        @CurrentChurch() churchId: string,
-        @Request() req,
-        @Param('id', ParseUUIDPipe) id: string
-    ) {
-        return this.deleteBook.execute(churchId, id, req.user.memberId);
-    }
+  @Post('books')
+  createBookHandler(
+    @CurrentChurch() churchId: string,
+    @Request() req,
+    @Body() dto: CreateBookDto,
+  ) {
+    return this.createBook.execute(
+      churchId,
+      req.user.memberId,
+      req.user.roles as string[],
+      dto,
+    );
+  }
 
-    // --- LOANS ---
-    @Get('loans')
-    @Roles(FunctionalRole.LIBRARIAN, EcclesiasticalRole.PASTOR)
-    async findAllLoans(
-        @CurrentChurch() churchId: string,
-        @Query('status') status?: LoanStatus,
-        @Query('borrowerId') borrowerId?: string
-    ) {
-        return this.getLoans.execute(churchId, { status, borrowerId });
-    }
+  @Put('books/:id')
+  updateBookHandler(
+    @CurrentChurch() churchId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req,
+    @Body() dto: UpdateBookDto,
+  ) {
+    return this.updateBook.execute(
+      churchId,
+      id,
+      req.user.memberId,
+      req.user.roles as string[],
+      dto,
+    );
+  }
 
-    @Get('my-loans')
-    async findMyLoans(
-        @CurrentChurch() churchId: string,
-        @Request() req
-    ) {
-        return this.getMyLoans.execute(churchId, req.user.memberId);
-    }
+  @Delete('books/:id')
+  deleteBookHandler(
+    @CurrentChurch() churchId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req,
+  ) {
+    return this.deleteBook.execute(
+      churchId,
+      id,
+      req.user.memberId,
+      req.user.roles as string[],
+    );
+  }
 
-    @Post('loans/request')
-    async request(
-        @CurrentChurch() churchId: string,
-        @Request() req,
-        @Body() dto: RequestLoanDto
-    ) {
-        return this.requestLoan.execute(churchId, req.user.memberId, dto);
-    }
+  // ─── LOANS ─────────────────────────────────────────────────────────────────
 
-    @Post('loans/:id/approve')
-    @Roles(FunctionalRole.LIBRARIAN, EcclesiasticalRole.PASTOR)
-    async approve(
-        @CurrentChurch() churchId: string,
-        @Request() req,
-        @Param('id', ParseUUIDPipe) id: string
-    ) {
-        return this.approveLoan.execute(churchId, id, req.user.id);
-    }
+  /** All loans — LIBRARIAN only (admin view) */
+  @Get('loans')
+  @Roles(FunctionalRole.LIBRARIAN)
+  findAllLoans(
+    @CurrentChurch() churchId: string,
+    @Query('status') status?: LoanStatus,
+    @Query('borrowerId') borrowerId?: string,
+    @Query('ownerMemberId') ownerMemberId?: string,
+  ) {
+    return this.getLoans.execute(churchId, { status, borrowerId, ownerMemberId });
+  }
 
-    @Post('loans/:id/deliver')
-    @Roles(FunctionalRole.LIBRARIAN, EcclesiasticalRole.PASTOR)
-    async deliver(
-        @CurrentChurch() churchId: string,
-        @Request() req,
-        @Param('id', ParseUUIDPipe) id: string,
-        @Body() dto: LoanActionDto
-    ) {
-        return this.markDelivered.execute(churchId, id, req.user.id, dto);
-    }
+  /**
+   * Loans for books owned by the current user (owner view).
+   * Available to any authenticated member.
+   */
+  @Get('loans/my-book-loans')
+  findMyBookLoans(@CurrentChurch() churchId: string, @Request() req) {
+    return this.getLoans.execute(churchId, { ownerMemberId: req.user.memberId });
+  }
 
-    @Post('loans/:id/return')
-    @Roles(FunctionalRole.LIBRARIAN, EcclesiasticalRole.PASTOR)
-    async returnBook(
-        @CurrentChurch() churchId: string,
-        @Request() req,
-        @Param('id', ParseUUIDPipe) id: string,
-        @Body() dto: LoanActionDto
-    ) {
-        return this.markReturned.execute(churchId, id, req.user.id, dto);
-    }
+  /** Loans belonging to the current user (borrower view) */
+  @Get('my-loans')
+  findMyLoans(@CurrentChurch() churchId: string, @Request() req) {
+    return this.getMyLoans.execute(churchId, req.user.memberId);
+  }
+
+  /** Request a loan for a book */
+  @Post('loans/request')
+  requestLoanHandler(
+    @CurrentChurch() churchId: string,
+    @Request() req,
+    @Body() dto: RequestLoanDto,
+  ) {
+    return this.requestLoan.execute(churchId, req.user.memberId, dto);
+  }
+
+  /**
+   * Approve a loan request.
+   * CHURCH books → LIBRARIAN only (enforced in UseCase via LibraryPolicy).
+   * MEMBER books → book owner only (enforced in UseCase via LibraryPolicy).
+   * No @Roles here — policy decides.
+   */
+  @Post('loans/:id/approve')
+  approveHandler(
+    @CurrentChurch() churchId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req,
+  ) {
+    return this.approveLoan.execute(
+      churchId,
+      id,
+      req.user.memberId,
+      req.user.roles as string[],
+    );
+  }
+
+  /**
+   * Register physical delivery of a book.
+   * Permission enforced in UseCase via LibraryPolicy.
+   */
+  @Post('loans/:id/deliver')
+  deliverHandler(
+    @CurrentChurch() churchId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req,
+    @Body() dto: LoanActionDto,
+  ) {
+    return this.markDelivered.execute(
+      churchId,
+      id,
+      req.user.memberId,
+      req.user.roles as string[],
+      dto,
+    );
+  }
+
+  /**
+   * Confirm physical return of a book.
+   * CHURCH books → LIBRARIAN only.
+   * MEMBER books → owner or LIBRARIAN.
+   * Permission enforced in UseCase via LibraryPolicy.
+   */
+  @Post('loans/:id/return')
+  returnHandler(
+    @CurrentChurch() churchId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req,
+    @Body() dto: LoanActionDto,
+  ) {
+    return this.markReturned.execute(
+      churchId,
+      id,
+      req.user.memberId,
+      req.user.roles as string[],
+      dto,
+    );
+  }
+
+  /**
+   * Reject a loan request.
+   * CHURCH books → LIBRARIAN only.
+   * MEMBER books → book owner only.
+   * Permission enforced in UseCase via LibraryPolicy.
+   */
+  @Post('loans/:id/reject')
+  rejectHandler(
+    @CurrentChurch() churchId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req,
+  ) {
+    return this.rejectLoan.execute(
+      churchId,
+      id,
+      req.user.memberId,
+      req.user.roles as string[],
+    );
+  }
+
+  /**
+   * Cancel a loan request.
+   * Only the borrower can cancel their own REQUESTED loan.
+   * Permission enforced in UseCase via LibraryPolicy.
+   */
+  @Post('loans/:id/cancel')
+  cancelHandler(
+    @CurrentChurch() churchId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req,
+  ) {
+    return this.cancelLoan.execute(
+      churchId,
+      id,
+      req.user.memberId,
+    );
+  }
 }

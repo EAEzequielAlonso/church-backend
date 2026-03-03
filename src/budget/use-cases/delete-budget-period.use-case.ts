@@ -5,20 +5,22 @@ import { BudgetPeriod } from '../entities/budget-period.entity';
 
 @Injectable()
 export class DeleteBudgetPeriodUseCase {
-    constructor(
-        @InjectRepository(BudgetPeriod)
-        private readonly budgetPeriodRepository: Repository<BudgetPeriod>,
-    ) { }
+  constructor(
+    @InjectRepository(BudgetPeriod)
+    private readonly budgetPeriodRepository: Repository<BudgetPeriod>,
+  ) {}
 
-    async execute(id: string, churchId: string): Promise<void> {
-        const period = await this.budgetPeriodRepository.findOne({
-            where: { id, church: { id: churchId } },
-        });
+  async execute(id: string, churchId: string): Promise<void> {
+    const period = await this.budgetPeriodRepository.findOne({
+      where: { id, church: { id: churchId } },
+    });
 
-        if (!period) {
-            throw new NotFoundException('Periodo presupuestario no encontrado o no tienes acceso.');
-        }
-
-        await this.budgetPeriodRepository.remove(period);
+    if (!period) {
+      throw new NotFoundException(
+        'Periodo presupuestario no encontrado o no tienes acceso.',
+      );
     }
+
+    await this.budgetPeriodRepository.remove(period);
+  }
 }

@@ -15,25 +15,25 @@ import { DeleteBudgetPeriodUseCase } from './use-cases/delete-budget-period.use-
 import { TreasuryTransaction } from '../treasury/entities/treasury-transaction.entity';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            BudgetPeriod,
-            BudgetAllocation,
-            TreasuryTransaction // Required for Execution aggregation
-        ])
-    ],
-    controllers: [BudgetController],
-    providers: [
-        CreateBudgetPeriodUseCase,
-        GetBudgetPeriodsUseCase,
-        CreateBudgetAllocationUseCase,
-        GetBudgetAllocationsUseCase,
-        GetBudgetExecutionUseCase,
-        UpdateBudgetAllocationUseCase,
-        DeleteBudgetAllocationUseCase,
-        UpdateBudgetPeriodUseCase,
-        DeleteBudgetPeriodUseCase,
-    ],
-    exports: [],
+  imports: [
+    TypeOrmModule.forFeature([
+      BudgetPeriod,
+      BudgetAllocation,
+      TreasuryTransaction, // Required for Execution aggregation
+    ]),
+  ],
+  controllers: [BudgetController],
+  providers: [
+    CreateBudgetPeriodUseCase,
+    GetBudgetPeriodsUseCase,
+    CreateBudgetAllocationUseCase,
+    GetBudgetAllocationsUseCase,
+    GetBudgetExecutionUseCase,
+    UpdateBudgetAllocationUseCase,
+    DeleteBudgetAllocationUseCase,
+    UpdateBudgetPeriodUseCase,
+    DeleteBudgetPeriodUseCase,
+  ],
+  exports: [],
 })
-export class BudgetModule { }
+export class BudgetModule {}

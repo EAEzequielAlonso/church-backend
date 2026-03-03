@@ -7,9 +7,11 @@ import { PrayerUpdate } from './entities/prayer-update.entity';
 import { ChurchPerson } from '../members/entities/church-person.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([PrayerRequest, PrayerUpdate, ChurchPerson])],
-    controllers: [PrayersController],
-    providers: [PrayersService],
-    exports: [PrayersService]
+  imports: [
+    TypeOrmModule.forFeature([PrayerRequest, PrayerUpdate, ChurchPerson]),
+  ],
+  controllers: [PrayersController],
+  providers: [PrayersService],
+  exports: [PrayersService],
 })
-export class PrayersModule { }
+export class PrayersModule {}

@@ -1,43 +1,83 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Loan } from '../entities/loan.entity';
-import { LoanStatus, BookStatus } from '../../common/enums/library.enums';
+import { Book } from '../entities/book.entity';
+import { LoanStatus, BookStatus, BookOwnershipType } from '../enums/library.enums';
+import { LibraryPolicy } from '../policies/library.policy';
 import { LoanActionDto } from '../dto/loan.dto';
+import { CreateNotificationUseCase } from '../../notifications/use-cases/create-notification.use-case';
+import { NotificationType } from '../../notifications/entities/notification.entity';
 
 @Injectable()
 export class MarkLoanReturnedUseCase {
-    constructor(private dataSource: DataSource) { }
+  constructor(
+    private dataSource: DataSource,
+    private policy: LibraryPolicy,
+    private notificationUseCase: CreateNotificationUseCase,
+  ) { }
 
-    async execute(churchId: string, loanId: string, userId: string, dto: LoanActionDto) {
-        return this.dataSource.transaction(async manager => {
-            const loanRepo = manager.getRepository(Loan);
+  async execute(
+    churchId: string,
+    loanId: string,
+    callerMemberId: string,
+    callerRoles: string[],
+    dto: LoanActionDto,
+  ) {
+    const savedLoan = await this.dataSource.transaction(async (manager) => {
+      const loanRepo = manager.getRepository(Loan);
+      const bookRepo = manager.getRepository(Book);
 
-            const loan = await loanRepo.findOne({
-                where: { id: loanId, church: { id: churchId } },
-                relations: ['book']
-            });
+      const loan = await loanRepo.findOne({
+        where: { id: loanId, churchId },
+        relations: ['book'],
+      });
+      if (!loan) throw new NotFoundException('Préstamo no encontrado');
 
-            if (!loan) throw new NotFoundException('Préstamo no encontrado');
+      const book = await bookRepo.findOne({
+        where: { id: loan.bookId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!book) throw new NotFoundException('Libro no encontrado');
 
-            if (loan.status !== LoanStatus.DELIVERED) {
-                throw new BadRequestException('Solo se pueden devolver préstamos que han sido ENTREGADOS');
-            }
+      loan.book = book;
+      this.policy.assertCanReturnLoan(
+        loan as Loan & { book: Book },
+        callerRoles,
+        callerMemberId,
+      );
 
-            loan.status = LoanStatus.RETURNED;
-            loan.returnedAt = new Date();
-            loan.returnedConfirmedByUserId = userId;
+      loan.status = LoanStatus.RETURNED;
+      loan.returnedAt = new Date();
+      loan.returnedConfirmedByUserId = callerMemberId;
+      if (dto?.condition) loan.conditionAtReturn = dto.condition;
 
-            if (dto.condition) {
-                loan.conditionAtReturn = dto.condition;
-                // Update Book condition history? 
-                loan.book.condition = dto.condition; // Set current condition
-            }
+      book.status = BookStatus.AVAILABLE;
 
-            // Update Book Status to AVAILABLE
-            loan.book.status = BookStatus.AVAILABLE;
-            await manager.save(loan.book);
+      await bookRepo.save(book);
+      return loanRepo.save(loan);
+    });
 
-            return loanRepo.save(loan);
-        });
+    // Notify the book owner if it's a MEMBER book (fire-and-forget)
+    const book = savedLoan.book;
+    if (
+      book?.ownershipType === BookOwnershipType.MEMBER &&
+      book?.ownerMemberId &&
+      book.ownerMemberId !== savedLoan.borrowerId
+    ) {
+      this.notificationUseCase.execute({
+        churchId,
+        userId: book.ownerMemberId,
+        type: NotificationType.LOAN_RETURNED,
+        title: 'Tu libro fue devuelto',
+        message: `El libro "${book.title}" fue devuelto y está disponible nuevamente.`,
+        entityType: 'LOAN',
+        entityId: savedLoan.id,
+      }).catch(() => { });
     }
+
+    return savedLoan;
+  }
 }

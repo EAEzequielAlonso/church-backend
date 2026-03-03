@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { CreateFamilyDto } from './dto/create-family.dto';
 import { UpdateFamilyDto } from './dto/update-family.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -15,60 +25,57 @@ import { RemoveFamilyMemberUseCase } from './use-cases/remove-family-member.use-
 @Controller('families')
 @UseGuards(JwtAuthGuard)
 export class FamiliesController {
-    constructor(
-        private readonly createFamilyUseCase: CreateFamilyUseCase,
-        private readonly updateFamilyUseCase: UpdateFamilyUseCase,
-        private readonly deleteFamilyUseCase: DeleteFamilyUseCase,
-        private readonly getFamilyUseCase: GetFamilyUseCase,
-        private readonly listFamiliesUseCase: ListFamiliesUseCase,
-        private readonly addFamilyMemberUseCase: AddFamilyMemberUseCase,
-        private readonly removeFamilyMemberUseCase: RemoveFamilyMemberUseCase
-    ) { }
+  constructor(
+    private readonly createFamilyUseCase: CreateFamilyUseCase,
+    private readonly updateFamilyUseCase: UpdateFamilyUseCase,
+    private readonly deleteFamilyUseCase: DeleteFamilyUseCase,
+    private readonly getFamilyUseCase: GetFamilyUseCase,
+    private readonly listFamiliesUseCase: ListFamiliesUseCase,
+    private readonly addFamilyMemberUseCase: AddFamilyMemberUseCase,
+    private readonly removeFamilyMemberUseCase: RemoveFamilyMemberUseCase,
+  ) {}
 
-    @Post()
-    create(@Body() createFamilyDto: CreateFamilyDto, @Request() req) {
-        return this.createFamilyUseCase.execute(createFamilyDto, req.user.churchId);
-    }
+  @Post()
+  create(@Body() createFamilyDto: CreateFamilyDto, @Request() req) {
+    return this.createFamilyUseCase.execute(createFamilyDto, req.user.churchId);
+  }
 
-    @Get()
-    findAll(@Request() req) {
-        return this.listFamiliesUseCase.execute(req.user.churchId);
-    }
+  @Get()
+  findAll(@Request() req) {
+    return this.listFamiliesUseCase.execute(req.user.churchId);
+  }
 
-    @Get('my-family')
-    findMyFamily(@Request() req) {
-        if (!req.user.memberId) return null;
-        return this.getFamilyUseCase.byMember(req.user.memberId);
-    }
+  @Get('my-family')
+  findMyFamily(@Request() req) {
+    if (!req.user.memberId) return null;
+    return this.getFamilyUseCase.byMember(req.user.memberId);
+  }
 
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.getFamilyUseCase.byId(id);
-    }
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.getFamilyUseCase.byId(id);
+  }
 
-    @Patch(':id')
-    update(@Param('id') id: string, @Body() updateFamilyDto: UpdateFamilyDto) {
-        return this.updateFamilyUseCase.execute(id, updateFamilyDto);
-    }
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateFamilyDto: UpdateFamilyDto) {
+    return this.updateFamilyUseCase.execute(id, updateFamilyDto);
+  }
 
-    @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.deleteFamilyUseCase.execute(id);
-    }
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.deleteFamilyUseCase.execute(id);
+  }
 
-    @Post(':id/members')
-    addMember(
-        @Param('id') id: string,
-        @Body() body: { memberId: string, role: string }
-    ) {
-        return this.addFamilyMemberUseCase.execute(id, body.memberId, body.role);
-    }
+  @Post(':id/members')
+  addMember(
+    @Param('id') id: string,
+    @Body() body: { memberId: string; role: string },
+  ) {
+    return this.addFamilyMemberUseCase.execute(id, body.memberId, body.role);
+  }
 
-    @Delete(':id/members/:memberId')
-    removeMember(
-        @Param('id') id: string,
-        @Param('memberId') memberId: string
-    ) {
-        return this.removeFamilyMemberUseCase.execute(id, memberId);
-    }
+  @Delete(':id/members/:memberId')
+  removeMember(@Param('id') id: string, @Param('memberId') memberId: string) {
+    return this.removeFamilyMemberUseCase.execute(id, memberId);
+  }
 }

@@ -6,27 +6,31 @@ import { UpdateBudgetAllocationDto } from '../dto/update-budget-allocation.dto';
 
 @Injectable()
 export class UpdateBudgetAllocationUseCase {
-    constructor(
-        @InjectRepository(BudgetAllocation)
-        private readonly budgetAllocationRepository: Repository<BudgetAllocation>,
-    ) { }
+  constructor(
+    @InjectRepository(BudgetAllocation)
+    private readonly budgetAllocationRepository: Repository<BudgetAllocation>,
+  ) {}
 
-    async execute(id: string, dto: UpdateBudgetAllocationDto, churchId: string): Promise<BudgetAllocation> {
-        const allocation = await this.budgetAllocationRepository.findOne({
-            where: { id, church: { id: churchId } },
-        });
+  async execute(
+    id: string,
+    dto: UpdateBudgetAllocationDto,
+    churchId: string,
+  ): Promise<BudgetAllocation> {
+    const allocation = await this.budgetAllocationRepository.findOne({
+      where: { id, church: { id: churchId } },
+    });
 
-        if (!allocation) {
-            throw new NotFoundException('Allocation not found');
-        }
-
-        // Only allow updating amount for now, as changing keys (ministry/category) might cause conflicts 
-        // and is better handled by delete+create or more complex logic.
-        // For simple edit, let's allow updating amount.
-        if (dto.amount) {
-            allocation.amountBaseCurrency = dto.amount;
-        }
-
-        return this.budgetAllocationRepository.save(allocation);
+    if (!allocation) {
+      throw new NotFoundException('Allocation not found');
     }
+
+    // Only allow updating amount for now, as changing keys (ministry/category) might cause conflicts
+    // and is better handled by delete+create or more complex logic.
+    // For simple edit, let's allow updating amount.
+    if (dto.amount) {
+      allocation.amountBaseCurrency = dto.amount;
+    }
+
+    return this.budgetAllocationRepository.save(allocation);
+  }
 }

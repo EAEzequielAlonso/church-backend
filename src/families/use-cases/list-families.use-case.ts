@@ -5,17 +5,18 @@ import { Family } from '../entities/family.entity';
 
 @Injectable()
 export class ListFamiliesUseCase {
-    constructor(
-        @InjectRepository(Family)
-        private readonly familyRepository: Repository<Family>
-    ) { }
+  constructor(
+    @InjectRepository(Family)
+    private readonly familyRepository: Repository<Family>,
+  ) {}
 
-    async execute(churchId: string): Promise<Family[]> {
-        return this.familyRepository.createQueryBuilder('family')
-            .leftJoinAndSelect('family.members', 'members')
-            .leftJoinAndSelect('members.member', 'member')
-            .leftJoinAndSelect('member.person', 'person')
-            .where('family.church.id = :churchId', { churchId })
-            .getMany();
-    }
+  async execute(churchId: string): Promise<Family[]> {
+    return this.familyRepository
+      .createQueryBuilder('family')
+      .leftJoinAndSelect('family.members', 'members')
+      .leftJoinAndSelect('members.member', 'member')
+      .leftJoinAndSelect('member.person', 'person')
+      .where('family.church.id = :churchId', { churchId })
+      .getMany();
+  }
 }

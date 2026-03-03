@@ -10,303 +10,325 @@ import { ServiceStatus } from './entities/worship-service.entity';
 
 @Injectable()
 export class WorshipServiceService {
-    constructor(
-        @InjectRepository(WorshipService) private serviceRepo: Repository<WorshipService>,
-        @InjectRepository(ServiceSection) private sectionRepo: Repository<ServiceSection>,
-        @InjectRepository(ServiceTemplate) private templateRepo: Repository<ServiceTemplate>,
-        @InjectRepository(ServiceTemplateSection) private templateSectionRepo: Repository<ServiceTemplateSection>,
-        @InjectRepository(MinistryRoleAssignment) private assignmentRepo: Repository<MinistryRoleAssignment>,
-    ) { }
+  constructor(
+    @InjectRepository(WorshipService)
+    private serviceRepo: Repository<WorshipService>,
+    @InjectRepository(ServiceSection)
+    private sectionRepo: Repository<ServiceSection>,
+    @InjectRepository(ServiceTemplate)
+    private templateRepo: Repository<ServiceTemplate>,
+    @InjectRepository(ServiceTemplateSection)
+    private templateSectionRepo: Repository<ServiceTemplateSection>,
+    @InjectRepository(MinistryRoleAssignment)
+    private assignmentRepo: Repository<MinistryRoleAssignment>,
+  ) {}
 
-    // --- TEMPLATES ---
+  // --- TEMPLATES ---
 
-    async findAllTemplates(churchId: string) {
-        return this.templateRepo.find({
-            where: { church: { id: churchId } },
-            relations: ['sections', 'sections.requiredRoles']
-        });
+  async findAllTemplates(churchId: string) {
+    return this.templateRepo.find({
+      where: { church: { id: churchId } },
+      relations: ['sections', 'sections.requiredRoles'],
+    });
+  }
+
+  async createTemplate(churchId: string, data: any) {
+    // Simple create logic, handling sections creation if passed or separate endpoint
+    const template = this.templateRepo.create({
+      ...data,
+      church: { id: churchId },
+    });
+    return this.templateRepo.save(template);
+  }
+
+  async findTemplate(id: string) {
+    return this.templateRepo.findOne({
+      where: { id },
+      relations: ['sections', 'sections.requiredRoles'],
+      order: { sections: { order: 'ASC' } },
+    });
+  }
+
+  async deleteTemplate(id: string) {
+    const template = await this.templateRepo.findOne({ where: { id } });
+    if (!template) throw new NotFoundException('Plantilla no encontrada');
+    return this.templateRepo.remove(template);
+  }
+
+  async addTemplateSection(templateId: string, data: any) {
+    const template = await this.templateRepo.findOne({
+      where: { id: templateId },
+    });
+    if (!template) throw new NotFoundException('Plantilla no encontrada');
+
+    const section = this.templateSectionRepo.create({
+      template,
+      title: data.title,
+      defaultDuration: data.type === 'GLOBAL' ? 0 : data.defaultDuration || 15,
+      order: data.order || 0,
+      type: data.type,
+      ministry: data.ministryId ? { id: data.ministryId } : undefined,
+    });
+
+    if (data.requiredRoleIds && Array.isArray(data.requiredRoleIds)) {
+      section.requiredRoles = data.requiredRoleIds.map((id: string) => ({
+        id,
+      }));
     }
 
-    async createTemplate(churchId: string, data: any) {
-        // Simple create logic, handling sections creation if passed or separate endpoint
-        const template = this.templateRepo.create({
-            ...data,
-            church: { id: churchId }
-        });
-        return this.templateRepo.save(template);
+    const savedSection = await this.templateSectionRepo.save(section);
+
+    // Touch template to update updatedAt
+    await this.templateRepo.update(templateId, { updatedAt: new Date() });
+
+    return savedSection;
+  }
+
+  async deleteTemplateSection(templateId: string, sectionId: string) {
+    const section = await this.templateSectionRepo.findOne({
+      where: { id: sectionId, template: { id: templateId } },
+    });
+    if (!section) throw new NotFoundException('Sección no encontrada');
+
+    await this.templateSectionRepo.remove(section);
+
+    // Touch template to update updatedAt
+    await this.templateRepo.update(templateId, { updatedAt: new Date() });
+
+    return { success: true };
+  }
+
+  // Also need to handle updates to sections if they exist in the controller,
+  // but user only mentioned add/delete/reorder usually.
+  // If updateTemplateSection exists, touch there too. Be safe.
+
+  // --- SERVICES & HYDRATION ---
+
+  async findAllServices(churchId: string) {
+    return this.serviceRepo.find({
+      where: { church: { id: churchId } },
+      order: { date: 'DESC' },
+    });
+  }
+
+  async findUpcomingServices(churchId: string) {
+    return this.serviceRepo.find({
+      where: {
+        church: { id: churchId },
+        status: ServiceStatus.CONFIRMED,
+        date: MoreThan(new Date()),
+      },
+      order: { date: 'ASC' },
+      take: 3,
+    });
+  }
+
+  async findOneService(id: string) {
+    let service = await this.serviceRepo.findOne({
+      where: { id },
+      relations: [
+        'sections',
+        'sections.requiredRoles',
+        'sections.requiredRoles.ministry',
+        'sections.ministry',
+        'template',
+      ],
+      order: {
+        sections: { order: 'ASC' },
+      },
+    });
+
+    if (!service) throw new NotFoundException('Culto no encontrado');
+
+    // FORCE SYNC IF DRAFT AND TEMPLATE CHANGED
+    if (service.status !== ServiceStatus.CONFIRMED && service.template) {
+      // Re-fetch template to get latest timestamp comparison if needed,
+      // but service.template (relation) might have old data if not strictly joined with selected cols?
+      // TypeORM relations usually fetch the related entity fields.
+      // Let's ensure we compare correctly.
+
+      // We use a small buffer or direct comparison.
+      // Template updatedAt > Service updatedAt = Template is newer.
+      // Note: service.updatedAt was set when we created it.
+      // If we modify template 1 sec later, it is newer.
+      if (service.template.updatedAt > service.updatedAt) {
+        // Check if it's REALLY newer (e.g. by at least 2 seconds to avoid race conditions on creation?)
+        // Actually, standard comparison is fine.
+        service = await this.syncServiceWithTemplate(service);
+      }
     }
 
-    async findTemplate(id: string) {
-        return this.templateRepo.findOne({
-            where: { id },
-            relations: ['sections', 'sections.requiredRoles'],
-            order: { sections: { order: 'ASC' } }
-        });
-    }
+    // HYDRATION: Fetch assignments for this date
+    const dateStr =
+      service.date instanceof Date
+        ? service.date.toISOString().split('T')[0]
+        : new Date(service.date).toISOString().split('T')[0];
 
-    async deleteTemplate(id: string) {
-        const template = await this.templateRepo.findOne({ where: { id } });
-        if (!template) throw new NotFoundException('Plantilla no encontrada');
-        return this.templateRepo.remove(template);
-    }
+    // Fetch all assignments for this date from Ministries
+    const assignments = await this.assignmentRepo.find({
+      where: { date: dateStr },
+      relations: ['role', 'person', 'ministry'],
+    });
 
-    async addTemplateSection(templateId: string, data: any) {
-        const template = await this.templateRepo.findOne({ where: { id: templateId } });
-        if (!template) throw new NotFoundException('Plantilla no encontrada');
+    // Attach assignments to sections dynamically
+    const richSections = service.sections.map((section) => {
+      const filledRoles = section.requiredRoles.map((role) => {
+        // 1. Check Override
+        const overridePersonId = section.overrides
+          ? section.overrides[role.id]
+          : null;
+        let assignedPerson = null;
+        let status = 'UNASSIGNED'; // UNASSIGNED, ASSIGNED, OVERRIDE
+        let metadata = null;
 
-        const section = this.templateSectionRepo.create({
-            template,
-            title: data.title,
-            defaultDuration: data.type === 'GLOBAL' ? 0 : (data.defaultDuration || 15),
-            order: data.order || 0,
-            type: data.type,
-            ministry: data.ministryId ? { id: data.ministryId } : undefined
-        });
-
-        if (data.requiredRoleIds && Array.isArray(data.requiredRoleIds)) {
-            section.requiredRoles = data.requiredRoleIds.map((id: string) => ({ id }));
+        if (overridePersonId) {
+          status = 'OVERRIDE';
+          // We would fetch the Person details for the override ID here if we want full details
+          // For now, let's assume frontend fetches or we add a quick lookup
+          assignedPerson = { id: overridePersonId, name: 'Override Person' }; // TODO: Fetch info
+        } else {
+          // 2. Check Ministry Assignment
+          const assignment = assignments.find((a) => a.role.id === role.id);
+          if (assignment) {
+            status = 'ASSIGNED';
+            assignedPerson = assignment.person;
+            metadata = assignment.metadata; // Hydrate metadata
+          }
         }
-
-        const savedSection = await this.templateSectionRepo.save(section);
-
-        // Touch template to update updatedAt
-        await this.templateRepo.update(templateId, { updatedAt: new Date() });
-
-        return savedSection;
-    }
-
-    async deleteTemplateSection(templateId: string, sectionId: string) {
-        const section = await this.templateSectionRepo.findOne({ where: { id: sectionId, template: { id: templateId } } });
-        if (!section) throw new NotFoundException('Sección no encontrada');
-
-        await this.templateSectionRepo.remove(section);
-
-        // Touch template to update updatedAt
-        await this.templateRepo.update(templateId, { updatedAt: new Date() });
-
-        return { success: true };
-    }
-
-    // Also need to handle updates to sections if they exist in the controller, 
-    // but user only mentioned add/delete/reorder usually. 
-    // If updateTemplateSection exists, touch there too. Be safe.
-
-    // --- SERVICES & HYDRATION ---
-
-    async findAllServices(churchId: string) {
-        return this.serviceRepo.find({
-            where: { church: { id: churchId } },
-            order: { date: 'DESC' }
-        });
-    }
-
-    async findUpcomingServices(churchId: string) {
-        return this.serviceRepo.find({
-            where: {
-                church: { id: churchId },
-                status: ServiceStatus.CONFIRMED,
-                date: MoreThan(new Date())
-            },
-            order: { date: 'ASC' },
-            take: 3
-        });
-    }
-
-    async findOneService(id: string) {
-        let service = await this.serviceRepo.findOne({
-            where: { id },
-            relations: [
-                'sections',
-                'sections.requiredRoles',
-                'sections.requiredRoles.ministry',
-                'sections.ministry',
-                'template'
-            ],
-            order: {
-                sections: { order: 'ASC' }
-            }
-        });
-
-        if (!service) throw new NotFoundException('Culto no encontrado');
-
-        // FORCE SYNC IF DRAFT AND TEMPLATE CHANGED
-        if (service.status !== ServiceStatus.CONFIRMED && service.template) {
-            // Re-fetch template to get latest timestamp comparison if needed, 
-            // but service.template (relation) might have old data if not strictly joined with selected cols?
-            // TypeORM relations usually fetch the related entity fields.
-            // Let's ensure we compare correctly.
-
-            // We use a small buffer or direct comparison.
-            // Template updatedAt > Service updatedAt = Template is newer.
-            // Note: service.updatedAt was set when we created it. 
-            // If we modify template 1 sec later, it is newer.
-            if (service.template.updatedAt > service.updatedAt) {
-                // Check if it's REALLY newer (e.g. by at least 2 seconds to avoid race conditions on creation?)
-                // Actually, standard comparison is fine.
-                service = await this.syncServiceWithTemplate(service);
-            }
-        }
-
-        // HYDRATION: Fetch assignments for this date
-        const dateStr = service.date instanceof Date
-            ? service.date.toISOString().split('T')[0]
-            : new Date(service.date).toISOString().split('T')[0];
-
-        // Fetch all assignments for this date from Ministries
-        const assignments = await this.assignmentRepo.find({
-            where: { date: dateStr },
-            relations: ['role', 'person', 'ministry']
-        });
-
-        // Attach assignments to sections dynamically
-        const richSections = service.sections.map(section => {
-            const filledRoles = section.requiredRoles.map(role => {
-                // 1. Check Override
-                const overridePersonId = section.overrides ? section.overrides[role.id] : null;
-                let assignedPerson = null;
-                let status = 'UNASSIGNED'; // UNASSIGNED, ASSIGNED, OVERRIDE
-                let metadata = null;
-
-                if (overridePersonId) {
-                    status = 'OVERRIDE';
-                    // We would fetch the Person details for the override ID here if we want full details
-                    // For now, let's assume frontend fetches or we add a quick lookup
-                    assignedPerson = { id: overridePersonId, name: 'Override Person' }; // TODO: Fetch info
-                } else {
-                    // 2. Check Ministry Assignment
-                    const assignment = assignments.find(a => a.role.id === role.id);
-                    if (assignment) {
-                        status = 'ASSIGNED';
-                        assignedPerson = assignment.person;
-                        metadata = assignment.metadata; // Hydrate metadata
-                    }
-                }
-
-                return {
-                    role,
-                    status,
-                    assignedPerson,
-                    metadata
-                };
-            });
-
-            return {
-                ...section,
-                filledRoles
-            };
-        });
 
         return {
-            ...service,
-            sections: richSections
+          role,
+          status,
+          assignedPerson,
+          metadata,
         };
-    }
+      });
 
-    /**
-     * Internal method to re-sync a service with its template.
-     * Deletes all current sections and re-copies from template.
-     */
-    private async syncServiceWithTemplate(service: WorshipService): Promise<WorshipService> {
-        // 1. Fetch full template with sections
-        const template = await this.templateRepo.findOne({
-            where: { id: service.template.id },
-            relations: ['sections', 'sections.requiredRoles', 'sections.ministry']
-        });
+      return {
+        ...section,
+        filledRoles,
+      };
+    });
 
-        if (!template) return service; // Should not happen
+    return {
+      ...service,
+      sections: richSections,
+    };
+  }
 
-        // 2. Delete existing service sections
-        // We can use the repository to delete by service ID
-        // But we need to be careful with cascading. 
-        // service.sections are loaded.
-        await this.sectionRepo.remove(service.sections);
+  /**
+   * Internal method to re-sync a service with its template.
+   * Deletes all current sections and re-copies from template.
+   */
+  private async syncServiceWithTemplate(
+    service: WorshipService,
+  ): Promise<WorshipService> {
+    // 1. Fetch full template with sections
+    const template = await this.templateRepo.findOne({
+      where: { id: service.template.id },
+      relations: ['sections', 'sections.requiredRoles', 'sections.ministry'],
+    });
 
-        // 3. Re-create sections
-        const newSections = template.sections.map(ts => {
-            return this.sectionRepo.create({
-                service: service, // Link to the service entity
-                title: ts.title,
-                order: ts.order,
-                duration: ts.type === 'GLOBAL' ? 0 : ts.defaultDuration,
-                type: ts.type,
-                ministry: ts.ministry,
-                requiredRoles: ts.requiredRoles
-            });
-        });
+    if (!template) return service; // Should not happen
 
-        await this.sectionRepo.save(newSections);
+    // 2. Delete existing service sections
+    // We can use the repository to delete by service ID
+    // But we need to be careful with cascading.
+    // service.sections are loaded.
+    await this.sectionRepo.remove(service.sections);
 
-        // 4. Update Service UpdatedAt to now (so we don't sync again until template changes)
-        // This is crucial. `save` on sections might not touch service.
-        // We explicitly touch the service.
-        await this.serviceRepo.update(service.id, { updatedAt: new Date() });
+    // 3. Re-create sections
+    const newSections = template.sections.map((ts) => {
+      return this.sectionRepo.create({
+        service: service, // Link to the service entity
+        title: ts.title,
+        order: ts.order,
+        duration: ts.type === 'GLOBAL' ? 0 : ts.defaultDuration,
+        type: ts.type,
+        ministry: ts.ministry,
+        requiredRoles: ts.requiredRoles,
+      });
+    });
 
-        // 5. Refetch the fresh service to return it
-        return this.serviceRepo.findOne({
-            where: { id: service.id },
-            relations: [
-                'sections',
-                'sections.requiredRoles',
-                'sections.requiredRoles.ministry',
-                'sections.ministry',
-                'template'
-            ],
-            order: { sections: { order: 'ASC' } }
-        });
-    }
+    await this.sectionRepo.save(newSections);
 
-    async deleteService(id: string) {
-        const service = await this.serviceRepo.findOne({ where: { id } });
-        if (!service) throw new NotFoundException('Culto no encontrado');
-        return this.serviceRepo.remove(service);
-    }
+    // 4. Update Service UpdatedAt to now (so we don't sync again until template changes)
+    // This is crucial. `save` on sections might not touch service.
+    // We explicitly touch the service.
+    await this.serviceRepo.update(service.id, { updatedAt: new Date() });
 
-    async createServiceFromTemplate(churchId: string, templateId: string, date: string) {
-        const template = await this.templateRepo.findOne({
-            where: { id: templateId },
-            relations: ['sections', 'sections.requiredRoles', 'sections.ministry']
-        });
-        if (!template) throw new NotFoundException('Plantilla no encontrada');
+    // 5. Refetch the fresh service to return it
+    return this.serviceRepo.findOne({
+      where: { id: service.id },
+      relations: [
+        'sections',
+        'sections.requiredRoles',
+        'sections.requiredRoles.ministry',
+        'sections.ministry',
+        'template',
+      ],
+      order: { sections: { order: 'ASC' } },
+    });
+  }
 
-        const service = this.serviceRepo.create({
-            date: new Date(date),
-            church: { id: churchId },
-            status: ServiceStatus.DRAFT,
-            template,
-            topic: template.name
-        });
+  async deleteService(id: string) {
+    const service = await this.serviceRepo.findOne({ where: { id } });
+    if (!service) throw new NotFoundException('Culto no encontrado');
+    return this.serviceRepo.remove(service);
+  }
 
-        const savedService = await this.serviceRepo.save(service);
+  async createServiceFromTemplate(
+    churchId: string,
+    templateId: string,
+    date: string,
+  ) {
+    const template = await this.templateRepo.findOne({
+      where: { id: templateId },
+      relations: ['sections', 'sections.requiredRoles', 'sections.ministry'],
+    });
+    if (!template) throw new NotFoundException('Plantilla no encontrada');
 
-        // Copy Sections
-        const sections = template.sections.map(ts => {
-            return this.sectionRepo.create({
-                service: savedService,
-                title: ts.title,
-                order: ts.order,
-                duration: ts.type === 'GLOBAL' ? 0 : ts.defaultDuration,
-                type: ts.type, // Copy TYPE (Fixes Global bug)
-                ministry: ts.ministry, // Copy Ministry
-                requiredRoles: ts.requiredRoles
-            });
-        });
+    const service = this.serviceRepo.create({
+      date: new Date(date),
+      church: { id: churchId },
+      status: ServiceStatus.DRAFT,
+      template,
+      topic: template.name,
+    });
 
-        await this.sectionRepo.save(sections);
-        return this.findOneService(savedService.id);
-    }
+    const savedService = await this.serviceRepo.save(service);
 
-    async updateSection(sectionId: string, data: any) {
-        const section = await this.sectionRepo.findOne({ where: { id: sectionId } });
-        if (!section) throw new NotFoundException('Sección no encontrada');
-        Object.assign(section, data);
-        return this.sectionRepo.save(section);
-    }
+    // Copy Sections
+    const sections = template.sections.map((ts) => {
+      return this.sectionRepo.create({
+        service: savedService,
+        title: ts.title,
+        order: ts.order,
+        duration: ts.type === 'GLOBAL' ? 0 : ts.defaultDuration,
+        type: ts.type, // Copy TYPE (Fixes Global bug)
+        ministry: ts.ministry, // Copy Ministry
+        requiredRoles: ts.requiredRoles,
+      });
+    });
 
-    async confirmService(id: string) {
-        const service = await this.serviceRepo.findOne({ where: { id } });
-        if (!service) throw new NotFoundException('Culto no encontrado');
+    await this.sectionRepo.save(sections);
+    return this.findOneService(savedService.id);
+  }
 
-        service.status = ServiceStatus.CONFIRMED;
-        return this.serviceRepo.save(service);
-    }
+  async updateSection(sectionId: string, data: any) {
+    const section = await this.sectionRepo.findOne({
+      where: { id: sectionId },
+    });
+    if (!section) throw new NotFoundException('Sección no encontrada');
+    Object.assign(section, data);
+    return this.sectionRepo.save(section);
+  }
+
+  async confirmService(id: string) {
+    const service = await this.serviceRepo.findOne({ where: { id } });
+    if (!service) throw new NotFoundException('Culto no encontrado');
+
+    service.status = ServiceStatus.CONFIRMED;
+    return this.serviceRepo.save(service);
+  }
 }

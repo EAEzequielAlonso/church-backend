@@ -7,9 +7,9 @@ import { Church } from '../churches/entities/church.entity';
 import { User } from '../users/entities/user.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Donation, Church, User])],
-    controllers: [DonationsController],
-    providers: [DonationsService],
-    exports: [DonationsService]
+  imports: [TypeOrmModule.forFeature([Donation, Church, User])],
+  controllers: [DonationsController],
+  providers: [DonationsService],
+  exports: [DonationsService],
 })
-export class DonationsModule { }
+export class DonationsModule {}

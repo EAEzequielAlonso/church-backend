@@ -4,23 +4,21 @@ import { FamilyMember } from '../entities/family-member.entity';
 
 @Injectable()
 export class RemoveFamilyMemberUseCase {
-    constructor(
-        private readonly dataSource: DataSource
-    ) { }
+  constructor(private readonly dataSource: DataSource) {}
 
-    async execute(familyId: string, memberId: string): Promise<void> {
-        await this.dataSource.transaction(async (manager) => {
-            const familyMemberRepo = manager.getRepository(FamilyMember);
+  async execute(familyId: string, memberId: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const familyMemberRepo = manager.getRepository(FamilyMember);
 
-            const fm = await familyMemberRepo.findOne({
-                where: { family: { id: familyId }, member: { id: memberId } }
-            });
+      const fm = await familyMemberRepo.findOne({
+        where: { family: { id: familyId }, member: { id: memberId } },
+      });
 
-            if (!fm) {
-                throw new NotFoundException('Member not found in family');
-            }
+      if (!fm) {
+        throw new NotFoundException('Member not found in family');
+      }
 
-            await familyMemberRepo.remove(fm);
-        });
-    }
+      await familyMemberRepo.remove(fm);
+    });
+  }
 }

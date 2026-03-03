@@ -25,33 +25,33 @@ import { GetAccountBalancesUseCase } from './use-cases/get-account-balances.use-
 import { TreasuryPolicy } from './policies/treasury.policy';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            TreasuryTransaction,
-            Account,
-            Budget,
-            TreasuryAuditLog,
-            Ministry,
-            TransactionCategory // Added TransactionCategory
-        ])
-    ],
-    controllers: [TreasuryController, ReportsController], // Added ReportsController
-    providers: [
-        // Legacy Service (kept for Accounts/Budgets if not refactored yet)
-        TreasuryService,
-        ReportsService,
+  imports: [
+    TypeOrmModule.forFeature([
+      TreasuryTransaction,
+      Account,
+      Budget,
+      TreasuryAuditLog,
+      Ministry,
+      TransactionCategory, // Added TransactionCategory
+    ]),
+  ],
+  controllers: [TreasuryController, ReportsController], // Added ReportsController
+  providers: [
+    // Legacy Service (kept for Accounts/Budgets if not refactored yet)
+    TreasuryService,
+    ReportsService,
 
-        // Domain Policy
-        TreasuryPolicy,
+    // Domain Policy
+    TreasuryPolicy,
 
-        // Use Cases
-        CreateTransactionUseCase,
-        UpdateTransactionUseCase,
-        DeleteTransactionUseCase,
-        GetTransactionsUseCase,
-        GetAuditLogsUseCase,
-        GetAccountBalancesUseCase
-    ],
-    exports: [TreasuryService]
+    // Use Cases
+    CreateTransactionUseCase,
+    UpdateTransactionUseCase,
+    DeleteTransactionUseCase,
+    GetTransactionsUseCase,
+    GetAuditLogsUseCase,
+    GetAccountBalancesUseCase,
+  ],
+  exports: [TreasuryService],
 })
-export class TreasuryModule { }
+export class TreasuryModule {}

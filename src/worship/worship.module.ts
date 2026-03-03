@@ -10,18 +10,18 @@ import { ServiceDuty } from '../ministries/entities/service-duty.entity';
 import { MinistryRoleAssignment } from '../ministries/entities/ministry-role-assignment.entity';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            ServiceTemplate,
-            ServiceTemplateSection,
-            WorshipService,
-            ServiceSection,
-            ServiceDuty,
-            MinistryRoleAssignment
-        ])
-    ],
-    controllers: [WorshipServiceController],
-    providers: [WorshipServiceService],
-    exports: [WorshipServiceService]
+  imports: [
+    TypeOrmModule.forFeature([
+      ServiceTemplate,
+      ServiceTemplateSection,
+      WorshipService,
+      ServiceSection,
+      ServiceDuty,
+      MinistryRoleAssignment,
+    ]),
+  ],
+  controllers: [WorshipServiceController],
+  providers: [WorshipServiceService],
+  exports: [WorshipServiceService],
 })
-export class WorshipModule { }
+export class WorshipModule {}

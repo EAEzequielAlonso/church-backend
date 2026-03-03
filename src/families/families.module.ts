@@ -16,23 +16,20 @@ import { AddFamilyMemberUseCase } from './use-cases/add-family-member.use-case';
 import { RemoveFamilyMemberUseCase } from './use-cases/remove-family-member.use-case';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Family, FamilyMember]),
-        MembersModule
-    ],
-    controllers: [FamiliesController],
-    providers: [
-        FamilyPolicy,
-        CreateFamilyUseCase,
-        UpdateFamilyUseCase,
-        DeleteFamilyUseCase,
-        GetFamilyUseCase,
-        ListFamiliesUseCase,
-        AddFamilyMemberUseCase,
-        RemoveFamilyMemberUseCase
-    ],
-    exports: [
-        GetFamilyUseCase // Export if needed by other modules
-    ]
+  imports: [TypeOrmModule.forFeature([Family, FamilyMember]), MembersModule],
+  controllers: [FamiliesController],
+  providers: [
+    FamilyPolicy,
+    CreateFamilyUseCase,
+    UpdateFamilyUseCase,
+    DeleteFamilyUseCase,
+    GetFamilyUseCase,
+    ListFamiliesUseCase,
+    AddFamilyMemberUseCase,
+    RemoveFamilyMemberUseCase,
+  ],
+  exports: [
+    GetFamilyUseCase, // Export if needed by other modules
+  ],
 })
-export class FamiliesModule { }
+export class FamiliesModule {}

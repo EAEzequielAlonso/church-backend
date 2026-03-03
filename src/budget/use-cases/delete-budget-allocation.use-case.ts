@@ -5,19 +5,19 @@ import { BudgetAllocation } from '../entities/budget-allocation.entity';
 
 @Injectable()
 export class DeleteBudgetAllocationUseCase {
-    constructor(
-        @InjectRepository(BudgetAllocation)
-        private readonly budgetAllocationRepository: Repository<BudgetAllocation>,
-    ) { }
+  constructor(
+    @InjectRepository(BudgetAllocation)
+    private readonly budgetAllocationRepository: Repository<BudgetAllocation>,
+  ) {}
 
-    async execute(id: string, churchId: string): Promise<void> {
-        const result = await this.budgetAllocationRepository.delete({
-            id,
-            church: { id: churchId },
-        });
+  async execute(id: string, churchId: string): Promise<void> {
+    const result = await this.budgetAllocationRepository.delete({
+      id,
+      church: { id: churchId },
+    });
 
-        if (result.affected === 0) {
-            throw new NotFoundException('Allocation not found');
-        }
+    if (result.affected === 0) {
+      throw new NotFoundException('Allocation not found');
     }
+  }
 }

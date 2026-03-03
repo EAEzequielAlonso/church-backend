@@ -5,14 +5,14 @@ import { BookCategory } from '../entities/book-category.entity';
 
 @Injectable()
 export class GetCategoriesUseCase {
-    constructor(
-        @InjectRepository(BookCategory)
-        private categoryRepo: Repository<BookCategory>,
-    ) { }
+  constructor(
+    @InjectRepository(BookCategory)
+    private categoryRepo: Repository<BookCategory>,
+  ) {}
 
-    async execute() {
-        return this.categoryRepo.find({
-            order: { name: 'ASC' }
-        });
-    }
+  async execute() {
+    return this.categoryRepo.find({
+      order: { name: 'ASC' },
+    });
+  }
 }

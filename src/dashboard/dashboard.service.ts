@@ -2,151 +2,196 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChurchPerson } from '../members/entities/church-person.entity';
 import { Group } from '../groups/entities/group.entity';
-import { TreasuryTransaction } from '../treasury/entities/treasury-transaction.entity';
-import { FollowUp } from '../follow-ups/entities/follow-up.entity';
-import { FollowUpStatus, AccountType } from '../common/enums';
-import { TransactionType } from '../treasury/enums/treasury.enums';
-import { WorshipService, ServiceStatus } from '../worship/entities/worship-service.entity';
+import { MembershipStatus } from '../members/enums/membership-status.enum';
+import {
+  WorshipService,
+  ServiceStatus,
+} from '../worship/entities/worship-service.entity';
 import { CalendarEvent } from '../agenda/entities/calendar-event.entity';
-import { Repository, Between, MoreThan } from 'typeorm';
+import { Repository, MoreThan, In } from 'typeorm';
 import * as dateFns from 'date-fns';
+import { MinistryMember } from '../ministries/entities/ministry-member.entity';
+import { GroupParticipant } from '../groups/entities/group-participant.entity';
+import { MentorshipProcess } from '../mentorship/infrastructure/entities/mentorship-process.entity';
+import { MentorshipStatus } from '../mentorship/domain/enums/mentorship.enum';
+import { MentorshipProcessParticipant } from '../mentorship/infrastructure/entities/mentorship-process-participant.entity';
 
 @Injectable()
 export class DashboardService {
-    constructor(
-        @InjectRepository(ChurchPerson) private memberRepository: Repository<ChurchPerson>,
-        @InjectRepository(Group) private groupRepository: Repository<Group>,
-        @InjectRepository(TreasuryTransaction) private treasuryRepository: Repository<TreasuryTransaction>,
-        @InjectRepository(FollowUp) private followUpRepository: Repository<FollowUp>,
-        @InjectRepository(WorshipService) private worshipRepo: Repository<WorshipService>,
-        @InjectRepository(CalendarEvent) private eventRepo: Repository<CalendarEvent>,
-    ) { }
+  constructor(
+    @InjectRepository(ChurchPerson)
+    private memberRepository: Repository<ChurchPerson>,
+    @InjectRepository(Group) private groupRepository: Repository<Group>,
+    @InjectRepository(WorshipService)
+    private worshipRepo: Repository<WorshipService>,
+    @InjectRepository(CalendarEvent)
+    private eventRepo: Repository<CalendarEvent>,
+    @InjectRepository(MinistryMember)
+    private ministryMemberRepo: Repository<MinistryMember>,
+    @InjectRepository(GroupParticipant)
+    private groupParticipantRepo: Repository<GroupParticipant>,
+    @InjectRepository(MentorshipProcess)
+    private mentorshipProcessRepo: Repository<MentorshipProcess>,
+  ) {}
 
-    async getStats(churchId: string) {
-        // 1. Members Count
-        const membersCount = await this.memberRepository.count({
-            where: { church: { id: churchId } }
-        });
+  async getStats(churchId: string) {
+    const membersData = await this.memberRepository
+      .createQueryBuilder('cp')
+      .select('cp.membershipStatus', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('cp.churchId = :churchId', { churchId })
+      .groupBy('cp.membershipStatus')
+      .getRawMany();
 
-        // Previous month members comparisons could be complex depending on if we have history. 
-        // For MVP, we'll just mock the growth or calculate based on joinedAt if available.
-        // Let's rely on joinedAt if it exists.
-        const lastMonth = dateFns.subMonths(new Date(), 1);
-        const newMembersLast30Days = await this.memberRepository.count({
-            where: {
-                church: { id: churchId },
-                joinedAt: Between(dateFns.startOfMonth(lastMonth), new Date())
-            }
-        });
+    let visitors = 0,
+      members = 0,
+      invited = 0,
+      prospects = 0,
+      total = 0;
+    membersData.forEach((row) => {
+      const cnt = parseInt(row.count, 10);
+      total += cnt;
+      if (row.status === MembershipStatus.VISITOR) visitors = cnt;
+      else if (row.status === MembershipStatus.MEMBER) members = cnt;
+      else if (row.status === MembershipStatus.INVITED) invited = cnt;
+      else if (row.status === MembershipStatus.PROSPECT) prospects = cnt;
+    });
 
-        // Active Groups
-        const totalGroups = await this.groupRepository.count({ where: { church: { id: churchId } } });
+    // Active Groups
+    const totalGroups = await this.groupRepository.count({
+      where: { church: { id: churchId } },
+    });
 
-        // 3. Treasury (Income this month)
-        const start = dateFns.startOfMonth(new Date());
-        const end = dateFns.endOfMonth(new Date());
+    return {
+      members: {
+        total,
+        visitors,
+        invited,
+        prospects,
+        members,
+      },
+      groups: {
+        total: totalGroups,
+        active: totalGroups,
+      },
+    };
+  }
 
-        const incomeResult = await this.treasuryRepository
-            .createQueryBuilder('tx')
-            .select('SUM(tx.amount)', 'total')
-            .where('tx.churchId = :churchId', { churchId })
-            .andWhere('tx.type = :type', { type: TransactionType.INCOME })
-            .andWhere('tx.date BETWEEN :start AND :end', { start, end })
-            .getRawOne();
+  async getUpcomingEvents(churchId: string, personId: string) {
+    // 1. Get Confirmed Worship Services (Future)
+    const services = await this.worshipRepo.find({
+      where: {
+        church: { id: churchId },
+        status: ServiceStatus.CONFIRMED,
+        date: MoreThan(new Date()),
+      },
+      take: 3,
+      order: { date: 'ASC' },
+    });
 
-        const monthlyIncome = parseFloat(incomeResult?.total || 0);
+    // 2. Resolve user's ministries and groups
+    const myMinistries = await this.ministryMemberRepo.find({
+      where: { member: { personId, churchId } },
+      relations: ['ministry'],
+    });
+    const myGroups = await this.groupParticipantRepo.find({
+      where: { churchPerson: { personId, churchId } },
+      relations: ['group'],
+    });
 
-        // 4. Follow Ups (New Visitors)
-        const newVisitorsCount = await this.followUpRepository.count({
-            where: {
-                church: { id: churchId },
-                status: FollowUpStatus.VISITOR
-            }
-        });
+    const ownerIds = [
+      churchId,
+      personId,
+      ...myMinistries.map((m) => m.ministry.id),
+      ...myGroups.map((g) => g.group.id),
+    ];
+
+    // 3. Get Calendar Events (Future) relevant to the user
+    const events = await this.eventRepo.find({
+      where: {
+        ownerId: In(ownerIds),
+        startDate: MoreThan(new Date()),
+      },
+      take: 10,
+      order: { startDate: 'ASC' },
+    });
+
+    const combined = [
+      ...services.map((s) => ({
+        id: s.id,
+        type: 'WORSHIP',
+        title: s.topic || 'Culto General',
+        date: s.date,
+        location: 'Auditorio',
+        link: `/worship/${s.id}`,
+      })),
+      ...events.map((event) => {
+        let link = '/agenda';
+        if (event.type === 'SMALL_GROUP' && event.ownerId) {
+          link = `/groups/${event.ownerId}`;
+        } else if (event.type === 'MINISTRY' && event.ownerId) {
+          link = `/ministries/${event.ownerId}`;
+        }
 
         return {
-            members: {
-                total: membersCount,
-                newLastMonth: newMembersLast30Days,
-                growthPercentage: membersCount > 0 ? Math.round((newMembersLast30Days / membersCount) * 100) : 0
-            },
-            groups: {
-                total: totalGroups,
-                active: totalGroups, // Assuming all are active for now
-            },
-            treasury: {
-                monthlyIncome: monthlyIncome,
-                currency: 'USD' // Or church setting
-            },
-            visitors: {
-                new: newVisitorsCount,
-                pending: newVisitorsCount
-            }
+          id: event.id,
+          type: event.type,
+          title: event.title,
+          date: event.startDate,
+          location: event.location,
+          link,
         };
-    }
+      }),
+    ];
 
-    async getUpcomingEvents(churchId: string) {
-        // 1. Get Confirmed Worship Services (Future)
-        const services = await this.worshipRepo.find({
-            where: {
-                church: { id: churchId },
-                status: ServiceStatus.CONFIRMED,
-                date: MoreThan(new Date())
-            },
-            take: 5,
-            order: { date: 'ASC' }
-        });
+    combined.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
+    return combined.slice(0, 3);
+  }
 
-        // 2. Get Calendar Events (Future) - Activities, Courses, etc.
-        const events = await this.eventRepo.find({
-            where: {
-                church: { id: churchId },
-                startDate: MoreThan(new Date())
-            },
-            relations: ['organizer', 'group', 'ministry'], // Load relations
-            take: 5,
-            order: { startDate: 'ASC' }
-        });
+  async getActiveMentorships(churchId: string, personId: string) {
+    const participantRepo = this.mentorshipProcessRepo.manager.getRepository(
+      MentorshipProcessParticipant,
+    );
+    const matchingParticipants = await participantRepo.find({
+      where: {
+        churchPerson: { personId, churchId },
+        process: { status: MentorshipStatus.ACTIVE },
+      },
+      relations: ['process'],
+    });
 
-        // 3. Merge and Sort
-        const combined = [
-            ...services.map(s => ({
-                id: s.id,
-                type: 'WORSHIP',
-                title: s.topic || 'Culto General',
-                date: s.date,
-                location: 'Auditorio',
-                link: `/worship/${s.id}`,
-                meta: {}
-            })),
-            ...events.map(event => {
-                let link = '/calendar';
-                if (event.group) {
-                    link = `/groups/${event.group.id}/events`;
-                } else if (event.ministry) {
-                    link = `/ministries/${event.ministry.id}/events`;
-                }
+    const processIds = matchingParticipants.map((p) => p.process.id);
+    if (processIds.length === 0) return [];
 
-                return {
-                    id: event.id,
-                    type: event.type,
-                    title: event.title,
-                    date: event.startDate,
-                    location: event.location,
-                    link, // Generated link
-                    meta: {
-                        groupId: event.group?.id,
-                        ministryId: event.ministry?.id
-                    },
-                    group: event.group ? { id: event.group.id, name: event.group.name } : null,
-                };
-            })
-        ];
+    const processes = await this.mentorshipProcessRepo.find({
+      where: { id: In(processIds) },
+      relations: [
+        'participants',
+        'participants.churchPerson',
+        'participants.churchPerson.person',
+      ],
+    });
 
-        // Sort by date ASC
-        combined.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return processes.map((process) => {
+      const myParticipation = process.participants.find(
+        (p) => p.churchPerson.personId === personId,
+      );
+      const counterPart = process.participants.find(
+        (p) => p.churchPerson.personId !== personId,
+      );
 
-        // Return top 5
-        return combined.slice(0, 5);
-    }
+      return {
+        id: process.id,
+        type: process.type,
+        mode: process.mode,
+        myRole: myParticipation?.role,
+        counterPartName: counterPart
+          ? `${counterPart.churchPerson.person.firstName} ${counterPart.churchPerson.person.lastName}`
+          : 'Desconocido',
+        startDate: process.startDate,
+      };
+    });
+  }
 }

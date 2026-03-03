@@ -2,65 +2,75 @@ import { FunctionalRole } from '../common/enums';
 import { AppPermission } from './authorization/permissions.enum';
 
 export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
-    [FunctionalRole.ADMIN_CHURCH]: [
-        AppPermission.CHURCH_MANAGE,
-        AppPermission.CHURCH_VIEW,
-        AppPermission.MEMBER_VIEW,
-        AppPermission.MEMBER_CREATE,
-        AppPermission.MEMBER_UPDATE,
-        AppPermission.MEMBER_DELETE,
-        AppPermission.MEMBER_EXPORT,
-        AppPermission.COUNSELING_VIEW_ALL,
-        AppPermission.COUNSELING_UPDATE,
-        AppPermission.COUNSELING_DELETE,
-        AppPermission.GROUP_VIEW,
-        AppPermission.GROUP_MANAGE_MEMBERS,
-        AppPermission.FINANCE_VIEW,
-        AppPermission.FINANCE_MANAGE,
-        AppPermission.FINANCE_AUDIT,
-        AppPermission.ROLE_MANAGE,
-        AppPermission.CHURCH_MANAGE, // Used for Settings
-        AppPermission.PRAYER_MANAGE,
-        AppPermission.PRAYER_CREATE,
-        AppPermission.PRAYER_VIEW_ALL,
-        AppPermission.FOLLOWUP_VIEW_ALL,
-        AppPermission.FOLLOWUP_MANAGE
-    ],
-    [FunctionalRole.TREASURER]: [
-        AppPermission.FINANCE_VIEW,
-        AppPermission.FINANCE_MANAGE
-    ],
-    [FunctionalRole.AUDITOR]: [
-        AppPermission.FINANCE_VIEW,
-        AppPermission.FINANCE_AUDIT,
-        AppPermission.PRAYER_VIEW_ALL,
-        AppPermission.PRAYER_MANAGE,
-        AppPermission.FOLLOWUP_VIEW_ALL,
-        AppPermission.FOLLOWUP_MANAGE
-    ],
-    [FunctionalRole.COUNSELOR]: [
-        AppPermission.COUNSELING_VIEW_OWN,
-        AppPermission.COUNSELING_CREATE,
-        AppPermission.COUNSELING_UPDATE
-    ],
-    [FunctionalRole.MINISTRY_LEADER]: [
-        AppPermission.GROUP_VIEW,
-        AppPermission.GROUP_MANAGE_MEMBERS,
-        AppPermission.MEMBER_VIEW,
-        AppPermission.MINISTRY_VIEW,
-        AppPermission.MINISTRY_MANAGE
-    ],
-    [FunctionalRole.LIBRARIAN]: [
-        AppPermission.LIBRARY_VIEW,
-        AppPermission.LIBRARY_MANAGE_BOOKS,
-        AppPermission.LIBRARY_MANAGE_LOANS
-    ],
-    [FunctionalRole.MEMBER]: [
-        AppPermission.MEMBER_VIEW,
-        AppPermission.GROUP_VIEW,
-        AppPermission.COUNSELING_VIEW_OWN,
-        AppPermission.LIBRARY_VIEW,
-        AppPermission.PRAYER_CREATE,
-        AppPermission.PRAYER_VIEW_ALL
-    ]
+  [FunctionalRole.ADMIN_CHURCH]: [
+    AppPermission.CHURCH_MANAGE,
+    AppPermission.CHURCH_VIEW,
+    AppPermission.MEMBER_VIEW,
+    AppPermission.MEMBER_CREATE,
+    AppPermission.MEMBER_UPDATE,
+    AppPermission.MEMBER_DELETE,
+    AppPermission.MEMBER_EXPORT,
+    AppPermission.COUNSELING_VIEW_ALL,
+    AppPermission.COUNSELING_CREATE,
+    AppPermission.COUNSELING_UPDATE,
+    AppPermission.COUNSELING_DELETE,
+    AppPermission.GROUP_VIEW,
+    AppPermission.GROUP_MANAGE_MEMBERS,
+    AppPermission.FINANCE_VIEW,
+    AppPermission.FINANCE_MANAGE,
+    AppPermission.FINANCE_AUDIT,
+    AppPermission.ROLE_MANAGE,
+    AppPermission.CHURCH_MANAGE, // Used for Settings
+    AppPermission.PRAYER_MANAGE,
+    AppPermission.PRAYER_CREATE,
+    AppPermission.PRAYER_VIEW_ALL,
+    AppPermission.FOLLOWUP_VIEW_ALL,
+    AppPermission.FOLLOWUP_MANAGE,
+  ],
+  [FunctionalRole.TREASURER]: [
+    AppPermission.FINANCE_VIEW,
+    AppPermission.FINANCE_MANAGE,
+  ],
+  [FunctionalRole.AUDITOR]: [
+    AppPermission.FINANCE_VIEW,
+    AppPermission.FINANCE_AUDIT,
+    AppPermission.PRAYER_VIEW_ALL,
+    AppPermission.PRAYER_MANAGE,
+    AppPermission.FOLLOWUP_VIEW_ALL,
+    AppPermission.FOLLOWUP_MANAGE,
+    AppPermission.COUNSELING_VIEW_ALL,
+    AppPermission.COUNSELING_VIEW_SUPERVISION,
+    AppPermission.COUNSELING_CREATE,
+    AppPermission.COUNSELING_UPDATE,
+  ],
+  [FunctionalRole.COUNSELOR]: [
+    AppPermission.COUNSELING_VIEW_OWN,
+    AppPermission.COUNSELING_CREATE,
+    AppPermission.COUNSELING_UPDATE,
+  ],
+  [FunctionalRole.MINISTRY_LEADER]: [
+    AppPermission.GROUP_VIEW,
+    AppPermission.GROUP_MANAGE_MEMBERS,
+    AppPermission.MEMBER_VIEW,
+    AppPermission.MINISTRY_VIEW,
+    AppPermission.MINISTRY_MANAGE,
+  ],
+  [FunctionalRole.LIBRARIAN]: [
+    AppPermission.LIBRARY_VIEW,
+    AppPermission.LIBRARY_MANAGE_BOOKS,
+    AppPermission.LIBRARY_MANAGE_LOANS,
+  ],
+  [FunctionalRole.DISCIPLER]: [
+    AppPermission.MEMBER_VIEW,
+    AppPermission.GROUP_VIEW,
+    AppPermission.COUNSELING_VIEW_OWN,
+  ],
+  [FunctionalRole.MEMBER]: [
+    AppPermission.MEMBER_VIEW,
+    AppPermission.GROUP_VIEW,
+    AppPermission.COUNSELING_VIEW_OWN,
+    AppPermission.LIBRARY_VIEW,
+    AppPermission.PRAYER_CREATE,
+    AppPermission.PRAYER_VIEW_ALL,
+  ],
 };

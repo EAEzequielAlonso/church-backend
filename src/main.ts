@@ -11,14 +11,16 @@ async function bootstrap() {
   app.enableCors();
 
   // Enable Global Validation
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    exceptionFactory: (errors) => {
-      console.error('Validation Errors:', JSON.stringify(errors, null, 2));
-      return new BadRequestException(errors);
-    }
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      exceptionFactory: (errors) => {
+        console.error('Validation Errors:', JSON.stringify(errors, null, 2));
+        return new BadRequestException(errors);
+      },
+    }),
+  );
 
   // Swagger Configuration
   const config = new DocumentBuilder()
@@ -35,7 +37,9 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
-  console.log(`Swagger documentation available at: http://localhost:${port}/api`);
+  console.log(
+    `Swagger documentation available at: http://localhost:${port}/api`,
+  );
 
   // Run Seed AFTER app.listen to ensure DB is dropped/synced
   const seedService = app.get(SeedService);

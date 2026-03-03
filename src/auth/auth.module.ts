@@ -26,10 +26,10 @@ import { Person } from 'src/users/entities/person.entity';
         signOptions: { expiresIn: '7d' }, // Token valid for 7 days
       }),
       inject: [ConfigService],
-    }), 
+    }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, GoogleStrategy, Auth0Strategy],
   exports: [AuthService],
 })
-export class AuthModule { }
+export class AuthModule {}

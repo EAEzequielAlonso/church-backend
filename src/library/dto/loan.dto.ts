@@ -1,21 +1,28 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsDateString, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsDateString,
+  IsEnum,
+} from 'class-validator';
 
 export class RequestLoanDto {
-    @IsString()
-    @IsNotEmpty()
-    bookId: string;
+  @IsString()
+  @IsNotEmpty()
+  bookId: string;
 
-    @IsNumber()
-    @IsOptional()
-    durationDays?: number;
+  @IsNumber()
+  @IsOptional()
+  durationDays?: number;
 }
 
 export class LoanActionDto {
-    @IsString()
-    @IsOptional()
-    notes?: string;
+  @IsString()
+  @IsOptional()
+  notes?: string;
 
-    @IsString()
-    @IsOptional()
-    condition?: string;
+  @IsString()
+  @IsOptional()
+  condition?: string;
 }

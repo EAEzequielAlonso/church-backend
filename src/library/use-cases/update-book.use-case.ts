@@ -1,49 +1,59 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Book } from '../entities/book.entity';
 import { BookCategory } from '../entities/book-category.entity';
 import { UpdateBookDto } from '../dto/create-book.dto';
+import { LibraryPolicy } from '../policies/library.policy';
 
 @Injectable()
 export class UpdateBookUseCase {
-    constructor(
-        @InjectRepository(Book)
-        private bookRepo: Repository<Book>,
-        @InjectRepository(BookCategory)
-        private categoryRepo: Repository<BookCategory>,
-    ) { }
+  constructor(
+    @InjectRepository(Book)
+    private bookRepo: Repository<Book>,
+    @InjectRepository(BookCategory)
+    private categoryRepo: Repository<BookCategory>,
+    private policy: LibraryPolicy,
+  ) { }
 
-    async execute(churchId: string, bookId: string, memberId: string, dto: UpdateBookDto) {
-        const book = await this.bookRepo.findOne({
-            where: { id: bookId, church: { id: churchId } },
-            relations: ['ownerMember']
-        });
+  async execute(
+    churchId: string,
+    bookId: string,
+    memberId: string,
+    roles: string[],
+    dto: UpdateBookDto,
+  ) {
+    const book = await this.bookRepo.findOne({
+      where: { id: bookId, churchId },
+    });
 
-        if (!book) throw new NotFoundException('Libro no encontrado');
+    if (!book) throw new NotFoundException('Libro no encontrado');
 
-        // RBAC Check: Only Owner or Librarian can edit
-        // Implementation note: Controller check role. If Member role, check ownership.
-        // Business Rule: Member can only edit their own books.
-        if (!book.isChurchOwned) {
-            if (book.ownerMemberId !== memberId) {
-                // Implicit check: if not church owned, must be owner. 
-                // If caller is Librarian, they might edit member books? Requirement says "Member create their own books, Edit/delete ONLY their books".
-                // Assuming Librarians can moderate? Requirement doesn't explicitly forbid Librarian editing Member books, but implies separation.
-                // Let's enforce: If Member-owned, only Owner can edit.
-                throw new ForbiddenException('No tienes permiso para editar este libro');
-            }
-        }
+    // Policy: only owner or LIBRARIAN can edit
+    this.policy.assertCanEditBook(book, roles, memberId);
 
-        if (dto.categoryId) {
-            const category = await this.categoryRepo.findOne({ where: { id: dto.categoryId } });
-            if (!category) throw new NotFoundException('Categoría no encontrada');
-            book.category = category;
-        }
-
-        // Update fields
-        Object.assign(book, dto);
-
-        return this.bookRepo.save(book);
+    if (dto.categoryId) {
+      const category = await this.categoryRepo.findOne({
+        where: { id: dto.categoryId },
+      });
+      if (!category) throw new NotFoundException('Categoría no encontrada');
+      book.category = category;
+      book.categoryId = dto.categoryId;
     }
+
+    // Only update allowed fields — ownership cannot be changed after creation
+    if (dto.title) book.title = dto.title;
+    if (dto.author) book.author = dto.author;
+    if (dto.description !== undefined) book.description = dto.description;
+    if (dto.isbn !== undefined) book.isbn = dto.isbn;
+    if (dto.coverUrl !== undefined) book.coverUrl = dto.coverUrl;
+    if (dto.code !== undefined) book.code = dto.code;
+    if (dto.condition !== undefined) book.condition = dto.condition;
+    if (dto.location !== undefined) book.location = dto.location;
+
+    return this.bookRepo.save(book);
+  }
 }

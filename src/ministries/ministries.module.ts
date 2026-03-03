@@ -15,17 +15,19 @@ import { ServiceDuty } from './entities/service-duty.entity';
 import { MinistryRoleAssignment } from './entities/ministry-role-assignment.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([
-    Ministry,
-    MinistryMember,
-    MinistryTask,
-    MeetingNote,
-    CalendarEvent,
-    ChurchPerson,
-    ServiceDuty,
-    MinistryRoleAssignment
-  ])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Ministry,
+      MinistryMember,
+      MinistryTask,
+      MeetingNote,
+      CalendarEvent,
+      ChurchPerson,
+      ServiceDuty,
+      MinistryRoleAssignment,
+    ]),
+  ],
   controllers: [MinistriesController, MinistriesScheduleController],
-  providers: [MinistriesService]
+  providers: [MinistriesService],
 })
-export class MinistriesModule { }
+export class MinistriesModule {}

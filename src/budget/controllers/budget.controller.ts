@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Query, Request, Patch, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+  Request,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../../auth/guards/roles.guard';
 import { FunctionalRole } from '../../common/enums';
@@ -18,66 +29,84 @@ import { CreateBudgetAllocationDto } from '../dto/create-budget-allocation.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(FunctionalRole.TREASURER, FunctionalRole.ADMIN_CHURCH) // Strict RBAC
 export class BudgetController {
-    constructor(
-        private readonly createBudgetPeriodUseCase: CreateBudgetPeriodUseCase,
-        private readonly getBudgetPeriodsUseCase: GetBudgetPeriodsUseCase,
-        private readonly createBudgetAllocationUseCase: CreateBudgetAllocationUseCase,
-        private readonly getBudgetAllocationsUseCase: GetBudgetAllocationsUseCase,
-        private readonly getBudgetExecutionUseCase: GetBudgetExecutionUseCase,
-        private readonly updateBudgetAllocationUseCase: UpdateBudgetAllocationUseCase,
-        private readonly deleteBudgetAllocationUseCase: DeleteBudgetAllocationUseCase,
-        private readonly updateBudgetPeriodUseCase: UpdateBudgetPeriodUseCase,
-        private readonly deleteBudgetPeriodUseCase: DeleteBudgetPeriodUseCase,
-    ) { }
+  constructor(
+    private readonly createBudgetPeriodUseCase: CreateBudgetPeriodUseCase,
+    private readonly getBudgetPeriodsUseCase: GetBudgetPeriodsUseCase,
+    private readonly createBudgetAllocationUseCase: CreateBudgetAllocationUseCase,
+    private readonly getBudgetAllocationsUseCase: GetBudgetAllocationsUseCase,
+    private readonly getBudgetExecutionUseCase: GetBudgetExecutionUseCase,
+    private readonly updateBudgetAllocationUseCase: UpdateBudgetAllocationUseCase,
+    private readonly deleteBudgetAllocationUseCase: DeleteBudgetAllocationUseCase,
+    private readonly updateBudgetPeriodUseCase: UpdateBudgetPeriodUseCase,
+    private readonly deleteBudgetPeriodUseCase: DeleteBudgetPeriodUseCase,
+  ) {}
 
-    // --- Periods ---
+  // --- Periods ---
 
-    @Post('periods')
-    async createPeriod(@Request() req, @Body() dto: CreateBudgetPeriodDto) {
-        return this.createBudgetPeriodUseCase.execute(dto, req.user.churchId);
-    }
+  @Post('periods')
+  async createPeriod(@Request() req, @Body() dto: CreateBudgetPeriodDto) {
+    return this.createBudgetPeriodUseCase.execute(dto, req.user.churchId);
+  }
 
-    @Get('periods')
-    async getPeriods(@Request() req, @Query('year') year?: number) {
-        return this.getBudgetPeriodsUseCase.execute(req.user.churchId, year);
-    }
+  @Get('periods')
+  async getPeriods(@Request() req, @Query('year') year?: number) {
+    return this.getBudgetPeriodsUseCase.execute(req.user.churchId, year);
+  }
 
-    @Patch('periods/:id')
-    async updatePeriod(@Request() req, @Param('id') id: string, @Body() dto: any) {
-        return this.updateBudgetPeriodUseCase.execute(id, dto, req.user.churchId);
-    }
+  @Patch('periods/:id')
+  async updatePeriod(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() dto: any,
+  ) {
+    return this.updateBudgetPeriodUseCase.execute(id, dto, req.user.churchId);
+  }
 
-    @Delete('periods/:id')
-    async deletePeriod(@Request() req, @Param('id') id: string) {
-        return this.deleteBudgetPeriodUseCase.execute(id, req.user.churchId);
-    }
+  @Delete('periods/:id')
+  async deletePeriod(@Request() req, @Param('id') id: string) {
+    return this.deleteBudgetPeriodUseCase.execute(id, req.user.churchId);
+  }
 
-    // --- Allocations ---
+  // --- Allocations ---
 
-    @Post('allocations')
-    async createAllocation(@Request() req, @Body() dto: CreateBudgetAllocationDto) {
-        return this.createBudgetAllocationUseCase.execute(dto, req.user.churchId);
-    }
+  @Post('allocations')
+  async createAllocation(
+    @Request() req,
+    @Body() dto: CreateBudgetAllocationDto,
+  ) {
+    return this.createBudgetAllocationUseCase.execute(dto, req.user.churchId);
+  }
 
-    @Get('allocations')
-    async getAllocations(@Request() req, @Query('periodId') periodId: string) {
-        return this.getBudgetAllocationsUseCase.execute(req.user.churchId, periodId);
-    }
+  @Get('allocations')
+  async getAllocations(@Request() req, @Query('periodId') periodId: string) {
+    return this.getBudgetAllocationsUseCase.execute(
+      req.user.churchId,
+      periodId,
+    );
+  }
 
-    // --- Execution ---
+  // --- Execution ---
 
-    @Get('execution/:periodId')
-    async getExecution(@Request() req, @Param('periodId') periodId: string) {
-        return this.getBudgetExecutionUseCase.execute(req.user.churchId, periodId);
-    }
+  @Get('execution/:periodId')
+  async getExecution(@Request() req, @Param('periodId') periodId: string) {
+    return this.getBudgetExecutionUseCase.execute(req.user.churchId, periodId);
+  }
 
-    @Patch('allocations/:id')
-    async updateAllocation(@Request() req, @Param('id') id: string, @Body() dto: any) {
-        return this.updateBudgetAllocationUseCase.execute(id, dto, req.user.churchId);
-    }
+  @Patch('allocations/:id')
+  async updateAllocation(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() dto: any,
+  ) {
+    return this.updateBudgetAllocationUseCase.execute(
+      id,
+      dto,
+      req.user.churchId,
+    );
+  }
 
-    @Delete('allocations/:id')
-    async deleteAllocation(@Request() req, @Param('id') id: string) {
-        return this.deleteBudgetAllocationUseCase.execute(id, req.user.churchId);
-    }
+  @Delete('allocations/:id')
+  async deleteAllocation(@Request() req, @Param('id') id: string) {
+    return this.deleteBudgetAllocationUseCase.execute(id, req.user.churchId);
+  }
 }

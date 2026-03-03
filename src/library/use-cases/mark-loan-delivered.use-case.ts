@@ -1,44 +1,56 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Loan } from '../entities/loan.entity';
-import { LoanStatus, BookStatus } from '../../common/enums/library.enums';
+import { Book } from '../entities/book.entity';
+import { LoanStatus, BookStatus } from '../enums/library.enums';
 import { LoanActionDto } from '../dto/loan.dto';
+import { LibraryPolicy } from '../policies/library.policy';
 
 @Injectable()
 export class MarkLoanDeliveredUseCase {
-    constructor(private dataSource: DataSource) { }
+  constructor(
+    private dataSource: DataSource,
+    private policy: LibraryPolicy,
+  ) { }
 
-    async execute(churchId: string, loanId: string, delivererUserId: string, dto: LoanActionDto) {
-        return this.dataSource.transaction(async manager => {
-            const loanRepo = manager.getRepository(Loan);
+  async execute(
+    churchId: string,
+    loanId: string,
+    delivererMemberId: string,
+    delivererRoles: string[],
+    dto: LoanActionDto,
+  ) {
+    return this.dataSource.transaction(async (manager) => {
+      const loanRepo = manager.getRepository(Loan);
+      const bookRepo = manager.getRepository(Book);
 
-            const loan = await loanRepo.findOne({
-                where: { id: loanId, church: { id: churchId } },
-                relations: ['book']
-            });
+      const loan = await loanRepo.findOne({
+        where: { id: loanId, churchId },
+        relations: ['book'],
+      });
+      if (!loan) throw new NotFoundException('Préstamo no encontrado');
 
-            if (!loan) throw new NotFoundException('Préstamo no encontrado');
+      // Policy: validates APPROVED status + RESERVED book + who can deliver
+      this.policy.assertCanDeliverLoan(
+        loan as Loan & { book: Book },
+        delivererRoles,
+        delivererMemberId,
+      );
 
-            if (loan.status !== LoanStatus.APPROVED) {
-                throw new BadRequestException('El préstamo debe estar APROBADO antes de ser entregado');
-            }
+      // Update loan
+      loan.status = LoanStatus.DELIVERED;
+      loan.deliveredAt = new Date();
+      loan.deliveredByUserId = delivererMemberId;
+      loan.conditionAtLoan = dto.condition ?? loan.book.condition;
 
-            loan.status = LoanStatus.DELIVERED;
-            loan.deliveredAt = new Date();
-            loan.deliveredByUserId = delivererUserId;
+      // Book: RESERVED → LOANED
+      loan.book.status = BookStatus.LOANED;
+      await bookRepo.save(loan.book);
 
-            if (dto.condition) {
-                loan.conditionAtLoan = dto.condition;
-            } else {
-                // Inherit current book condition
-                loan.conditionAtLoan = loan.book.condition;
-            }
-
-            // Book status is already LOANED from Approval step, but reinforce used logic
-            loan.book.status = BookStatus.LOANED;
-            await manager.save(loan.book);
-
-            return loanRepo.save(loan);
-        });
-    }
+      return loanRepo.save(loan);
+    });
+  }
 }

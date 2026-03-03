@@ -8,9 +8,9 @@ import { Payment } from './entities/payment.entity';
 import { Church } from '../churches/entities/church.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Plan, Subscription, Payment, Church])],
-    controllers: [SubscriptionsController],
-    providers: [SubscriptionsService],
-    exports: [SubscriptionsService],
+  imports: [TypeOrmModule.forFeature([Plan, Subscription, Payment, Church])],
+  controllers: [SubscriptionsController],
+  providers: [SubscriptionsService],
+  exports: [SubscriptionsService],
 })
-export class SubscriptionsModule { }
+export class SubscriptionsModule {}

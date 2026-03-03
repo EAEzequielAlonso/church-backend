@@ -1,85 +1,80 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinTable, CreateDateColumn, UpdateDateColumn, OneToOne } from 'typeorm';
-import { Church } from '../../churches/entities/church.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  ManyToMany,
+  JoinTable,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToOne,
+  Index,
+} from 'typeorm';
 import { Person } from '../../users/entities/person.entity';
-import { Ministry } from '../../ministries/entities/ministry.entity';
-import { Group } from '../../groups/entities/group.entity';
 import { MeetingNote } from '../../ministries/entities/meeting-note.entity';
 import { CalendarEventType, MinistryEventType } from '../../common/enums';
-import { DiscipleshipMeeting } from '../../discipleships/entities/discipleship-meeting.entity';
 
 @Entity('calendar_events')
+@Index(['type', 'ownerId', 'startDate'])
 export class CalendarEvent {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column()
-    title: string;
+  @Column()
+  title: string;
 
-    @Column({ nullable: true, type: 'text' })
-    description: string;
+  @Column({ nullable: true, type: 'text' })
+  description: string;
 
-    @Column({ type: 'timestamp' })
-    startDate: Date;
+  @Column({ type: 'timestamp' })
+  startDate: Date;
 
-    @Column({ type: 'timestamp' })
-    endDate: Date;
+  @Column({ type: 'timestamp' })
+  endDate: Date;
 
-    @Column({ nullable: true })
-    location: string;
+  @Column({ nullable: true })
+  location: string;
 
-    @Column({
-        type: 'enum',
-        enum: CalendarEventType,
-        default: CalendarEventType.OTHER
-    })
-    type: CalendarEventType;
+  @Column({
+    type: 'enum',
+    enum: CalendarEventType,
+    default: CalendarEventType.OTHER,
+  })
+  type: CalendarEventType;
 
-    @Column({
-        type: 'enum',
-        enum: MinistryEventType,
-        nullable: true
-    })
-    ministryEventType: MinistryEventType;
+  @Column({
+    type: 'enum',
+    enum: MinistryEventType,
+    nullable: true,
+  })
+  ministryEventType: MinistryEventType;
 
-    @Column({ nullable: true })
-    color: string; // For UI customization
+  @Column({ nullable: true })
+  color: string; // For UI customization
 
-    @Column({ default: false })
-    isAllDay: boolean;
+  @Column({ default: false })
+  isAllDay: boolean;
 
-    // 🔗 Relations
+  // 🔗 Relations
 
-    @ManyToOne(() => Church, (church) => church.calendarEvents)
-    church: Church;
+  @Column('uuid', { nullable: true })
+  ownerId: string;
 
-    // For PERSONAL events or "created by"
-    @ManyToOne(() => Person, { nullable: true })
-    organizer: Person;
+  // For PERSONAL events or "created by"
+  @ManyToOne(() => Person, { nullable: true })
+  organizer: Person;
 
-    // For MINISTRY events
-    @ManyToOne(() => Ministry, { nullable: true })
-    ministry: Ministry;
+  // Specific assignments (e.g. Preacher for a Sunday) or Attendees
+  @ManyToMany(() => Person)
+  @JoinTable({ name: 'calendar_event_attendees' })
+  attendees: Person[];
 
-    // For GROUP events (formerly small groups/courses)
-    @ManyToOne(() => Group, { nullable: true })
-    group: Group;
+  @OneToOne(() => MeetingNote, (note) => note.event)
+  meetingNote: MeetingNote;
 
-    // Specific assignments (e.g. Preacher for a Sunday) or Attendees
-    @ManyToMany(() => Person)
-    @JoinTable({ name: 'calendar_event_attendees' })
-    attendees: Person[];
+  @CreateDateColumn()
+  createdAt: Date;
 
-    @OneToOne(() => MeetingNote, (note) => note.event)
-    meetingNote: MeetingNote;
-
-    @OneToOne(() => DiscipleshipMeeting, (meeting) => meeting.calendarEvent)
-    discipleshipMeeting: DiscipleshipMeeting;
-
-
-
-    @CreateDateColumn()
-    createdAt: Date;
-
-    @UpdateDateColumn()
-    updatedAt: Date;
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

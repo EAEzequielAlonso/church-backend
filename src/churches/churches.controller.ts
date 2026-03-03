@@ -1,4 +1,13 @@
-import { Body, Controller, Post, Get, Patch, UseGuards, Request, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  Patch,
+  UseGuards,
+  Request,
+  Query,
+} from '@nestjs/common';
 import { ChurchesService } from './churches.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateChurchDto } from './dto/create-church.dto';
@@ -6,31 +15,31 @@ import { CurrentChurch } from '../common/decorators';
 
 @Controller('churches')
 export class ChurchesController {
-    constructor(private readonly churchesService: ChurchesService) { }
+  constructor(private readonly churchesService: ChurchesService) {}
 
-    @UseGuards(JwtAuthGuard)
-    @Post()
-    create(@Request() req, @Body() dto: CreateChurchDto) {
-        console.log('Create Church Request Body:', JSON.stringify(dto, null, 2));
-        console.log('User:', req.user);
-        return this.churchesService.create(req.user.userId, dto);
-    }
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  create(@Request() req, @Body() dto: CreateChurchDto) {
+    console.log('Create Church Request Body:', JSON.stringify(dto, null, 2));
+    console.log('User:', req.user);
+    return this.churchesService.create(req.user.userId, dto);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Get('current')
-    getCurrent(@CurrentChurch() churchId: string) {
-        return this.churchesService.findOne(churchId);
-    }
+  @UseGuards(JwtAuthGuard)
+  @Get('current')
+  getCurrent(@CurrentChurch() churchId: string) {
+    return this.churchesService.findOne(churchId);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Patch('current')
-    update(@CurrentChurch() churchId: string, @Body() dto: any) {
-        return this.churchesService.update(churchId, dto);
-    }
+  @UseGuards(JwtAuthGuard)
+  @Patch('current')
+  update(@CurrentChurch() churchId: string, @Body() dto: any) {
+    return this.churchesService.update(churchId, dto);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Get('search')
-    search(@Query('q') query: string) {
-        return this.churchesService.search(query);
-    }
+  @UseGuards(JwtAuthGuard)
+  @Get('search')
+  search(@Query('q') query: string) {
+    return this.churchesService.search(query);
+  }
 }

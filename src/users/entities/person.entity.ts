@@ -1,7 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, OneToMany, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+  JoinColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 import { ChurchPerson } from '../../members/entities/church-person.entity';
-import { Notification } from '../../notifications/entities/notification.entity';
+
 
 import { MaritalStatus, Sex } from 'src/common/enums';
 @Entity('persons')
@@ -93,11 +102,6 @@ export class Person {
 
   @OneToMany(() => ChurchPerson, (member) => member.person)
   memberships: ChurchPerson[];
-
-  @OneToMany(() => Notification, (notification) => notification.person)
-  notifications: Notification[];
-
-
 
 
 

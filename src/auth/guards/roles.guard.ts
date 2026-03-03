@@ -8,25 +8,25 @@ import { SetMetadata } from '@nestjs/common';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-    constructor(private reflector: Reflector) { }
+  constructor(private reflector: Reflector) {}
 
-    canActivate(context: ExecutionContext): boolean {
-        const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
-            context.getHandler(),
-            context.getClass(),
-        ]);
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
-        if (!requiredRoles) {
-            return true;
-        }
-
-        const { user } = context.switchToHttp().getRequest();
-        if (!user || !user.roles) return false;
-
-        // Check if user has at least one of the required roles
-        // Check if user has at least one of the required roles
-        if (user.systemRole === SystemRole.ADMIN_APP) return true; // Super Admin Bypass
-
-        return requiredRoles.some((role) => user.roles.includes(role));
+    if (!requiredRoles) {
+      return true;
     }
+
+    const { user } = context.switchToHttp().getRequest();
+    if (!user || !user.roles) return false;
+
+    // Check if user has at least one of the required roles
+    // Check if user has at least one of the required roles
+    if (user.systemRole === SystemRole.ADMIN_APP) return true; // Super Admin Bypass
+
+    return requiredRoles.some((role) => user.roles.includes(role));
+  }
 }

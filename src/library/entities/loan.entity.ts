@@ -1,82 +1,99 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
 import { Book } from './book.entity';
 import { ChurchPerson } from '../../members/entities/church-person.entity';
-import { LoanStatus } from '../../common/enums/library.enums';
-import { Church } from '../../churches/entities/church.entity'; // Assuming Church entity import
+import { LoanStatus } from '../enums/library.enums';
+import { Church } from '../../churches/entities/church.entity';
 
 @Entity('loans')
-@Index(['church', 'status'])
-@Index(['church', 'borrower'])
-@Index(['church', 'book'])
+@Index(['churchId', 'status'])
+@Index(['churchId', 'borrowerId'])
+@Index(['churchId', 'bookId'])
 export class Loan {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @ManyToOne(() => Book, { nullable: false })
-    @JoinColumn({ name: 'bookId' })
-    book: Book;
+  @ManyToOne(() => Book, { nullable: false })
+  @JoinColumn({ name: 'bookId' })
+  book: Book;
 
-    @Column()
-    bookId: string;
+  @Column({ nullable: false })
+  bookId: string;
 
-    @ManyToOne(() => ChurchPerson, { nullable: false })
-    @JoinColumn({ name: 'borrowerId' })
-    borrower: ChurchPerson;
+  @ManyToOne(() => ChurchPerson, { nullable: false })
+  @JoinColumn({ name: 'borrowerId' })
+  borrower: ChurchPerson;
 
-    @Column()
-    borrowerId: string;
+  @Column({ nullable: false })
+  borrowerId: string;
 
-    // Workflow Dates
-    @Column({ nullable: true })
-    requestedAt: Date; // Formerly outDate? No, outDate usually meant start of loan. 
-    // We map: requestedAt -> creation, approvedAt -> approval, deliveredAt -> start of physical loan
+  /**
+   * Multi-tenancy enforcement: Loan always belongs to a church.
+   * NOT nullable — a loan without a church is invalid.
+   */
+  @ManyToOne(() => Church, { nullable: false })
+  @JoinColumn({ name: 'churchId' })
+  church: Church;
 
-    @Column({ nullable: true })
-    approvedAt: Date;
+  @Column({ nullable: false })
+  churchId: string;
 
-    @Column({ nullable: true })
-    deliveredAt: Date;
+  // ── Workflow dates ───────────────────────────────────────────────────────
 
-    @Column({ nullable: true })
-    dueDate: Date;
+  @Column({ nullable: true })
+  requestedAt: Date;
 
-    @Column({ nullable: true })
-    returnedAt: Date;
+  @Column({ nullable: true })
+  approvedAt: Date;
 
-    // Conditions
-    @Column({ nullable: true, type: 'text' })
-    conditionAtLoan: string;
+  @Column({ nullable: true })
+  deliveredAt: Date;
 
-    @Column({ nullable: true, type: 'text' })
-    conditionAtReturn: string;
+  @Column({ nullable: true })
+  dueDate: Date;
 
-    // Audit / Actors
-    @Column({ nullable: true }) // User ID
-    approvedByUserId: string;
+  @Column({ nullable: true })
+  returnedAt: Date;
 
-    @Column({ nullable: true }) // User ID
-    deliveredByUserId: string;
+  // ── Conditions ───────────────────────────────────────────────────────────
 
-    @Column({ nullable: true }) // User ID
-    returnedConfirmedByUserId: string;
+  @Column({ nullable: true, type: 'text' })
+  conditionAtLoan: string;
 
-    @Column({
-        type: 'enum',
-        enum: LoanStatus,
-        default: LoanStatus.REQUESTED
-    })
-    status: LoanStatus;
+  @Column({ nullable: true, type: 'text' })
+  conditionAtReturn: string;
 
-    @ManyToOne(() => Church, { nullable: true }) // Should be strict, but nullable for migration if needed
-    @JoinColumn({ name: 'churchId' })
-    church: Church; // Enforce multi-tenancy on loans too for faster filtering
+  // ── Audit actors (memberId of who acted) ─────────────────────────────────
 
-    @Column({ nullable: true })
-    churchId: string;
+  @Column({ nullable: true })
+  approvedByUserId: string;
 
-    @CreateDateColumn()
-    createdAt: Date;
+  @Column({ nullable: true })
+  deliveredByUserId: string;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+  @Column({ nullable: true })
+  returnedConfirmedByUserId: string;
+
+  // ── Status ───────────────────────────────────────────────────────────────
+
+  @Column({
+    type: 'enum',
+    enum: LoanStatus,
+    default: LoanStatus.REQUESTED,
+  })
+  status: LoanStatus;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

@@ -3,33 +3,33 @@ import { Subscription } from './subscription.entity';
 
 @Entity('plans')
 export class Plan {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column()
-    name: string; // FREE, BASIC, PRO
+  @Column()
+  name: string; // FREE, BASIC, PRO
 
-    @Column({ nullable: true })
-    description: string;
+  @Column({ nullable: true })
+  description: string;
 
-    @Column('decimal', { precision: 10, scale: 2 })
-    price: number;
+  @Column('decimal', { precision: 10, scale: 2 })
+  price: number;
 
-    @Column({ default: 'ARS' })
-    currency: string;
+  @Column({ default: 'ARS' })
+  currency: string;
 
-    @Column({ default: 'MONTHLY' })
-    interval: string; // MONTHLY, YEARLY
+  @Column({ default: 'MONTHLY' })
+  interval: string; // MONTHLY, YEARLY
 
-    @Column({ name: 'mercadopago_id', nullable: true })
-    mercadopagoId: string; // preapproval_plan_id from MP
+  @Column({ name: 'mercadopago_id', nullable: true })
+  mercadopagoId: string; // preapproval_plan_id from MP
 
-    @Column('simple-json', { nullable: true })
-    features: string[];
+  @Column('simple-json', { nullable: true })
+  features: string[];
 
-    @Column({ default: true })
-    isActive: boolean;
+  @Column({ default: true })
+  isActive: boolean;
 
-    @OneToMany(() => Subscription, (sub) => sub.plan)
-    subscriptions: Subscription[];
+  @OneToMany(() => Subscription, (sub) => sub.plan)
+  subscriptions: Subscription[];
 }

@@ -10,35 +10,37 @@ import { getPermissionsForRoles } from './authorization/role-permissions.config'
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor(
-        private configService: ConfigService,
-        @InjectRepository(User)
-        private userRepository: Repository<User>,
-    ) {
-        super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            ignoreExpiration: false,
-            secretOrKey: configService.get<string>('JWT_SECRET'),
-        });
+  constructor(
+    private configService: ConfigService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: configService.get<string>('JWT_SECRET'),
+    });
+  }
+
+  async validate(payload: JwtPayload) {
+    // Validation: Ensure user exists in DB to prevent stale token issues (e.g. after DB wipe)
+    const user = await this.userRepository.findOne({
+      where: { id: payload.sub },
+    });
+    if (!user) {
+      throw new UnauthorizedException('User no longer exists');
     }
 
-    async validate(payload: JwtPayload) {
-        // Validation: Ensure user exists in DB to prevent stale token issues (e.g. after DB wipe)
-        const user = await this.userRepository.findOne({ where: { id: payload.sub } });
-        if (!user) {
-            throw new UnauthorizedException('User no longer exists');
-        }
-
-        return {
-            userId: payload.sub,
-            personId: payload.personId,
-            email: payload.email,
-            churchId: payload.churchId,
-            memberId: payload.memberId,
-            ecclesiasticalRole: payload.ecclesiasticalRole,
-            roles: payload.roles,
-            permissions: getPermissionsForRoles(payload.roles),
-            systemRole: user.systemRole
-        };
-    }
+    return {
+      userId: payload.sub,
+      personId: payload.personId,
+      email: payload.email,
+      churchId: payload.churchId,
+      memberId: payload.memberId,
+      ecclesiasticalRole: payload.ecclesiasticalRole,
+      roles: payload.roles,
+      permissions: getPermissionsForRoles(payload.roles),
+      systemRole: user.systemRole,
+    };
+  }
 }

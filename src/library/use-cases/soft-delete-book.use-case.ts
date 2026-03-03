@@ -1,31 +1,39 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Book } from '../entities/book.entity';
-import { BookStatus } from '../../common/enums/library.enums';
+import { LibraryPolicy } from '../policies/library.policy';
+import { BookStatus } from '../enums/library.enums';
 
 @Injectable()
 export class SoftDeleteBookUseCase {
-    constructor(
-        @InjectRepository(Book)
-        private bookRepo: Repository<Book>,
-    ) { }
+  constructor(
+    @InjectRepository(Book)
+    private bookRepo: Repository<Book>,
+    private policy: LibraryPolicy,
+  ) { }
 
-    async execute(churchId: string, bookId: string, memberId: string) {
-        const book = await this.bookRepo.findOne({
-            where: { id: bookId, church: { id: churchId } }
-        });
+  async execute(
+    churchId: string,
+    bookId: string,
+    memberId: string,
+    roles: string[],
+  ) {
+    const book = await this.bookRepo.findOne({
+      where: { id: bookId, churchId },
+    });
 
-        if (!book) throw new NotFoundException('Libro no encontrado');
+    if (!book) throw new NotFoundException('Libro no encontrado');
 
-        // Check active loans? 
-        if (book.status === BookStatus.LOANED) {
-            throw new BadRequestException('No se puede eliminar un libro prestado. Debe devolverse primero.');
-        }
+    // Policy: only owner or LIBRARIAN, and not while actively loaned
+    this.policy.assertCanDeleteBook(book, roles, memberId);
 
-        book.status = BookStatus.REMOVED;
-        await this.bookRepo.save(book);
+    book.status = BookStatus.REMOVED;
+    await this.bookRepo.save(book);
 
-        return this.bookRepo.softDelete(bookId);
-    }
+    return this.bookRepo.softDelete(bookId);
+  }
 }

@@ -1,10 +1,20 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, ManyToOne, JoinColumn, Check } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+  Check,
+} from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { Currency } from '../../treasury/enums/treasury.enums';
 
 export enum BudgetPeriodType {
-    MONTHLY = 'MONTHLY',
-    YEARLY = 'YEARLY',
+  MONTHLY = 'MONTHLY',
+  YEARLY = 'YEARLY',
 }
 
 @Entity('budget_periods')
@@ -13,31 +23,31 @@ export enum BudgetPeriodType {
 @Index(['church', 'startDate', 'endDate'])
 @Check(`"startDate" <= "endDate"`)
 export class BudgetPeriod {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @ManyToOne(() => Church, { nullable: false })
-    @JoinColumn({ name: 'churchId' })
-    church: Church;
+  @ManyToOne(() => Church, { nullable: false })
+  @JoinColumn({ name: 'churchId' })
+  church: Church;
 
-    @Column({ nullable: false })
-    name: string;
+  @Column({ nullable: false })
+  name: string;
 
-    @Column({ type: 'enum', enum: BudgetPeriodType })
-    type: BudgetPeriodType;
+  @Column({ type: 'enum', enum: BudgetPeriodType })
+  type: BudgetPeriodType;
 
-    @Column({ type: 'date', nullable: false })
-    startDate: Date;
+  @Column({ type: 'date', nullable: false })
+  startDate: Date;
 
-    @Column({ type: 'date', nullable: false })
-    endDate: Date;
+  @Column({ type: 'date', nullable: false })
+  endDate: Date;
 
-    @Column({ type: 'enum', enum: Currency, default: Currency.ARS })
-    currency: Currency;
+  @Column({ type: 'enum', enum: Currency, default: Currency.ARS })
+  currency: Currency;
 
-    @CreateDateColumn()
-    createdAt: Date;
+  @CreateDateColumn()
+  createdAt: Date;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+  @UpdateDateColumn()
+  updatedAt: Date;
 }
