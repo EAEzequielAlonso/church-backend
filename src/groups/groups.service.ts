@@ -42,7 +42,7 @@ export class GroupsService {
       const participant = this.participantRepo.create({
         churchPersonId: dto.leaderChurchPersonId,
         groupId: savedGroup.id,
-        role: GroupRole.LEADER,
+        role: GroupRole.COORDINATOR,
       });
       await this.participantRepo.save(participant);
     }
@@ -94,7 +94,7 @@ export class GroupsService {
     groupId: string,
     churchPersonId: string,
     churchId: string,
-    role: GroupRole = GroupRole.MEMBER,
+    role: GroupRole = GroupRole.PARTICIPANT,
   ) {
     const group = await this.findOne(groupId, churchId);
 
@@ -132,6 +132,27 @@ export class GroupsService {
     }
 
     return this.participantRepo.remove(existing);
+  }
+
+  async updateParticipantRole(
+    groupId: string,
+    churchPersonId: string,
+    churchId: string,
+    role: GroupRole,
+  ) {
+    // ensure group belongs to church
+    await this.findOne(groupId, churchId);
+
+    const existing = await this.participantRepo.findOne({
+      where: { groupId, churchPersonId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Participant not found in this group');
+    }
+
+    existing.role = role;
+    return this.participantRepo.save(existing);
   }
 
   async createMeeting(

@@ -7,6 +7,7 @@ import {
   ManyToOne,
   OneToMany,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { Church } from '../../../churches/entities/church.entity';
 import { BaseDomainEvent } from '../../domain/events/base-domain-event';
@@ -81,6 +82,7 @@ export class MentorshipProcess {
   closeObservation: string; // Obligatorio cuando status pasa a CLOSED
 
   @ManyToOne(() => Church, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'churchId' })
   church: Church;
 
   @Column({ nullable: false })

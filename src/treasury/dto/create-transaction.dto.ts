@@ -57,4 +57,8 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsUUID()
   ministryId?: string;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }

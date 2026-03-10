@@ -2,38 +2,66 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
   CreateDateColumn,
+  Index,
 } from 'typeorm';
-import { TreasuryTransaction } from './treasury-transaction.entity';
-import { User } from '../../users/entities/user.entity';
+import { AuditEntityType, AuditAction } from '../enums/treasury.enums';
 
 @Entity('treasury_audit_logs')
+@Index(['churchId', 'createdAt'])
+@Index(['churchId', 'entityType', 'entityId'])
 export class TreasuryAuditLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => TreasuryTransaction, { onDelete: 'CASCADE' })
-  transaction: TreasuryTransaction;
+  @Column()
+  @Index()
+  churchId: string;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true })
-  oldAmount: number;
+  // --- What was affected ---
 
-  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true })
-  newAmount: number;
+  @Column({ type: 'enum', enum: AuditEntityType })
+  entityType: AuditEntityType;
+
+  @Column('uuid')
+  entityId: string;
+
+  @Column({ type: 'enum', enum: AuditAction })
+  action: AuditAction;
+
+  // --- State snapshots (JSONB) ---
+
+  @Column({ type: 'jsonb', nullable: true })
+  before: Record<string, any> | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  after: Record<string, any> | null;
+
+  // --- Schema versioning ---
+
+  @Column({ type: 'varchar', length: 50, default: 'v1' })
+  entityVersion: string;
+
+  // --- Who did it ---
+
+  @Column('uuid')
+  performedByUserId: string;
 
   @Column({ nullable: true })
-  oldDescription: string;
+  performedByEmail: string;
 
   @Column({ nullable: true })
-  newDescription: string;
+  performedByRole: string;
 
   @Column({ nullable: true })
-  changeReason: string;
+  ipAddress: string;
 
-  @ManyToOne(() => User)
-  changedBy: User;
+  @Column({ nullable: true })
+  reason: string;
+
+  // --- When ---
 
   @CreateDateColumn()
+  @Index()
   createdAt: Date;
 }

@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { MentorshipProcess } from './mentorship-process.entity';
 import { ChurchPerson } from '../../../members/entities/church-person.entity';
@@ -25,12 +26,14 @@ export class MentorshipProcessParticipant {
     nullable: false,
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'processId' })
   process: MentorshipProcess;
 
   @Column({ nullable: false })
   processId: string;
 
   @ManyToOne(() => ChurchPerson, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'churchPersonId' })
   churchPerson: ChurchPerson;
 
   @Column({ nullable: false })

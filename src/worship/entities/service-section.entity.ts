@@ -5,6 +5,7 @@ import {
   ManyToOne,
   ManyToMany,
   JoinTable,
+  JoinColumn,
 } from 'typeorm';
 import { WorshipService } from './worship-service.entity';
 import { ServiceDuty } from '../../ministries/entities/service-duty.entity';
@@ -37,9 +38,13 @@ export class ServiceSection {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  @Column()
+  serviceId: string;
+
   @ManyToOne(() => WorshipService, (service) => service.sections, {
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'serviceId' })
   service: WorshipService;
 
   // Required roles snapshot (copied from template or added manually)
@@ -53,6 +58,10 @@ export class ServiceSection {
   @Column({ type: 'simple-json', nullable: true })
   overrides: Record<string, string>;
 
+  @Column({ nullable: true })
+  ministryId: string;
+
   @ManyToOne(() => Ministry, { nullable: true })
+  @JoinColumn({ name: 'ministryId' })
   ministry: Ministry;
 }

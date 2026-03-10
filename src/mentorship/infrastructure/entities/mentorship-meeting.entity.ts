@@ -7,6 +7,7 @@ import {
   ManyToOne,
   OneToMany,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { MentorshipProcess } from './mentorship-process.entity';
 import { MentorshipNote } from './mentorship-note.entity';
@@ -22,6 +23,7 @@ export class MentorshipMeeting {
     nullable: false,
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'processId' })
   process: MentorshipProcess;
 
   @Column({ nullable: false })

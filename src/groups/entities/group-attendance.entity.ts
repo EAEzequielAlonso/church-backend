@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   Unique,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { GroupMeeting } from './group-meeting.entity';
 import { ChurchPerson } from '../../members/entities/church-person.entity';
@@ -21,12 +22,14 @@ export class GroupAttendance {
     nullable: false,
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'meetingId' })
   meeting: GroupMeeting;
 
   @Column({ nullable: false })
   meetingId: string;
 
   @ManyToOne(() => ChurchPerson, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'churchPersonId' })
   churchPerson: ChurchPerson;
 
   @Column({ nullable: false })

@@ -4,14 +4,14 @@ import { FamilyMember } from '../entities/family-member.entity';
 
 @Injectable()
 export class RemoveFamilyMemberUseCase {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly dataSource: DataSource) { }
 
   async execute(familyId: string, memberId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const familyMemberRepo = manager.getRepository(FamilyMember);
 
       const fm = await familyMemberRepo.findOne({
-        where: { family: { id: familyId }, member: { id: memberId } },
+        where: { familyId, memberId },
       });
 
       if (!fm) {

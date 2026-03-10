@@ -20,7 +20,7 @@ export class MembersService {
     private memberRepository: Repository<ChurchPerson>,
     @InjectRepository(Person) private personRepository: Repository<Person>,
     @InjectRepository(User) private userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async search(churchId: string, query: string) {
     if (!query || query.length < 2) return [];
@@ -135,7 +135,7 @@ export class MembersService {
     const existingMember = await memberRepo.findOne({
       where: {
         person: { id: person.id },
-        church: { id: churchId },
+        churchId: churchId,
       },
     });
 
@@ -145,7 +145,7 @@ export class MembersService {
 
     const member = memberRepo.create({
       person,
-      church: { id: churchId },
+      churchId: churchId,
       ecclesiasticalRole: ecclesiasticalRole || EcclesiasticalRole.NONE,
       functionalRoles: functionalRoles || [FunctionalRole.MEMBER],
       membershipStatus: status || MembershipStatus.MEMBER,
@@ -172,7 +172,7 @@ export class MembersService {
 
   async findOne(id: string, churchId: string) {
     const member = await this.memberRepository.findOne({
-      where: { id, church: { id: churchId } },
+      where: { id, churchId },
       relations: ['person', 'person.user'],
     });
 
@@ -208,7 +208,7 @@ export class MembersService {
     actingMemberId?: string,
   ) {
     const member = await this.memberRepository.findOne({
-      where: { id, church: { id: churchId } },
+      where: { id, churchId },
       relations: ['person', 'person.user'],
     });
     if (!member) throw new NotFoundException('Member not found');
@@ -361,7 +361,7 @@ export class MembersService {
     const existingMember = await this.memberRepository.findOne({
       where: {
         person: { id: personId },
-        church: { id: targetChurchId },
+        churchId: targetChurchId,
       },
     });
 
@@ -371,7 +371,7 @@ export class MembersService {
 
     const member = this.memberRepository.create({
       person: person,
-      church: { id: targetChurchId },
+      churchId: targetChurchId,
       ecclesiasticalRole: EcclesiasticalRole.NONE,
       membershipStatus: MembershipStatus.MEMBER, // Pending/Prospect
     });
@@ -415,7 +415,7 @@ export class MembersService {
     const existingMember = await this.memberRepository.findOne({
       where: {
         person: { id: person.id },
-        church: { id: churchId },
+        churchId: churchId,
       },
     });
 
@@ -426,7 +426,7 @@ export class MembersService {
     // 4. Create Member
     const member = this.memberRepository.create({
       person,
-      church: { id: churchId },
+      churchId: churchId,
       ecclesiasticalRole: EcclesiasticalRole.NONE,
       // Default roles for new member
       functionalRoles: [FunctionalRole.MEMBER],

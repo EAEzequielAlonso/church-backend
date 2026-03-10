@@ -24,7 +24,7 @@ export class CreateFamilyUseCase {
       // 1. Create Family Entity
       const family = familyRepo.create({
         name: createDto.name,
-        church: { id: churchId },
+        churchId: churchId,
       });
 
       this.policy.ensureValidFamilyState(family);
@@ -81,8 +81,8 @@ export class CreateFamilyUseCase {
         if (!memberId) continue;
 
         const familyMember = familyMemberRepo.create({
-          family: savedFamily,
-          member: { id: memberId },
+          familyId: savedFamily.id,
+          memberId: memberId,
           role: memberDto.role as FamilyRole,
         });
 

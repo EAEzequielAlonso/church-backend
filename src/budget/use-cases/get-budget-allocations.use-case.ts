@@ -8,7 +8,7 @@ export class GetBudgetAllocationsUseCase {
   constructor(
     @InjectRepository(BudgetAllocation)
     private readonly budgetAllocationRepository: Repository<BudgetAllocation>,
-  ) {}
+  ) { }
 
   async execute(
     churchId: string,
@@ -16,8 +16,8 @@ export class GetBudgetAllocationsUseCase {
   ): Promise<BudgetAllocation[]> {
     return this.budgetAllocationRepository.find({
       where: {
-        church: { id: churchId },
-        budgetPeriod: { id: periodId },
+        churchId,
+        budgetPeriodId: periodId,
       },
       relations: ['ministry', 'category'],
       order: {

@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   CreateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { Ministry } from './ministry.entity';
 import { ChurchPerson } from '../../members/entities/church-person.entity';
@@ -15,10 +16,17 @@ export class MinistryMember {
   id: string;
 
   @ManyToOne(() => Ministry, (ministry) => ministry.members)
+  @JoinColumn({ name: 'ministryId' })
   ministry: Ministry;
+  @Column()
+  ministryId: string;
 
   @ManyToOne(() => ChurchPerson, (member) => member.ministries)
+  @JoinColumn({ name: 'memberId' })
   member: ChurchPerson;
+
+  @Column()
+  memberId: string;
 
   @Column({
     type: 'enum',

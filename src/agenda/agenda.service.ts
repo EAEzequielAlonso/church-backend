@@ -37,7 +37,7 @@ export class AgendaService {
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(MinistryRoleAssignment)
     private readonly assignmentRepository: Repository<MinistryRoleAssignment>,
-  ) {}
+  ) { }
 
   async getUpcomingActivities(
     personId: string,
@@ -341,7 +341,7 @@ export class AgendaService {
             (m) => m.churchPerson.id === memberId,
           );
 
-          if (membership && membership.role === GroupRole.LEADER) {
+          if (membership && membership.role === GroupRole.COORDINATOR) {
             isModerator = true;
           }
         }
@@ -422,7 +422,7 @@ export class AgendaService {
           churchPerson: { id: personId },
         },
       });
-      if (membership && membership.role === GroupRole.LEADER) {
+      if (membership && membership.role === GroupRole.COORDINATOR) {
         isModerator = true;
       }
     }
@@ -463,7 +463,7 @@ export class AgendaService {
           churchPerson: { id: personId },
         },
       });
-      if (membership && membership.role === GroupRole.LEADER) {
+      if (membership && membership.role === GroupRole.COORDINATOR) {
         isModerator = true;
       }
     }

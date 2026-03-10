@@ -19,15 +19,27 @@ export class MinistryRoleAssignment {
   @ManyToOne(() => Ministry, (ministry) => ministry.assignments, {
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'ministryId' })
   ministry: Ministry;
+
+  @Column()
+  ministryId: string;
 
   @ManyToOne(() => ServiceDuty, (duty) => duty.assignments, {
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'roleId' })
   role: ServiceDuty;
 
+  @Column()
+  roleId: string;
+
   @ManyToOne(() => Person, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'personId' })
   person: Person;
+
+  @Column()
+  personId: string;
 
   @Column({ type: 'date' })
   date: string; // YYYY-MM-DD

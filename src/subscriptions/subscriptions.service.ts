@@ -207,7 +207,7 @@ export class SubscriptionsService implements OnModuleInit {
               // Deactivate old active subscriptions
               await this.subRep.update(
                 {
-                  church: { id: church.id },
+                  churchId: church.id,
                   status: SubscriptionStatus.ACTIVE,
                 },
                 { status: SubscriptionStatus.CANCELLED, endDate: new Date() },
@@ -256,7 +256,7 @@ export class SubscriptionsService implements OnModuleInit {
 
   private async activateFreeSubscription(church: Church, plan: Plan) {
     await this.subRep.update(
-      { church: { id: church.id }, status: SubscriptionStatus.ACTIVE },
+      { churchId: church.id, status: SubscriptionStatus.ACTIVE },
       { status: SubscriptionStatus.CANCELLED, endDate: new Date() },
     );
 
@@ -275,7 +275,7 @@ export class SubscriptionsService implements OnModuleInit {
   async getCurrentSubscription(churchId: string) {
     const sub = await this.subRep.findOne({
       where: {
-        church: { id: churchId },
+        churchId: churchId,
       },
       order: { createdAt: 'DESC' },
       relations: ['plan'],

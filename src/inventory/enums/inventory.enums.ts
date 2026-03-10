@@ -1,12 +1,12 @@
 export enum InventoryItemCategory {
-  FURNITURE = 'FURNITURE', // Mobiliario
-  SOUND = 'SOUND', // Sonido
-  INSTRUMENTS = 'INSTRUMENTS', // Instrumentos
-  TECHNOLOGY = 'TECHNOLOGY', // Tecnología/IT
-  LIGHTING = 'LIGHTING', // Iluminación
-  KITCHEN = 'KITCHEN', // Cocina
-  STATIONERY = 'STATIONERY', // Papelería
-  DECORATION = 'DECORATION', // Decoración
+  FURNITURE = 'FURNITURE',       // Mobiliario
+  SOUND = 'SOUND',               // Sonido
+  INSTRUMENTS = 'INSTRUMENTS',   // Instrumentos
+  TECHNOLOGY = 'TECHNOLOGY',     // Tecnología/IT
+  LIGHTING = 'LIGHTING',         // Iluminación
+  KITCHEN = 'KITCHEN',           // Cocina
+  STATIONERY = 'STATIONERY',     // Papelería
+  DECORATION = 'DECORATION',     // Decoración
   OTHER = 'OTHER',
 }
 
@@ -15,19 +15,16 @@ export enum InventoryMovementType {
   OUT = 'OUT',
 }
 
-export enum InventoryInReason {
-  PURCHASE = 'PURCHASE', // Compra
-  DONATION = 'DONATION', // Donación
-  TRANSFER = 'TRANSFER', // Traslado (entrada)
-  ADJUSTMENT = 'ADJUSTMENT', // Ajuste (inventario inicial o corrección)
-  RETURN = 'RETURN', // Devolución (prestado y devuelto)
-}
-
-export enum InventoryOutReason {
-  BROKEN = 'BROKEN', // Roto/Dañado
-  LOST = 'LOST', // Perdido/Robado
-  DISCARDED = 'DISCARDED', // Descartado/Obsoleto
-  TRANSFER = 'TRANSFER', // Traslado (salida)
-  ADJUSTMENT = 'ADJUSTMENT', // Ajuste de corrección
-  LOAN = 'LOAN', // Préstamo
+/**
+ * Unified reason enum. Valid for both IN and OUT movements.
+ * IN  → PURCHASE | DONATION | TRANSFER | ADJUSTMENT
+ * OUT → BROKEN | LOST | TRANSFER | ADJUSTMENT
+ */
+export enum InventoryReason {
+  PURCHASE = 'PURCHASE',    // Compra (IN)
+  DONATION = 'DONATION',    // Donación (IN)
+  TRANSFER = 'TRANSFER',    // Traslado (IN/OUT)
+  BROKEN = 'BROKEN',      // Roto/Dañado (OUT)
+  LOST = 'LOST',        // Perdido/Robado (OUT)
+  ADJUSTMENT = 'ADJUSTMENT',  // Ajuste / Inventario inicial (IN/OUT)
 }

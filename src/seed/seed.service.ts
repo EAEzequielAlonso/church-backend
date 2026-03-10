@@ -208,7 +208,7 @@ export class SeedService {
         let adminMember = await this.memberRepository.findOne({
           where: {
             person: { id: adminPerson.id },
-            church: { id: savedChurch.id },
+            churchId: savedChurch.id,
           },
           relations: ['person', 'church'],
         });
@@ -216,7 +216,7 @@ export class SeedService {
         if (!adminMember) {
           adminMember = this.memberRepository.create({
             person: adminPerson,
-            church: savedChurch,
+            churchId: savedChurch.id,
             membershipStatus: MembershipStatus.MEMBER,
             ecclesiasticalRole: EcclesiasticalRole.PASTOR,
             functionalRoles: [
@@ -294,7 +294,7 @@ export class SeedService {
           let member = await this.memberRepository.findOne({
             where: {
               person: { id: person.id },
-              church: { id: savedChurch.id },
+              churchId: savedChurch.id,
             },
             relations: ['person', 'church'],
           });
@@ -311,7 +311,7 @@ export class SeedService {
           } else {
             member = this.memberRepository.create({
               person: person,
-              church: savedChurch,
+              churchId: savedChurch.id,
               membershipStatus:
                 (mData.status as MembershipStatus) || MembershipStatus.MEMBER,
               ecclesiasticalRole: EcclesiasticalRole.NONE,
@@ -333,7 +333,7 @@ export class SeedService {
           if (churchData.treasury.categories) {
             for (const catData of churchData.treasury.categories) {
               let category = await this.categoryRepository.findOne({
-                where: { name: catData.name, church: { id: savedChurch.id } },
+                where: { name: catData.name, churchId: savedChurch.id },
               });
 
               if (!category) {
@@ -341,7 +341,7 @@ export class SeedService {
                   name: catData.name,
                   type: catData.type as TransactionType,
                   color: catData.color,
-                  church: savedChurch,
+                  churchId: savedChurch.id,
                 });
                 category = await queryRunner.manager.save(category);
               }
@@ -358,7 +358,7 @@ export class SeedService {
 
           for (const accData of churchData.treasury.accounts) {
             let account = await this.accountRepository.findOne({
-              where: { name: accData.name, church: { id: savedChurch.id } },
+              where: { name: accData.name, churchId: savedChurch.id },
             });
             if (!account) {
               account = this.accountRepository.create({
@@ -366,7 +366,7 @@ export class SeedService {
                 type: accData.type as AccountType,
                 currency: accData.currency,
                 balance: accData.balance,
-                church: savedChurch,
+                churchId: savedChurch.id,
               });
               account = await queryRunner.manager.save(account);
             }
@@ -405,7 +405,7 @@ export class SeedService {
               where: {
                 description: txData.description,
                 amount: txData.amount,
-                church: { id: savedChurch.id },
+                churchId: savedChurch.id,
                 date: new Date(txData.date), // Check by date too
               },
             });
@@ -422,7 +422,7 @@ export class SeedService {
                 sourceAccount: sourceAcc,
                 destinationAccount: destAcc,
                 category: category,
-                church: savedChurch,
+                churchId: savedChurch.id,
                 status: TransactionStatus.COMPLETED,
                 date: new Date(txData.date), // Fix Date
               });
@@ -450,7 +450,7 @@ export class SeedService {
 
           for (const bookData of churchData.library.books) {
             let savedBook = await this.bookRepository.findOne({
-              where: { title: bookData.title, church: { id: savedChurch.id } },
+              where: { title: bookData.title, churchId: savedChurch.id },
             });
 
             if (!savedBook) {
@@ -463,7 +463,7 @@ export class SeedService {
                 coverUrl: bookData.coverUrl, // Imagen de libro elegante
                 ownershipType: BookOwnershipType.CHURCH,
                 status: BookStatus.AVAILABLE,
-                church: savedChurch,
+                churchId: savedChurch.id,
                 code: `LIB-${faker.number.int({ min: 100, max: 999 })}`,
               });
               savedBook = await queryRunner.manager.save(book);
@@ -511,7 +511,7 @@ export class SeedService {
           this.logger.log(`Creating Groups for ${churchData.name}...`);
           for (const groupData of churchData.smallGroups) {
             let savedGroup = await this.groupRepository.findOne({
-              where: { name: groupData.name, church: { id: savedChurch.id } },
+              where: { name: groupData.name, churchId: savedChurch.id },
             });
 
             if (savedGroup) {
@@ -526,7 +526,7 @@ export class SeedService {
               description: groupData.description || 'Grupo de Crecimiento',
               type: groupData.type || GroupType.SMALL_GROUP,
               visibility: GroupVisibility.PUBLIC,
-              church: savedChurch,
+              churchId: savedChurch.id,
             });
             savedGroup = await queryRunner.manager.save(group);
 
@@ -536,7 +536,7 @@ export class SeedService {
               const groupParticipant = this.groupMemberRepository.create({
                 churchPerson: leaderMember,
                 group: savedGroup,
-                role: GroupRole.LEADER,
+                role: GroupRole.COORDINATOR,
                 joinedAt: new Date(),
               });
               await queryRunner.manager.save(groupParticipant);
@@ -550,7 +550,7 @@ export class SeedService {
                   const groupParticipant = this.groupMemberRepository.create({
                     churchPerson: member,
                     group: savedGroup,
-                    role: GroupRole.MEMBER,
+                    role: GroupRole.PARTICIPANT,
                     joinedAt: new Date(),
                   });
                   await queryRunner.manager.save(groupParticipant);
@@ -567,7 +567,7 @@ export class SeedService {
           for (const familyData of churchData.families) {
             const family = this.familyRepository.create({
               name: familyData.name,
-              church: savedChurch,
+              churchId: savedChurch.id,
             });
             const savedFamily = await queryRunner.manager.save(family);
 
@@ -580,7 +580,7 @@ export class SeedService {
                 {
                   where: {
                     person: { user: { id: headUser.id } },
-                    church: { id: savedChurch.id },
+                    churchId: savedChurch.id,
                   },
                 },
               );
@@ -588,7 +588,7 @@ export class SeedService {
               if (headChurchPerson) {
                 const headMember = this.familyMemberRepository.create({
                   member: headChurchPerson,
-                  family: savedFamily,
+                  familyId: savedFamily.id,
                   role: FamilyRole.FATHER,
                   joinedAt: new Date(),
                 });
@@ -606,7 +606,7 @@ export class SeedService {
                     {
                       where: {
                         person: { user: { id: memberUser.id } },
-                        church: { id: savedChurch.id },
+                        churchId: savedChurch.id,
                       },
                     },
                   );
@@ -614,7 +614,7 @@ export class SeedService {
                   if (memberChurchPerson) {
                     const famMember = this.familyMemberRepository.create({
                       member: memberChurchPerson,
-                      family: savedFamily,
+                      familyId: savedFamily.id,
                       role: FamilyRole.CHILD, // Default to CHILD for now
                       joinedAt: new Date(),
                     });
@@ -631,7 +631,7 @@ export class SeedService {
           this.logger.log(`Creating Ministries for ${churchData.name}...`);
           for (const minData of churchData.ministries) {
             let savedMinistry = await this.ministryRepository.findOne({
-              where: { name: minData.name, church: { id: savedChurch.id } },
+              where: { name: minData.name, churchId: savedChurch.id },
             });
 
             if (!savedMinistry) {
@@ -639,7 +639,7 @@ export class SeedService {
                 name: minData.name,
                 description: `Ministerio de ${minData.name}`,
                 status: 'active',
-                church: savedChurch,
+                churchId: savedChurch.id,
               });
               savedMinistry = await queryRunner.manager.save(ministry);
             }
@@ -653,7 +653,7 @@ export class SeedService {
                   {
                     where: {
                       person: { user: { id: leaderUser.id } },
-                      church: { id: savedChurch.id },
+                      churchId: savedChurch.id,
                     },
                   },
                 );
@@ -662,8 +662,8 @@ export class SeedService {
                   const existingMembership =
                     await this.ministryMemberRepository.findOne({
                       where: {
-                        ministry: { id: savedMinistry.id },
-                        member: { id: leaderMember.id },
+                        ministryId: savedMinistry.id,
+                        memberId: leaderMember.id,
                       },
                     });
 
@@ -687,7 +687,7 @@ export class SeedService {
 
             // Assign 6 Random Members
             const allMembers = await queryRunner.manager.find(ChurchPerson, {
-              where: { church: { id: savedChurch.id } },
+              where: { churchId: savedChurch.id },
               relations: ['person'],
             });
             // Filter out leader if exists
@@ -705,8 +705,8 @@ export class SeedService {
               const existingMembership =
                 await this.ministryMemberRepository.findOne({
                   where: {
-                    ministry: { id: savedMinistry.id },
-                    member: { id: member.id },
+                    ministryId: savedMinistry.id,
+                    memberId: member.id,
                   },
                 });
 
@@ -728,7 +728,7 @@ export class SeedService {
                 const existingRole = await this.serviceDutyRepository.findOne({
                   where: {
                     name: roleData.name,
-                    ministry: { id: savedMinistry.id },
+                    ministryId: savedMinistry.id,
                   },
                 });
 

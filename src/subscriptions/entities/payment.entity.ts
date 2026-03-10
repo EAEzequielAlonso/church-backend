@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   CreateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { Subscription } from './subscription.entity';
 
@@ -12,7 +13,11 @@ export class Payment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column()
+  subscriptionId: string;
+
   @ManyToOne(() => Subscription, (sub) => sub.payments)
+  @JoinColumn({ name: 'subscriptionId' })
   subscription: Subscription;
 
   @Column('decimal', { precision: 10, scale: 2 })

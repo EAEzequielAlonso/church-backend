@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { MinistryMember } from './ministry-member.entity';
@@ -29,11 +30,18 @@ export class Ministry {
   @Column({ default: 'active' })
   status: 'active' | 'inactive';
 
+  @Column({ nullable: true })
+  leaderId: string;
+
   @ManyToOne(() => ChurchPerson, { nullable: true })
+  @JoinColumn({ name: 'leaderId' })
   leader: ChurchPerson; // Main leader reference
 
   @ManyToOne(() => Church, (church) => church.ministries)
+  @JoinColumn({ name: 'churchId' })
   church: Church;
+  @Column()
+  churchId: string;
 
   @OneToMany(() => MinistryMember, (mm) => mm.ministry)
   members: MinistryMember[];

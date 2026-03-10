@@ -6,6 +6,7 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { Plan } from './plan.entity';
@@ -17,10 +18,18 @@ export class Subscription {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Church, { eager: true })
+  @Column()
+  churchId: string;
+
+  @ManyToOne(() => Church)
+  @JoinColumn({ name: 'churchId' })
   church: Church;
 
+  @Column()
+  planId: string;
+
   @ManyToOne(() => Plan, (plan) => plan.subscriptions, { eager: true })
+  @JoinColumn({ name: 'planId' })
   plan: Plan;
 
   @Column({

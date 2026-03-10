@@ -21,15 +21,18 @@ import {
 
 @Entity('treasury_transactions')
 // MANDATORY Indexes for Reporting Performance
-@Index(['church', 'date'])
-@Index(['church', 'type', 'date'])
-@Index(['church', 'category', 'date'])
-@Index(['church', 'sourceAccount', 'date'])
-@Index(['church', 'destinationAccount', 'date'])
-@Index(['church', 'ministry', 'date'])
+@Index(['churchId', 'date'])
+@Index(['churchId', 'type', 'date'])
+@Index(['churchId', 'categoryId', 'date'])
+@Index(['churchId', 'sourceAccountId', 'date'])
+@Index(['churchId', 'destinationAccountId', 'date'])
+@Index(['churchId', 'ministryId', 'date'])
 export class TreasuryTransaction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ nullable: false })
+  churchId: string;
 
   @ManyToOne(() => Church, { nullable: false })
   @JoinColumn({ name: 'churchId' })
@@ -57,20 +60,36 @@ export class TreasuryTransaction {
 
   // --- Relationships ---
 
+  @Column({ nullable: true })
+  sourceAccountId: string;
+
   @ManyToOne(() => Account, (acc) => acc.outgoingTransactions, {
     nullable: true,
   })
+  @JoinColumn({ name: 'sourceAccountId' })
   sourceAccount: Account; // Required for EXPENSE, TRANSFER
+
+  @Column({ nullable: true })
+  destinationAccountId: string;
 
   @ManyToOne(() => Account, (acc) => acc.incomingTransactions, {
     nullable: true,
   })
+  @JoinColumn({ name: 'destinationAccountId' })
   destinationAccount: Account; // Required for INCOME, TRANSFER
 
+  @Column({ nullable: true })
+  categoryId: string;
+
   @ManyToOne(() => TransactionCategory, { nullable: true })
+  @JoinColumn({ name: 'categoryId' })
   category: TransactionCategory; // Required for INCOME, EXPENSE. Null for TRANSFER.
 
+  @Column({ nullable: true })
+  ministryId: string;
+
   @ManyToOne(() => Ministry, { nullable: true })
+  @JoinColumn({ name: 'ministryId' })
   ministry: Ministry; // Optional
 
   // --- Status & Integrity ---
@@ -82,8 +101,13 @@ export class TreasuryTransaction {
   })
   status: TransactionStatus;
 
-  @Column('decimal', { precision: 18, scale: 2, default: 0 })
-  balanceAfter: number; // Integrity Check: Balance of the primary account after this tx
+  // --- Correction Tracking ---
+
+  @Column({ type: 'uuid', nullable: true })
+  correctedTransactionId: string | null; // FK to the original tx being corrected
+
+  @Column({ default: false })
+  isCorrection: boolean; // true if this tx is a reversal or correction entry
 
   @Column({ nullable: true })
   reference: string; // External ref number

@@ -103,6 +103,22 @@ export class GroupsController {
     );
   }
 
+  @Patch(':id/participants/:churchPersonId/role')
+  @ApiOperation({ summary: 'Update a participant role in a group' })
+  updateParticipantRole(
+    @Param('id') id: string,
+    @Param('churchPersonId') churchPersonId: string,
+    @Body() body: { role: any }, // using any for now, ideally GroupRole
+    @CurrentChurch() churchId: string,
+  ) {
+    return this.groupsService.updateParticipantRole(
+      id,
+      churchPersonId,
+      churchId,
+      body.role,
+    );
+  }
+
   @Post(':id/meetings')
   @ApiOperation({ summary: 'Register a new meeting/encounter for a group' })
   createMeeting(

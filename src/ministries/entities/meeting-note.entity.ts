@@ -16,8 +16,11 @@ export class MeetingNote {
   id: string;
 
   @OneToOne(() => CalendarEvent, { onDelete: 'CASCADE' })
-  @JoinColumn()
+  @JoinColumn({ name: 'eventId' })
   event: CalendarEvent;
+
+  @Column()
+  eventId: string;
 
   @Column({ type: 'text', nullable: true })
   summary: string;
@@ -29,7 +32,11 @@ export class MeetingNote {
   nextSteps: string;
 
   @ManyToOne(() => Person)
+  @JoinColumn({ name: 'createdById' })
   createdBy: Person;
+
+  @Column()
+  createdById: string;
 
   @CreateDateColumn()
   createdAt: Date;

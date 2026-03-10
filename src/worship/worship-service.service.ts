@@ -21,13 +21,13 @@ export class WorshipServiceService {
     private templateSectionRepo: Repository<ServiceTemplateSection>,
     @InjectRepository(MinistryRoleAssignment)
     private assignmentRepo: Repository<MinistryRoleAssignment>,
-  ) {}
+  ) { }
 
   // --- TEMPLATES ---
 
   async findAllTemplates(churchId: string) {
     return this.templateRepo.find({
-      where: { church: { id: churchId } },
+      where: { churchId: churchId },
       relations: ['sections', 'sections.requiredRoles'],
     });
   }
@@ -36,7 +36,7 @@ export class WorshipServiceService {
     // Simple create logic, handling sections creation if passed or separate endpoint
     const template = this.templateRepo.create({
       ...data,
-      church: { id: churchId },
+      churchId: churchId,
     });
     return this.templateRepo.save(template);
   }
@@ -67,7 +67,7 @@ export class WorshipServiceService {
       defaultDuration: data.type === 'GLOBAL' ? 0 : data.defaultDuration || 15,
       order: data.order || 0,
       type: data.type,
-      ministry: data.ministryId ? { id: data.ministryId } : undefined,
+      ministryId: data.ministryId || undefined,
     });
 
     if (data.requiredRoleIds && Array.isArray(data.requiredRoleIds)) {
@@ -86,7 +86,7 @@ export class WorshipServiceService {
 
   async deleteTemplateSection(templateId: string, sectionId: string) {
     const section = await this.templateSectionRepo.findOne({
-      where: { id: sectionId, template: { id: templateId } },
+      where: { id: sectionId, templateId: templateId },
     });
     if (!section) throw new NotFoundException('Sección no encontrada');
 
@@ -106,7 +106,7 @@ export class WorshipServiceService {
 
   async findAllServices(churchId: string) {
     return this.serviceRepo.find({
-      where: { church: { id: churchId } },
+      where: { churchId: churchId },
       order: { date: 'DESC' },
     });
   }
@@ -114,7 +114,7 @@ export class WorshipServiceService {
   async findUpcomingServices(churchId: string) {
     return this.serviceRepo.find({
       where: {
-        church: { id: churchId },
+        churchId: churchId,
         status: ServiceStatus.CONFIRMED,
         date: MoreThan(new Date()),
       },
@@ -290,7 +290,7 @@ export class WorshipServiceService {
 
     const service = this.serviceRepo.create({
       date: new Date(date),
-      church: { id: churchId },
+      churchId: churchId,
       status: ServiceStatus.DRAFT,
       template,
       topic: template.name,

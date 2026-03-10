@@ -4,6 +4,8 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  JoinColumn,
+  Index,
 } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { TreasuryTransaction } from './treasury-transaction.entity';
@@ -26,7 +28,12 @@ export class Account {
   @Column('decimal', { precision: 15, scale: 2, default: 0 })
   balance: number;
 
+  @Column()
+  @Index()
+  churchId: string;
+
   @ManyToOne(() => Church, (church) => church.accounts)
+  @JoinColumn({ name: 'churchId' })
   church: Church;
 
   @OneToMany(() => TreasuryTransaction, (tx) => tx.sourceAccount)

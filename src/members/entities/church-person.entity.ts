@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
   Index,
   Unique,
+  JoinColumn,
 } from 'typeorm';
 import { Person } from '../../users/entities/person.entity';
 import { Church } from '../../churches/entities/church.entity';
@@ -30,9 +31,11 @@ export class ChurchPerson {
   personId: string;
 
   @ManyToOne(() => Church, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'churchId' })
   church: Church;
 
   @ManyToOne(() => Person, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'personId' })
   person: Person;
 
   @OneToMany(() => MinistryMember, (mm) => mm.member)

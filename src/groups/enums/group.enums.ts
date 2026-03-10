@@ -12,6 +12,7 @@ export enum GroupVisibility {
 }
 
 export enum GroupRole {
-  LEADER = 'LEADER',
-  MEMBER = 'MEMBER',
+  COORDINATOR = 'COORDINATOR',
+  TEACHER = 'TEACHER',
+  PARTICIPANT = 'PARTICIPANT',
 }

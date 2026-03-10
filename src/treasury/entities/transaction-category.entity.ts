@@ -12,11 +12,14 @@ import { Church } from '../../churches/entities/church.entity';
 import { TransactionType } from '../enums/treasury.enums';
 
 @Entity('transaction_categories')
-@Index(['church', 'type']) // Common query: Categories by type
-@Unique(['church', 'type', 'name']) // PREVENT DUPLICATES
+@Index(['churchId', 'type']) // Common query: Categories by type
+@Unique(['churchId', 'type', 'name']) // PREVENT DUPLICATES
 export class TransactionCategory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column()
+  churchId: string;
 
   @ManyToOne(() => Church, { nullable: false })
   @JoinColumn({ name: 'churchId' })

@@ -6,6 +6,8 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
+  JoinColumn,
 } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { Ministry } from '../../ministries/entities/ministry.entity';
@@ -17,6 +19,16 @@ export class InventoryItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // ─── Multi-tenant ──────────────────────────────────────────────────────────
+  @Column()
+  @Index()
+  churchId: string;
+
+  @ManyToOne(() => Church, { nullable: false })
+  @JoinColumn({ name: 'churchId' })
+  church: Church;
+
+  // ─── Item data ─────────────────────────────────────────────────────────────
   @Column()
   name: string;
 
@@ -33,20 +45,27 @@ export class InventoryItem {
   @Column({ type: 'text', nullable: true })
   imageUrl: string;
 
-  // Stock actual (se actualiza con hooks o servicio)
+  /** Current stock — updated transactionally on every movement */
   @Column({ type: 'int', default: 0 })
   quantity: number;
 
   @Column({ type: 'text', nullable: true })
-  location: string; // Ubicación física (Ej: "Armario Salón Principal")
+  location: string;
 
-  @ManyToOne(() => Church, { nullable: false })
-  church: Church;
+  /** Soft-delete: 'inactive' keeps history but hides from active listings */
+  @Column({ type: 'varchar', default: 'active' })
+  status: 'active' | 'inactive';
+
+  // ─── Ministry (optional) ───────────────────────────────────────────────────
+  @Column({ nullable: true })
+  ministryId: string;
 
   @ManyToOne(() => Ministry, { nullable: true })
+  @JoinColumn({ name: 'ministryId' })
   ministry: Ministry;
 
-  @OneToMany(() => InventoryMovement, (movement) => movement.item)
+  // ─── Movements ─────────────────────────────────────────────────────────────
+  @OneToMany(() => InventoryMovement, (m) => m.item)
   movements: InventoryMovement[];
 
   @CreateDateColumn()

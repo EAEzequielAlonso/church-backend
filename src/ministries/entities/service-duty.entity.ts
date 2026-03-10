@@ -6,6 +6,7 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { Ministry } from './ministry.entity';
 import { MinistryRoleAssignment } from './ministry-role-assignment.entity';
@@ -30,7 +31,10 @@ export class ServiceDuty {
   @ManyToOne(() => Ministry, (ministry) => ministry.serviceDuties, {
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'ministryId' })
   ministry: Ministry;
+  @Column()
+  ministryId: string;
 
   @OneToMany(() => MinistryRoleAssignment, (assignment) => assignment.role)
   assignments: MinistryRoleAssignment[];

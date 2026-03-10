@@ -15,29 +15,41 @@ import { Ministry } from '../../ministries/entities/ministry.entity';
 import { TransactionCategory } from '../../treasury/entities/transaction-category.entity';
 
 @Entity('budget_allocations')
-@Index(['church', 'budgetPeriod'])
-@Index(['church', 'ministry'])
-@Index(['church', 'category'])
-@Index(['church', 'budgetPeriod', 'ministry'])
-@Index(['church', 'budgetPeriod', 'category'])
-@Index(['church', 'budgetPeriod', 'ministry', 'category'], { unique: true }) // Prevent duplicate allocations
+@Index(['churchId', 'budgetPeriodId'])
+@Index(['churchId', 'ministryId'])
+@Index(['churchId', 'categoryId'])
+@Index(['churchId', 'budgetPeriodId', 'ministryId'])
+@Index(['churchId', 'budgetPeriodId', 'categoryId'])
+@Index(['churchId', 'budgetPeriodId', 'ministryId', 'categoryId'], { unique: true }) // Prevent duplicate allocations
 @Check(`"amountBaseCurrency" > 0`)
 @Check(`("ministryId" IS NOT NULL OR "categoryId" IS NOT NULL)`) // At least one must be present
 export class BudgetAllocation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ nullable: false })
+  churchId: string;
+
   @ManyToOne(() => Church, { nullable: false })
   @JoinColumn({ name: 'churchId' })
   church: Church;
+
+  @Column({ nullable: false })
+  budgetPeriodId: string;
 
   @ManyToOne(() => BudgetPeriod, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'budgetPeriodId' })
   budgetPeriod: BudgetPeriod;
 
+  @Column({ nullable: true })
+  ministryId: string;
+
   @ManyToOne(() => Ministry, { nullable: true })
   @JoinColumn({ name: 'ministryId' })
   ministry: Ministry;
+
+  @Column({ nullable: true })
+  categoryId: string;
 
   @ManyToOne(() => TransactionCategory, { nullable: true })
   @JoinColumn({ name: 'categoryId' })

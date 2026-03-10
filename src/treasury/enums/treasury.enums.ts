@@ -24,3 +24,24 @@ export enum TransactionStatus {
   PENDING_APPROVAL = 'pending_approval',
   REJECTED = 'rejected',
 }
+
+export enum AuditEntityType {
+  TRANSACTION = 'TRANSACTION',
+  ACCOUNT = 'ACCOUNT',
+  PERIOD = 'PERIOD',
+  BUDGET = 'BUDGET',
+}
+
+export enum AuditAction {
+  CREATE = 'CREATE',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+  CORRECT = 'CORRECT',
+  CLOSE_PERIOD = 'CLOSE_PERIOD',
+  REOPEN_PERIOD = 'REOPEN_PERIOD',
+}
+
+export enum BudgetLineType {
+  INCOME = 'INCOME',
+  EXPENSE = 'EXPENSE',
+}

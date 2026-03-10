@@ -18,13 +18,16 @@ export enum BudgetPeriodType {
 }
 
 @Entity('budget_periods')
-@Index(['church', 'startDate'])
-@Index(['church', 'type'])
-@Index(['church', 'startDate', 'endDate'])
+@Index(['churchId', 'startDate'])
+@Index(['churchId', 'type'])
+@Index(['churchId', 'startDate', 'endDate'])
 @Check(`"startDate" <= "endDate"`)
 export class BudgetPeriod {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ nullable: false })
+  churchId: string;
 
   @ManyToOne(() => Church, { nullable: false })
   @JoinColumn({ name: 'churchId' })

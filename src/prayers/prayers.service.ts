@@ -21,7 +21,7 @@ export class PrayersService {
     private updateRepo: Repository<PrayerUpdate>,
     @InjectRepository(ChurchPerson)
     private memberRepo: Repository<ChurchPerson>,
-  ) {}
+  ) { }
 
   async create(
     churchId: string,
@@ -34,7 +34,7 @@ export class PrayersService {
     if (!member) throw new NotFoundException('Member not found');
 
     const request = this.requestRepo.create({
-      church: { id: churchId },
+      churchId: churchId,
       member,
       motive,
       visibility,

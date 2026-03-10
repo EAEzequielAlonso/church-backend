@@ -8,46 +8,101 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
 } from '@nestjs/common';
-import { TreasuryService } from './treasury.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { CurrentChurch, CurrentUser } from '../common/decorators';
-import { User } from '../users/entities/user.entity';
-import { FunctionalRole } from '../common/enums'; // STRICT RBAC
+import { FunctionalRole } from '../common/enums';
 
+import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
+import { CreateAccountDto, UpdateAccountDto } from './dto/account.dto';
+import { CreateBudgetDto } from './dto/budget.dto';
 import { ReportsService } from './reports.service';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { Res } from '@nestjs/common';
 
-// Use Cases
+// Use Cases — Transactions
 import { CreateTransactionUseCase } from './use-cases/create-transaction.use-case';
 import { UpdateTransactionUseCase } from './use-cases/update-transaction.use-case';
 import { DeleteTransactionUseCase } from './use-cases/delete-transaction.use-case';
+import { CorrectTransactionUseCase } from './use-cases/correct-transaction.use-case';
 import {
   GetTransactionsUseCase,
   GetTransactionsFilterDto,
 } from './use-cases/get-transactions.use-case';
 import { GetAuditLogsUseCase } from './use-cases/get-audit-logs.use-case';
-import { GetAccountBalancesUseCase } from './use-cases/get-account-balances.use-case';
+
+// Use Cases — Accounts
+import { CreateAccountUseCase } from './use-cases/create-account.use-case';
+import { GetAccountsUseCase } from './use-cases/get-accounts.use-case';
+import { UpdateAccountUseCase } from './use-cases/update-account.use-case';
+import { DeleteAccountUseCase } from './use-cases/delete-account.use-case';
+
+// Use Cases — Categories
+import { CreateCategoryUseCase } from './use-cases/create-category.use-case';
+import { GetCategoriesUseCase } from './use-cases/get-categories.use-case';
+import { UpdateCategoryUseCase } from './use-cases/update-category.use-case';
+import { DeleteCategoryUseCase } from './use-cases/delete-category.use-case';
+
+// Use Cases — Budgets
+import { CreateBudgetUseCase } from './use-cases/create-budget.use-case';
+import { GetBudgetsUseCase } from './use-cases/get-budgets.use-case';
+import { DeleteBudgetUseCase } from './use-cases/delete-budget.use-case';
+import { GetBudgetExecutionUseCase } from './use-cases/get-budget-execution.use-case';
+
+// Use Cases — Periods
+import { ClosePeriodUseCase } from './use-cases/close-period.use-case';
+import { ReopenPeriodUseCase } from './use-cases/reopen-period.use-case';
+
+// Entities for querying periods
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ClosedPeriod } from './entities/closed-period.entity';
+import { AuditEntityType, AuditAction } from './enums/treasury.enums';
 
 @Controller('treasury')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class TreasuryController {
   constructor(
-    private readonly treasuryService: TreasuryService,
     private readonly reportsService: ReportsService,
 
-    // Injected Use Cases
+    // Transactions
     private readonly createTransactionUseCase: CreateTransactionUseCase,
     private readonly updateTransactionUseCase: UpdateTransactionUseCase,
     private readonly deleteTransactionUseCase: DeleteTransactionUseCase,
+    private readonly correctTransactionUseCase: CorrectTransactionUseCase,
     private readonly getTransactionsUseCase: GetTransactionsUseCase,
     private readonly getAuditLogsUseCase: GetAuditLogsUseCase,
-    private readonly getAccountBalancesUseCase: GetAccountBalancesUseCase,
-  ) {}
 
-  // --- TRANSACTION ENDPOINTS (Refactored) ---
+    // Accounts
+    private readonly createAccountUseCase: CreateAccountUseCase,
+    private readonly getAccountsUseCase: GetAccountsUseCase,
+    private readonly updateAccountUseCase: UpdateAccountUseCase,
+    private readonly deleteAccountUseCase: DeleteAccountUseCase,
+
+    // Categories
+    private readonly createCategoryUseCase: CreateCategoryUseCase,
+    private readonly getCategoriesUseCase: GetCategoriesUseCase,
+    private readonly updateCategoryUseCase: UpdateCategoryUseCase,
+    private readonly deleteCategoryUseCase: DeleteCategoryUseCase,
+
+    // Budgets
+    private readonly createBudgetUseCase: CreateBudgetUseCase,
+    private readonly getBudgetsUseCase: GetBudgetsUseCase,
+    private readonly deleteBudgetUseCase: DeleteBudgetUseCase,
+    private readonly getBudgetExecutionUseCase: GetBudgetExecutionUseCase,
+
+    // Periods
+    private readonly closePeriodUseCase: ClosePeriodUseCase,
+    private readonly reopenPeriodUseCase: ReopenPeriodUseCase,
+    @InjectRepository(ClosedPeriod)
+    private readonly closedPeriodRepo: Repository<ClosedPeriod>,
+  ) { }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TRANSACTIONS
+  // ═══════════════════════════════════════════════════════════════════════════
 
   @Post('transactions')
   @Roles(FunctionalRole.TREASURER)
@@ -55,11 +110,15 @@ export class TreasuryController {
     @Body() data: any,
     @CurrentChurch() churchId: string,
     @CurrentUser() user: any,
+    @Req() req: Request,
   ) {
     return this.createTransactionUseCase.execute({
       ...data,
       churchId,
       userId: user.userId,
+      userRole: user.functionalRole,
+      userEmail: user.email,
+      ipAddress: req.ip || req.socket?.remoteAddress || null,
     });
   }
 
@@ -68,7 +127,7 @@ export class TreasuryController {
     FunctionalRole.TREASURER,
     FunctionalRole.ADMIN_CHURCH,
     FunctionalRole.AUDITOR,
-  ) // READ: Broader Access
+  )
   getTransactions(
     @CurrentChurch() churchId: string,
     @Query('startDate') startDate?: string,
@@ -94,10 +153,6 @@ export class TreasuryController {
       offset,
       withDeleted: deleted === 'true',
     };
-    console.log('GET /transactions filters:', filters, 'Original params:', {
-      startDate,
-      endDate,
-    });
     return this.getTransactionsUseCase.execute(churchId, filters);
   }
 
@@ -108,23 +163,50 @@ export class TreasuryController {
     @Body() data: any,
     @CurrentChurch() churchId: string,
     @CurrentUser() user: any,
+    @Req() req: Request,
   ) {
     return this.updateTransactionUseCase.execute({
       id,
       churchId,
       userId: user.userId,
+      userRole: user.functionalRole,
+      userEmail: user.email,
+      ipAddress: req.ip || req.socket?.remoteAddress || null,
       ...data,
     });
   }
 
-  @Get('transactions/:id/audit')
+  @Get('audit')
   @Roles(
     FunctionalRole.TREASURER,
     FunctionalRole.ADMIN_CHURCH,
     FunctionalRole.AUDITOR,
   )
-  getAuditLogs(@Param('id') id: string) {
-    return this.getAuditLogsUseCase.execute(id);
+  getAuditLogs(
+    @CurrentChurch() churchId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('entityType') entityType?: string,
+    @Query('action') action?: string,
+    @Query('userId') userId?: string,
+    @Query('entityId') entityId?: string,
+    @Query('limit') limit?: number,
+    @Query('page') page?: number,
+  ) {
+    const validatedLimit = limit ? Number(limit) : 20;
+    const validatedPage = page ? Number(page) : 1;
+    const offset = (validatedPage - 1) * validatedLimit;
+
+    return this.getAuditLogsUseCase.execute(churchId, {
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      entityType: entityType as AuditEntityType,
+      action: action as AuditAction,
+      userId,
+      entityId,
+      limit: validatedLimit,
+      offset,
+    });
   }
 
   @Delete('transactions/:id')
@@ -133,16 +215,41 @@ export class TreasuryController {
     @Param('id') id: string,
     @CurrentChurch() churchId: string,
     @CurrentUser() user: any,
+    @Req() req: Request,
   ) {
-    console.log('[DEBUG-TreasuryController] User object structure:', user);
     return this.deleteTransactionUseCase.execute(
       id,
       churchId,
       user.userId || user.id,
-    ); // Try both to be safe while debugging
+      user.functionalRole,
+      user.email,
+      req.ip || req.socket?.remoteAddress || null,
+    );
   }
 
-  // --- REPORTS ---
+  @Post('transactions/:id/correct')
+  @Roles(FunctionalRole.TREASURER)
+  correctTransaction(
+    @Param('id') id: string,
+    @Body() data: { reason: string; newAmount?: number; newSourceAccountId?: string; newDestinationAccountId?: string; newCategoryId?: string; newDescription?: string },
+    @CurrentChurch() churchId: string,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    return this.correctTransactionUseCase.execute({
+      transactionId: id,
+      churchId,
+      userId: user.userId || user.id,
+      userRole: user.functionalRole,
+      userEmail: user.email,
+      ipAddress: req.ip || req.socket?.remoteAddress || null,
+      ...data,
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // REPORTS
+  // ═══════════════════════════════════════════════════════════════════════════
 
   @Get('reports/ppt')
   @Roles(
@@ -152,8 +259,8 @@ export class TreasuryController {
   )
   async getPPTReport(@CurrentChurch() churchId: string, @Res() res: Response) {
     const { data: transactions } =
-      await this.getTransactionsUseCase.execute(churchId); // Use UseCase
-    const accounts = await this.treasuryService.findAllAccounts(churchId);
+      await this.getTransactionsUseCase.execute(churchId);
+    const accounts = await this.getAccountsUseCase.execute(churchId);
 
     const buffer = await this.reportsService.generateMonthlyReport(
       'Iglesia',
@@ -165,30 +272,31 @@ export class TreasuryController {
       'Content-Type':
         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       'Content-Disposition': 'attachment; filename=reporte-mensual.pptx',
-      'Content-Length': buffer.length.toString(), // toString() often safer
+      'Content-Length': buffer.length.toString(),
     });
 
     res.end(buffer);
   }
 
-  // --- ACCOUNTS (Legacy Delegate) ---
-  // Note: Accounts management typically Treasurer only
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ACCOUNTS
+  // ═══════════════════════════════════════════════════════════════════════════
+
   @Post('accounts')
   @Roles(FunctionalRole.TREASURER)
-  createAccount(@Body() data: any, @CurrentChurch() churchId: string) {
-    return this.treasuryService.createAccount(data, churchId);
-  }
-
-  @Patch('accounts/:id')
-  @Roles(FunctionalRole.TREASURER)
-  updateAccount(@Param('id') id: string, @Body() data: any) {
-    return this.treasuryService.updateAccount(id, data);
-  }
-
-  @Delete('accounts/:id')
-  @Roles(FunctionalRole.TREASURER)
-  deleteAccount(@Param('id') id: string) {
-    return this.treasuryService.deleteAccount(id);
+  createAccount(
+    @Body() dto: CreateAccountDto,
+    @CurrentChurch() churchId: string,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    return this.createAccountUseCase.execute(
+      dto, churchId,
+      user.userId || user.id,
+      user.functionalRole,
+      user.email,
+      req.ip || req.socket?.remoteAddress || null,
+    );
   }
 
   @Get('accounts')
@@ -198,14 +306,64 @@ export class TreasuryController {
     FunctionalRole.AUDITOR,
   )
   getAccounts(@CurrentChurch() churchId: string) {
-    return this.getAccountBalancesUseCase.execute(churchId);
+    return this.getAccountsUseCase.execute(churchId);
   }
 
-  // --- BUDGETS (Legacy Delegate) ---
+  @Patch('accounts/:id')
+  @Roles(FunctionalRole.TREASURER)
+  updateAccount(
+    @Param('id') id: string,
+    @Body() dto: UpdateAccountDto,
+    @CurrentChurch() churchId: string,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    return this.updateAccountUseCase.execute(
+      id, churchId, dto,
+      user.userId || user.id,
+      user.functionalRole,
+      user.email,
+      req.ip || req.socket?.remoteAddress || null,
+    );
+  }
+
+  @Delete('accounts/:id')
+  @Roles(FunctionalRole.TREASURER)
+  deleteAccount(
+    @Param('id') id: string,
+    @CurrentChurch() churchId: string,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    return this.deleteAccountUseCase.execute(
+      id, churchId,
+      user.userId || user.id,
+      user.functionalRole,
+      user.email,
+      req.ip || req.socket?.remoteAddress || null,
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BUDGETS
+  // ═══════════════════════════════════════════════════════════════════════════
+
   @Post('budgets')
   @Roles(FunctionalRole.TREASURER)
-  createBudget(@Body() data: any, @CurrentChurch() churchId: string) {
-    return this.treasuryService.createBudget(data, churchId);
+  createBudget(
+    @Body() dto: CreateBudgetDto,
+    @CurrentChurch() churchId: string,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    return this.createBudgetUseCase.execute(
+      dto,
+      churchId,
+      user.userId || user.id,
+      user.functionalRole,
+      user.email,
+      req.ip || req.socket?.remoteAddress || null,
+    );
   }
 
   @Get('budgets')
@@ -214,21 +372,57 @@ export class TreasuryController {
     FunctionalRole.ADMIN_CHURCH,
     FunctionalRole.AUDITOR,
   )
-  getBudgets(@CurrentChurch() churchId: string, @Query('year') year?: number) {
-    return this.treasuryService.getBudgets(churchId, year);
+  getBudgets(
+    @CurrentChurch() churchId: string,
+    @Query('year') year?: number,
+    @Query('month') month?: number,
+  ) {
+    return this.getBudgetsUseCase.execute(churchId, year, month);
+  }
+
+  @Get('budgets/execution')
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.ADMIN_CHURCH,
+    FunctionalRole.AUDITOR,
+  )
+  getBudgetExecution(
+    @CurrentChurch() churchId: string,
+    @Query('year') year: number,
+    @Query('month') month: number,
+  ) {
+    return this.getBudgetExecutionUseCase.execute(churchId, Number(year), Number(month));
   }
 
   @Delete('budgets/:id')
   @Roles(FunctionalRole.TREASURER)
-  deleteBudget(@Param('id') id: string) {
-    return this.treasuryService.deleteBudget(id);
+  deleteBudget(
+    @Param('id') id: string,
+    @CurrentChurch() churchId: string,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    return this.deleteBudgetUseCase.execute(
+      id,
+      churchId,
+      user.userId || user.id,
+      user.functionalRole,
+      user.email,
+      req.ip || req.socket?.remoteAddress || null,
+    );
   }
-  // --- CATEGORIES (New Endpoints) ---
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CATEGORIES
+  // ═══════════════════════════════════════════════════════════════════════════
 
   @Post('categories')
   @Roles(FunctionalRole.TREASURER)
-  createCategory(@Body() data: any, @CurrentChurch() churchId: string) {
-    return this.treasuryService.createCategory(data, churchId);
+  createCategory(
+    @Body() dto: CreateCategoryDto,
+    @CurrentChurch() churchId: string,
+  ) {
+    return this.createCategoryUseCase.execute(dto, churchId);
   }
 
   @Get('categories')
@@ -241,18 +435,80 @@ export class TreasuryController {
     @CurrentChurch() churchId: string,
     @Query('type') type?: string,
   ) {
-    return this.treasuryService.findAllCategories(churchId, type);
+    return this.getCategoriesUseCase.execute(churchId, type);
   }
 
   @Patch('categories/:id')
   @Roles(FunctionalRole.TREASURER)
-  updateCategory(@Param('id') id: string, @Body() data: any) {
-    return this.treasuryService.updateCategory(id, data);
+  updateCategory(
+    @Param('id') id: string,
+    @Body() dto: UpdateCategoryDto,
+    @CurrentChurch() churchId: string,
+  ) {
+    return this.updateCategoryUseCase.execute(id, churchId, dto);
   }
 
   @Delete('categories/:id')
   @Roles(FunctionalRole.TREASURER)
-  deleteCategory(@Param('id') id: string) {
-    return this.treasuryService.deleteCategory(id);
+  deleteCategory(
+    @Param('id') id: string,
+    @CurrentChurch() churchId: string,
+  ) {
+    return this.deleteCategoryUseCase.execute(id, churchId);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PERIODS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Post('periods/close')
+  @Roles(FunctionalRole.TREASURER)
+  closePeriod(
+    @Body() data: { year: number; month: number },
+    @CurrentChurch() churchId: string,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    return this.closePeriodUseCase.execute({
+      churchId,
+      userId: user.userId || user.id,
+      userRole: user.functionalRole,
+      userEmail: user.email,
+      ipAddress: req.ip || req.socket?.remoteAddress || null,
+      year: data.year,
+      month: data.month,
+    });
+  }
+
+  @Post('periods/:year/:month/reopen')
+  @Roles(FunctionalRole.ADMIN_CHURCH)
+  reopenPeriod(
+    @Param('year') year: string,
+    @Param('month') month: string,
+    @Body() data: { reason: string },
+    @CurrentChurch() churchId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.reopenPeriodUseCase.execute({
+      churchId,
+      userId: user.userId || user.id,
+      year: parseInt(year, 10),
+      month: parseInt(month, 10),
+      reason: data.reason,
+    });
+  }
+
+  @Get('periods')
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.ADMIN_CHURCH,
+    FunctionalRole.AUDITOR,
+  )
+  getPeriods(@CurrentChurch() churchId: string) {
+    return this.closedPeriodRepo.find({
+      where: { churchId },
+      relations: ['accountSnapshots'],
+      order: { year: 'DESC', month: 'DESC' },
+    });
   }
 }

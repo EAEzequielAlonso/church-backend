@@ -6,6 +6,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  JoinColumn,
+  Index,
 } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { ChurchPerson } from '../../members/entities/church-person.entity';
@@ -16,14 +18,23 @@ import {
 import { PrayerUpdate } from './prayer-update.entity';
 
 @Entity('prayer_requests')
+@Index(['churchId', 'status'])
 export class PrayerRequest {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column()
+  churchId: string;
+
   @ManyToOne(() => Church, { nullable: false })
+  @JoinColumn({ name: 'churchId' })
   church: Church;
 
+  @Column()
+  memberId: string;
+
   @ManyToOne(() => ChurchPerson, { nullable: false })
+  @JoinColumn({ name: 'memberId' })
   member: ChurchPerson; // The person asking for prayer
 
   @Column('text')

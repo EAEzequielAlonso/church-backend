@@ -1,41 +1,70 @@
-import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
-import { ReportsService } from './reports.service';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { CurrentChurch } from '../common/decorators';
+import { FunctionalRole } from '../common/enums';
 import { TransactionType } from './enums/treasury.enums';
+
+import { GetSummaryUseCase } from './use-cases/get-summary.use-case';
+import { GetCashflowUseCase } from './use-cases/get-cashflow.use-case';
+import { GetCategoryBreakdownUseCase } from './use-cases/get-category-breakdown.use-case';
+import { GetMinistryBreakdownUseCase } from './use-cases/get-ministry-breakdown.use-case';
+import { GetAccountBalancesUseCase } from './use-cases/get-account-balances.use-case';
+import { GetTrendAnalysisUseCase } from './use-cases/get-trend-analysis.use-case';
 
 @Controller('treasury/reports')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ReportsController {
-  constructor(private readonly reportsService: ReportsService) {}
+  constructor(
+    private readonly getSummaryUseCase: GetSummaryUseCase,
+    private readonly getCashflowUseCase: GetCashflowUseCase,
+    private readonly getCategoryBreakdownUseCase: GetCategoryBreakdownUseCase,
+    private readonly getMinistryBreakdownUseCase: GetMinistryBreakdownUseCase,
+    private readonly getAccountBalancesUseCase: GetAccountBalancesUseCase,
+    private readonly getTrendAnalysisUseCase: GetTrendAnalysisUseCase,
+  ) { }
 
   @Get('summary')
-  async getSummary(
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.ADMIN_CHURCH,
+    FunctionalRole.AUDITOR,
+  )
+  getSummary(
     @CurrentChurch() churchId: string,
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.reportsService.getSummary(churchId, startDate, endDate);
+    return this.getSummaryUseCase.execute(churchId, startDate, endDate);
   }
 
   @Get('cashflow')
-  async getCashflow(
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.ADMIN_CHURCH,
+    FunctionalRole.AUDITOR,
+  )
+  getCashflow(
     @CurrentChurch() churchId: string,
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.reportsService.getCashflow(churchId, startDate, endDate);
+    return this.getCashflowUseCase.execute(churchId, startDate, endDate);
   }
 
   @Get('category-breakdown')
-  async getCategoryBreakdown(
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.ADMIN_CHURCH,
+    FunctionalRole.AUDITOR,
+  )
+  getCategoryBreakdown(
     @CurrentChurch() churchId: string,
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
     @Query('type') type: TransactionType,
   ) {
-    return this.reportsService.getCategoryBreakdown(
+    return this.getCategoryBreakdownUseCase.execute(
       churchId,
       startDate,
       endDate,
@@ -44,28 +73,39 @@ export class ReportsController {
   }
 
   @Get('ministry-breakdown')
-  async getMinistryBreakdown(
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.ADMIN_CHURCH,
+    FunctionalRole.AUDITOR,
+  )
+  getMinistryBreakdown(
     @CurrentChurch() churchId: string,
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.reportsService.getMinistryBreakdown(
-      churchId,
-      startDate,
-      endDate,
-    );
+    return this.getMinistryBreakdownUseCase.execute(churchId, startDate, endDate);
   }
 
   @Get('account-balances')
-  async getAccountBalances(@CurrentChurch() churchId: string) {
-    return this.reportsService.getAccountBalances(churchId);
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.ADMIN_CHURCH,
+    FunctionalRole.AUDITOR,
+  )
+  getAccountBalances(@CurrentChurch() churchId: string) {
+    return this.getAccountBalancesUseCase.execute(churchId);
   }
 
   @Get('trends')
-  async getTrends(
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.ADMIN_CHURCH,
+    FunctionalRole.AUDITOR,
+  )
+  getTrends(
     @CurrentChurch() churchId: string,
     @Query('months') months: number,
   ) {
-    return this.reportsService.getTrendAnalysis(churchId, months || 12);
+    return this.getTrendAnalysisUseCase.execute(churchId, months || 12);
   }
 }

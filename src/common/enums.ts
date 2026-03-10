@@ -16,14 +16,6 @@ export enum SubscriptionStatus {
   CANCELLED = 'CANCELLED',
 }
 
-// Deprecated: Use EcclesiasticalRole instead
-// export enum ChurchRole {
-//     ADMIN = 'ADMIN',
-//     PASTOR = 'PASTOR',
-//     LEADER = 'LEADER',
-//     MEMBER = 'MEMBER',
-// }
-
 export enum EcclesiasticalRole {
   PASTOR = 'PASTOR',
   BISHOP = 'BISHOP',

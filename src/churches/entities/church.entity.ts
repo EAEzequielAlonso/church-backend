@@ -7,6 +7,8 @@ import { Group } from '../../groups/entities/group.entity';
 import { Family } from '../../families/entities/family.entity';
 import { Account } from '../../treasury/entities/account.entity';
 import { Subscription } from '../../subscriptions/entities/subscription.entity';
+import { Currency } from '../../treasury/enums/treasury.enums';
+
 @Entity('churches')
 export class Church {
   @PrimaryGeneratedColumn('uuid')
@@ -14,6 +16,9 @@ export class Church {
 
   @Column()
   name: string;
+
+  @Column({ type: 'enum', enum: Currency, default: Currency.ARS })
+  baseCurrency: Currency;
 
   @Column({ unique: true, nullable: true })
   slug: string;

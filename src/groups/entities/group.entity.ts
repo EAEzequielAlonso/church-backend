@@ -7,6 +7,7 @@ import {
   ManyToOne,
   OneToMany,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { GroupType, GroupVisibility } from '../enums/group.enums';
@@ -56,6 +57,7 @@ export class Group {
   visibility: GroupVisibility;
 
   @ManyToOne(() => Church, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'churchId' })
   church: Church;
 
   @Column({ nullable: false })

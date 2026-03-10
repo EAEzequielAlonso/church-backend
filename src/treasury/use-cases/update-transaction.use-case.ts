@@ -1,22 +1,32 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { TreasuryPolicy } from '../policies/treasury.policy';
 import { TreasuryTransaction } from '../entities/treasury-transaction.entity';
-import { TransactionStatus } from '../enums/treasury.enums';
-import { Account } from '../entities/account.entity';
-import { AccountType } from '../../common/enums';
+import { TransactionStatus, AuditEntityType, AuditAction } from '../enums/treasury.enums';
 import { TreasuryAuditLog } from '../entities/treasury-audit-log.entity';
+import { snapshotTransaction } from '../helpers/audit-snapshot.helper';
 
 interface UpdateTransactionDto {
   id: string;
   churchId: string;
   userId: string;
+  userRole?: string;
+  userEmail?: string;
+  ipAddress?: string;
+  // Only non-financial fields allowed for COMPLETED
   description?: string;
+  ministryId?: string;
+  reason?: string;
+  // Financial fields — only allowed for PENDING_APPROVAL
   amount?: number;
   sourceAccountId?: string;
   destinationAccountId?: string;
-  ministryId?: string;
-  reason?: string;
+  categoryId?: string;
+  date?: string;
 }
 
 @Injectable()
@@ -24,127 +34,95 @@ export class UpdateTransactionUseCase {
   constructor(
     private readonly dataSource: DataSource,
     private readonly policy: TreasuryPolicy,
-  ) {}
+  ) { }
 
   async execute(dto: UpdateTransactionDto): Promise<TreasuryTransaction> {
     return this.dataSource.transaction(async (manager) => {
       const txRepo = manager.getRepository(TreasuryTransaction);
-      const accountRepo = manager.getRepository(Account);
       const auditRepo = manager.getRepository(TreasuryAuditLog);
 
-      // 1. Fetch Existing (Scoped)
       const tx = await txRepo.findOne({
-        where: { id: dto.id, church: { id: dto.churchId } },
-        relations: ['sourceAccount', 'destinationAccount'],
+        where: { id: dto.id, churchId: dto.churchId },
+        relations: ['sourceAccount', 'destinationAccount', 'category', 'ministry'],
       });
 
       if (!tx) throw new NotFoundException('Transacción no encontrada.');
 
-      this.policy.canModifyTransaction(tx);
-      if (dto.amount) this.policy.validateAmount(dto.amount);
+      const beforeSnapshot = snapshotTransaction(tx);
 
-      // Capture state for Audit/Revert
-      const oldAmount = Number(tx.amount);
-      const oldDescription = tx.description;
-      const oldSource = tx.sourceAccount;
-      const oldDest = tx.destinationAccount;
-
-      const newAmount =
-        dto.amount !== undefined ? Number(dto.amount) : oldAmount;
-
-      // 2. Revert Previous Balance
-      // ONLY if completed
       if (tx.status === TransactionStatus.COMPLETED) {
-        if (oldSource.type === AccountType.ASSET) {
-          oldSource.balance = Number(oldSource.balance) + oldAmount;
-          await accountRepo.save(oldSource);
+        const financialFields = [
+          'amount',
+          'currency',
+          'sourceAccountId',
+          'destinationAccountId',
+          'categoryId',
+          'date',
+        ];
+        const attemptedFinancial = financialFields.filter(
+          (f) => dto[f] !== undefined,
+        );
+
+        if (attemptedFinancial.length > 0) {
+          throw new BadRequestException(
+            'No se pueden modificar campos financieros de una transacción completada. ' +
+            'Use la función de corrección para modificar monto, cuentas, categoría o fecha.',
+          );
         }
-        if (oldDest.type === AccountType.ASSET) {
-          oldDest.balance =
-            Number(oldDest.balance) - oldAmount * Number(tx.exchangeRate);
-          await accountRepo.save(oldDest);
-        }
+
+        if (dto.description !== undefined) tx.description = dto.description;
+        if (dto.ministryId !== undefined)
+          tx.ministry = dto.ministryId
+            ? ({ id: dto.ministryId } as any)
+            : null;
+
+        const saved = await txRepo.save(tx);
+
+        await auditRepo.save(auditRepo.create({
+          churchId: dto.churchId,
+          entityType: AuditEntityType.TRANSACTION,
+          entityId: tx.id,
+          action: AuditAction.UPDATE,
+          before: beforeSnapshot,
+          after: snapshotTransaction(saved),
+          entityVersion: 'v1',
+          performedByUserId: dto.userId,
+          performedByEmail: dto.userEmail || null,
+          performedByRole: dto.userRole || null,
+          ipAddress: dto.ipAddress || null,
+          reason: dto.reason || null,
+        }));
+
+        return saved;
       }
 
-      // 3. Update Fields & Fetch New Accounts
-      if (dto.description) tx.description = dto.description;
-      tx.amount = newAmount;
+      // PENDING_APPROVAL: full edit allowed (no balance impact)
+      if (dto.description !== undefined) tx.description = dto.description;
+      if (dto.amount !== undefined) {
+        this.policy.validateAmount(dto.amount);
+        tx.amount = dto.amount;
+      }
       if (dto.ministryId !== undefined)
         tx.ministry = dto.ministryId ? ({ id: dto.ministryId } as any) : null;
 
-      let finalSource = oldSource;
-      let finalDest = oldDest;
+      const saved = await txRepo.save(tx);
 
-      // If Source Changed
-      if (dto.sourceAccountId && dto.sourceAccountId !== oldSource.id) {
-        const newSource = await accountRepo.findOne({
-          where: { id: dto.sourceAccountId, church: { id: dto.churchId } },
-        });
-        if (!newSource)
-          throw new NotFoundException('Nueva cuenta de origen no encontrada.');
-        finalSource = newSource;
-        tx.sourceAccount = finalSource;
-      } else {
-        // Must reload source to get updated balance from step 2 if it was the same account
-        finalSource = await accountRepo.findOneBy({ id: oldSource.id });
-      }
+      await auditRepo.save(auditRepo.create({
+        churchId: dto.churchId,
+        entityType: AuditEntityType.TRANSACTION,
+        entityId: tx.id,
+        action: AuditAction.UPDATE,
+        before: beforeSnapshot,
+        after: snapshotTransaction(saved),
+        entityVersion: 'v1',
+        performedByUserId: dto.userId,
+        performedByEmail: dto.userEmail || null,
+        performedByRole: dto.userRole || null,
+        ipAddress: dto.ipAddress || null,
+        reason: dto.reason || null,
+      }));
 
-      // If Dest Changed
-      if (dto.destinationAccountId && dto.destinationAccountId !== oldDest.id) {
-        const newDest = await accountRepo.findOne({
-          where: { id: dto.destinationAccountId, church: { id: dto.churchId } },
-        });
-        if (!newDest)
-          throw new NotFoundException('Nueva cuenta de destino no encontrada.');
-        finalDest = newDest;
-        tx.destinationAccount = finalDest;
-      } else {
-        // Reload
-        finalDest = await accountRepo.findOneBy({ id: oldDest.id });
-      }
-
-      this.policy.validateTransactionFlow(finalSource, finalDest);
-
-      // 4. Apply New Balance
-      if (tx.status === TransactionStatus.COMPLETED) {
-        if (finalSource.type === AccountType.ASSET) {
-          finalSource.balance = Number(finalSource.balance) - newAmount;
-          await accountRepo.save(finalSource);
-        }
-        if (finalDest.type === AccountType.ASSET) {
-          finalDest.balance =
-            Number(finalDest.balance) + newAmount * Number(tx.exchangeRate);
-          await accountRepo.save(finalDest);
-        }
-      }
-
-      // 5. Audit
-      let changeDetails = dto.reason || 'Edición';
-      const changes = [];
-
-      if (finalSource.id !== oldSource.id) {
-        changes.push(`${oldSource.name} -> ${finalSource.name}`);
-      }
-      if (finalDest.id !== oldDest.id) {
-        changes.push(`${oldDest.name} -> ${finalDest.name}`);
-      }
-
-      if (changes.length > 0) {
-        changeDetails += `. Cambios: ${changes.join(', ')}.`;
-      }
-
-      const audit = auditRepo.create({
-        transaction: tx,
-        oldAmount,
-        newAmount,
-        oldDescription,
-        newDescription: tx.description,
-        changedBy: { id: dto.userId } as any,
-        changeReason: changeDetails,
-      });
-      await auditRepo.save(audit);
-
-      return await txRepo.save(tx);
+      return saved;
     });
   }
 }

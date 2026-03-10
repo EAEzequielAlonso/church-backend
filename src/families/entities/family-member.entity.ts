@@ -5,29 +5,35 @@ import {
   ManyToOne,
   CreateDateColumn,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { ChurchPerson } from '../../members/entities/church-person.entity';
 import { Family } from './family.entity';
 import { FamilyRole } from '../../common/enums';
 
 @Entity('family_members')
-@Index(['family', 'member'], { unique: true })
+@Index(['familyId', 'memberId'], { unique: true })
 export class FamilyMember {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Index()
+  @Column({ nullable: false })
+  memberId: string;
+
   @ManyToOne(() => ChurchPerson, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'memberId' })
   member: ChurchPerson;
 
-  @Index()
+  @Column({ nullable: false })
+  familyId: string;
+
   @ManyToOne(() => Family, (family) => family.members, {
     nullable: false,
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'familyId' })
   family: Family;
 
-  @Index()
   @Column({
     type: 'enum',
     enum: FamilyRole,

@@ -6,6 +6,8 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  JoinColumn,
+  Index,
 } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { ServiceTemplate } from './service-template.entity';
@@ -18,6 +20,7 @@ export enum ServiceStatus {
 }
 
 @Entity('worship_services')
+@Index(['churchId', 'date'])
 export class WorshipService {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -35,10 +38,18 @@ export class WorshipService {
   })
   status: ServiceStatus;
 
+  @Column()
+  churchId: string;
+
   @ManyToOne(() => Church, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'churchId' })
   church: Church;
 
+  @Column({ nullable: true })
+  templateId: string;
+
   @ManyToOne(() => ServiceTemplate, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'templateId' })
   template: ServiceTemplate;
 
   @OneToMany(() => ServiceSection, (section) => section.service, {

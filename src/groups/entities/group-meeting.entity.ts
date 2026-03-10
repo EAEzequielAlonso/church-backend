@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
   OneToMany,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { Group } from './group.entity';
 import { GroupAttendance } from './group-attendance.entity';
@@ -21,6 +22,7 @@ export class GroupMeeting {
     nullable: false,
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'groupId' })
   group: Group;
 
   @Column({ nullable: false })

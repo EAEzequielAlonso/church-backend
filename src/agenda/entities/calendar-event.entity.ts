@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
   OneToOne,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { Person } from '../../users/entities/person.entity';
 import { MeetingNote } from '../../ministries/entities/meeting-note.entity';
@@ -16,6 +17,7 @@ import { CalendarEventType, MinistryEventType } from '../../common/enums';
 
 @Entity('calendar_events')
 @Index(['type', 'ownerId', 'startDate'])
+@Index(['churchId', 'startDate'])
 export class CalendarEvent {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -60,8 +62,15 @@ export class CalendarEvent {
   @Column('uuid', { nullable: true })
   ownerId: string;
 
+  @Column({ nullable: true })
+  churchId: string;
+
+  @Column({ nullable: true })
+  organizerId: string;
+
   // For PERSONAL events or "created by"
   @ManyToOne(() => Person, { nullable: true })
+  @JoinColumn({ name: 'organizerId' })
   organizer: Person;
 
   // Specific assignments (e.g. Preacher for a Sunday) or Attendees

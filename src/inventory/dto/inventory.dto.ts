@@ -10,8 +10,7 @@ import {
 import {
   InventoryItemCategory,
   InventoryMovementType,
-  InventoryInReason,
-  InventoryOutReason,
+  InventoryReason,
 } from '../enums/inventory.enums';
 
 export class CreateInventoryItemDto {
@@ -37,32 +36,11 @@ export class CreateInventoryItemDto {
   @IsInt()
   @Min(0)
   @IsOptional()
-  initialQuantity?: number; // Opcional, si > 0 crea un movimiento inicial
+  initialQuantity?: number;
 
   @IsUUID()
   @IsOptional()
   ministryId?: string;
-}
-
-export class CreateInventoryMovementDto {
-  @IsUUID()
-  @IsNotEmpty()
-  itemId: string;
-
-  @IsEnum(InventoryMovementType)
-  type: InventoryMovementType;
-
-  @IsInt()
-  @Min(1)
-  quantity: number;
-
-  @IsString()
-  @IsNotEmpty()
-  reason: string; // Validar contra InReason o OutReason en servicio
-
-  @IsString()
-  @IsOptional()
-  observation?: string;
 }
 
 export class UpdateInventoryItemDto {
@@ -89,4 +67,24 @@ export class UpdateInventoryItemDto {
   @IsUUID()
   @IsOptional()
   ministryId?: string;
+}
+
+export class RegisterMovementDto {
+  @IsUUID()
+  @IsNotEmpty()
+  itemId: string;
+
+  @IsEnum(InventoryMovementType)
+  type: InventoryMovementType;
+
+  @IsInt()
+  @Min(1)
+  quantity: number;
+
+  @IsEnum(InventoryReason)
+  reason: InventoryReason;
+
+  @IsString()
+  @IsOptional()
+  observation?: string;
 }

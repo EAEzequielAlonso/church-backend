@@ -14,7 +14,7 @@ export class GetBudgetExecutionUseCase {
     @InjectRepository(BudgetAllocation)
     private readonly budgetAllocationRepository: Repository<BudgetAllocation>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   async execute(churchId: string, periodId: string) {
     // 1. Fetch Period
@@ -26,7 +26,7 @@ export class GetBudgetExecutionUseCase {
 
     // 2. Fetch Allocations
     const allocations = await this.budgetAllocationRepository.find({
-      where: { budgetPeriod: { id: periodId } },
+      where: { budgetPeriodId: periodId },
       relations: ['ministry', 'category'],
     });
 
@@ -72,10 +72,10 @@ export class GetBudgetExecutionUseCase {
           : null,
         category: allocation.category
           ? {
-              id: allocation.category.id,
-              name: allocation.category.name,
-              type: allocation.category.type, // Added type
-            }
+            id: allocation.category.id,
+            name: allocation.category.name,
+            type: allocation.category.type, // Added type
+          }
           : null,
         budgetAmount,
         spentAmount,

@@ -31,11 +31,14 @@ export class User {
   })
   systemRole: SystemRole;
 
+  @Column({ nullable: true })
+  personId: string;
+
   @OneToOne(() => Person, (person) => person.user, {
     cascade: true,
     nullable: true,
-  }) // User *should* have a person, but maybe during migration... let's say nullable=true to be safe, but conceptually 1:1.
-  @JoinColumn()
+  })
+  @JoinColumn({ name: 'personId' })
   person: Person;
 
   @CreateDateColumn()

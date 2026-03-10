@@ -17,7 +17,7 @@ export class CreateBudgetAllocationUseCase {
     private readonly budgetAllocationRepository: Repository<BudgetAllocation>,
     @InjectRepository(BudgetPeriod)
     private readonly budgetPeriodRepository: Repository<BudgetPeriod>,
-  ) {}
+  ) { }
 
   async execute(
     dto: CreateBudgetAllocationDto,
@@ -43,10 +43,10 @@ export class CreateBudgetAllocationUseCase {
     // Check for duplicates (Period + Ministry + Category must be unique)
     const existingAllocation = await this.budgetAllocationRepository.findOne({
       where: {
-        budgetPeriod: { id: dto.budgetPeriodId },
-        ministry: dto.ministryId ? { id: dto.ministryId } : IsNull(),
-        category: dto.categoryId ? { id: dto.categoryId } : IsNull(),
-        church: { id: churchId },
+        budgetPeriodId: dto.budgetPeriodId,
+        ministryId: dto.ministryId || null,
+        categoryId: dto.categoryId || null,
+        churchId,
       },
     });
 
@@ -59,10 +59,10 @@ export class CreateBudgetAllocationUseCase {
     try {
       const allocation = this.budgetAllocationRepository.create({
         amountBaseCurrency: dto.amount,
-        budgetPeriod: { id: dto.budgetPeriodId },
-        ministry: dto.ministryId ? { id: dto.ministryId } : null,
-        category: dto.categoryId ? { id: dto.categoryId } : null,
-        church: { id: churchId } as Church,
+        budgetPeriodId: dto.budgetPeriodId,
+        ministryId: dto.ministryId || null,
+        categoryId: dto.categoryId || null,
+        churchId,
       });
 
       return await this.budgetAllocationRepository.save(allocation);

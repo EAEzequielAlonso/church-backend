@@ -14,7 +14,7 @@ export class AddFamilyMemberUseCase {
   constructor(
     private readonly dataSource: DataSource,
     private readonly policy: FamilyPolicy,
-  ) {}
+  ) { }
 
   async execute(
     familyId: string,
@@ -46,8 +46,8 @@ export class AddFamilyMemberUseCase {
       // Policy checked in-memory list. Unique index is the final guard.
 
       const familyMember = familyMemberRepo.create({
-        family: family,
-        member: { id: memberId },
+        familyId: familyId,
+        memberId: memberId,
         role: role as FamilyRole,
       });
 
