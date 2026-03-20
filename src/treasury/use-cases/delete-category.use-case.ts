@@ -21,7 +21,7 @@ export class DeleteCategoryUseCase {
         const category = await this.categoryRepo.findOne({
             where: { id, churchId },
         });
-        if (!category) throw new NotFoundException('Category not found');
+        if (!category) throw new NotFoundException('Categoría no encontrada');
 
         const hasTransactions = await this.txRepo.count({
             where: { category: { id } },

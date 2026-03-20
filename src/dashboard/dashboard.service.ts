@@ -12,9 +12,9 @@ import { Repository, MoreThan, In } from 'typeorm';
 import * as dateFns from 'date-fns';
 import { MinistryMember } from '../ministries/entities/ministry-member.entity';
 import { GroupParticipant } from '../groups/entities/group-participant.entity';
-import { MentorshipProcess } from '../mentorship/infrastructure/entities/mentorship-process.entity';
-import { MentorshipStatus } from '../mentorship/domain/enums/mentorship.enum';
-import { MentorshipProcessParticipant } from '../mentorship/infrastructure/entities/mentorship-process-participant.entity';
+import { MentorshipProcess } from '../mentorship/entities/mentorship-process.entity';
+import { MentorshipStatus } from '../mentorship/enums/mentorship.enum';
+import { MentorshipProcessParticipant } from '../mentorship/entities/mentorship-process-participant.entity';
 
 @Injectable()
 export class DashboardService {
@@ -32,7 +32,7 @@ export class DashboardService {
     private groupParticipantRepo: Repository<GroupParticipant>,
     @InjectRepository(MentorshipProcess)
     private mentorshipProcessRepo: Repository<MentorshipProcess>,
-  ) {}
+  ) { }
 
   async getStats(churchId: string) {
     const membersData = await this.memberRepository

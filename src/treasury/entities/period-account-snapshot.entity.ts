@@ -5,6 +5,7 @@ import {
     ManyToOne,
     JoinColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { ClosedPeriod } from './closed-period.entity';
 import { Account } from './account.entity';
 import { Currency } from '../enums/treasury.enums';
@@ -17,6 +18,7 @@ export class PeriodAccountSnapshot {
     @Column()
     closedPeriodId: string;
 
+    @Exclude()
     @ManyToOne(() => ClosedPeriod, (p) => p.accountSnapshots, {
         onDelete: 'CASCADE',
     })

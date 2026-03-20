@@ -21,7 +21,7 @@ export class UpdateBudgetAllocationUseCase {
     });
 
     if (!allocation) {
-      throw new NotFoundException('Allocation not found');
+      throw new NotFoundException('Asignación no encontrada');
     }
 
     // Only allow updating amount for now, as changing keys (ministry/category) might cause conflicts

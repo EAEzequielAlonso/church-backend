@@ -21,8 +21,8 @@ import { Church } from '../../churches/entities/church.entity';
 import { ClosedPeriod } from '../entities/closed-period.entity';
 import { TreasuryAuditLog } from '../entities/treasury-audit-log.entity';
 import { snapshotTransaction } from '../helpers/audit-snapshot.helper';
-import { BudgetLine } from '../entities/budget-line.entity';
-import { BudgetLineType } from '../enums/treasury.enums';
+import { BudgetPeriod, BudgetPeriodStatus } from '../../budget/entities/budget-period.entity';
+import { BudgetAllocation } from '../../budget/entities/budget-allocation.entity';
 
 @Injectable()
 export class CreateTransactionUseCase {
@@ -44,25 +44,25 @@ export class CreateTransactionUseCase {
       const church = await churchRepo.findOne({
         where: { id: data.churchId },
       });
-      if (!church) throw new NotFoundException('Church not found');
+      if (!church) throw new NotFoundException('Iglesia no encontrada');
 
       // 1. Validate Transaction Type & Inputs
       if (data.type === TransactionType.INCOME) {
         if (!data.destinationAccountId)
           throw new BadRequestException(
-            'Destination Account required for Income',
+            'Se requiere una cuenta destino para los ingresos',
           );
         if (!data.categoryId)
-          throw new BadRequestException('Category required for Income');
+          throw new BadRequestException('Se requiere una categoría para los ingresos');
       } else if (data.type === TransactionType.EXPENSE) {
         if (!data.sourceAccountId)
-          throw new BadRequestException('Source Account required for Expense');
+          throw new BadRequestException('Se requiere una cuenta origen para los egresos');
         if (!data.categoryId)
-          throw new BadRequestException('Category required for Expense');
+          throw new BadRequestException('Se requiere una categoría para los egresos');
       } else if (data.type === TransactionType.TRANSFER) {
         if (!data.sourceAccountId || !data.destinationAccountId)
           throw new BadRequestException(
-            'Source and Destination Accounts required for Transfer',
+            'Se requieren cuentas de origen y destino para las transferencias',
           );
       }
 
@@ -134,10 +134,10 @@ export class CreateTransactionUseCase {
         category = await categoryRepo.findOne({
           where: { id: data.categoryId },
         });
-        if (!category) throw new NotFoundException('Category not found');
+        if (!category) throw new NotFoundException('Categoría no encontrada');
         if (category.type !== data.type)
           throw new BadRequestException(
-            `Category type mismatch. Expected ${data.type}`,
+            `El tipo de categoría no coincide. Se esperaba ${data.type}`,
           );
       }
 
@@ -254,104 +254,119 @@ export class CreateTransactionUseCase {
     });
   }
 
+  /**
+   * Non-blocking budget warning using BudgetPeriod + BudgetAllocation.
+   * Returns a warning object if budget execution exceeds 80% or 100%.
+   */
   private async checkBudgetWarning(
     manager: any,
     churchId: string,
     tx: TreasuryTransaction,
   ) {
+    // Only check INCOME/EXPENSE, skip TRANSFER
+    if (tx.type !== TransactionType.INCOME && tx.type !== TransactionType.EXPENSE) {
+      return null;
+    }
+
     const txDate = new Date(tx.date);
-    const year = txDate.getFullYear();
-    const month = txDate.getMonth() + 1;
-
-    const lineType = tx.type === TransactionType.INCOME
-      ? BudgetLineType.INCOME
-      : tx.type === TransactionType.EXPENSE
-        ? BudgetLineType.EXPENSE
-        : null;
-
-    if (!lineType) return null; // TRANSFER no tiene budget line
-
-    const lineRepo = manager.getRepository(BudgetLine);
+    const periodRepo = manager.getRepository(BudgetPeriod);
+    const allocationRepo = manager.getRepository(BudgetAllocation);
     const txRepo = manager.getRepository(TreasuryTransaction);
 
-    // Priority matching: most specific first
-    let line = null;
+    // 1. Find ACTIVE periods containing this transaction date
+    const periods = await periodRepo
+      .createQueryBuilder('p')
+      .where('p.churchId = :churchId', { churchId })
+      .andWhere('p.status = :status', { status: BudgetPeriodStatus.ACTIVE })
+      .andWhere('p.startDate <= :txDate', { txDate })
+      .andWhere('p.endDate >= :txDate', { txDate })
+      .getMany();
 
-    // 1. Match both ministry + category
-    if (tx.ministry && tx.category) {
-      line = await lineRepo
-        .createQueryBuilder('bl')
-        .innerJoin('bl.budget', 'b')
-        .where('b.churchId = :churchId', { churchId })
-        .andWhere('b.year = :year AND b.month = :month', { year, month })
-        .andWhere('bl.type = :type', { type: lineType })
-        .andWhere('bl.ministryId = :minId', { minId: tx.ministry.id || (tx as any).ministryId })
-        .andWhere('bl.categoryId = :catId', { catId: tx.category.id || (tx as any).categoryId })
-        .getOne();
+    if (!periods || periods.length === 0) return null;
+
+    // 2. For each period, find matching allocation (priority: category+ministry > category > ministry)
+    for (const period of periods) {
+      let allocation = null;
+      const txCategoryId = tx.category?.id || (tx as any).categoryId || null;
+      const txMinistryId = tx.ministry?.id || (tx as any).ministryId || null;
+
+      // Priority 1: category + ministry
+      if (txCategoryId && txMinistryId) {
+        allocation = await allocationRepo.findOne({
+          where: {
+            budgetPeriodId: period.id,
+            categoryId: txCategoryId,
+            ministryId: txMinistryId,
+            type: tx.type,
+            churchId,
+          },
+        });
+      }
+
+      // Priority 2: category only
+      if (!allocation && txCategoryId) {
+        allocation = await allocationRepo.findOne({
+          where: {
+            budgetPeriodId: period.id,
+            categoryId: txCategoryId,
+            ministryId: null as any,
+            type: tx.type,
+            churchId,
+          },
+        });
+      }
+
+      // Priority 3: ministry only
+      if (!allocation && txMinistryId) {
+        allocation = await allocationRepo.findOne({
+          where: {
+            budgetPeriodId: period.id,
+            ministryId: txMinistryId,
+            categoryId: null as any,
+            type: tx.type,
+            churchId,
+          },
+        });
+      }
+
+      if (!allocation) continue;
+
+      // 3. Calculate executed amount within the period range
+      let qb = txRepo
+        .createQueryBuilder('t')
+        .select('COALESCE(SUM(t.amountBaseCurrency), 0)', 'total')
+        .where('t.churchId = :churchId', { churchId })
+        .andWhere('t.date >= :start', { start: period.startDate })
+        .andWhere('t.date <= :end', { end: period.endDate })
+        .andWhere('t.type = :txType', { txType: tx.type })
+        .andWhere('t.status = :status', { status: TransactionStatus.COMPLETED })
+        .andWhere('t.deletedAt IS NULL');
+
+      if (allocation.categoryId) {
+        qb = qb.andWhere('t.categoryId = :catId', { catId: allocation.categoryId });
+      }
+      if (allocation.ministryId) {
+        qb = qb.andWhere('t.ministryId = :minId', { minId: allocation.ministryId });
+      }
+
+      const result = await qb.getRawOne();
+      const executedAmount = parseFloat(result?.total || '0');
+      const budgetedAmount = Number(allocation.amountBaseCurrency);
+      const totalAfterTx = executedAmount + Number(tx.amountBaseCurrency);
+      const pct = budgetedAmount > 0 ? (totalAfterTx / budgetedAmount) * 100 : 0;
+
+      if (pct < 80) continue;
+
+      return {
+        level: pct > 100 ? ('EXCEEDED' as const) : ('WARNING_80' as const),
+        periodName: period.name,
+        executionPercentage: Math.round(pct * 100) / 100,
+        budgetedAmount,
+        executedAmount: Math.round(totalAfterTx * 100) / 100,
+        remainingAmount: Math.round((budgetedAmount - totalAfterTx) * 100) / 100,
+      };
     }
 
-    // 2. Match category only
-    if (!line && tx.category) {
-      line = await lineRepo
-        .createQueryBuilder('bl')
-        .innerJoin('bl.budget', 'b')
-        .where('b.churchId = :churchId', { churchId })
-        .andWhere('b.year = :year AND b.month = :month', { year, month })
-        .andWhere('bl.type = :type', { type: lineType })
-        .andWhere('bl.ministryId IS NULL')
-        .andWhere('bl.categoryId = :catId', { catId: tx.category.id || (tx as any).categoryId })
-        .getOne();
-    }
-
-    // 3. Match ministry only
-    if (!line && tx.ministry) {
-      line = await lineRepo
-        .createQueryBuilder('bl')
-        .innerJoin('bl.budget', 'b')
-        .where('b.churchId = :churchId', { churchId })
-        .andWhere('b.year = :year AND b.month = :month', { year, month })
-        .andWhere('bl.type = :type', { type: lineType })
-        .andWhere('bl.ministryId = :minId', { minId: tx.ministry.id || (tx as any).ministryId })
-        .andWhere('bl.categoryId IS NULL')
-        .getOne();
-    }
-
-    if (!line) return null;
-
-    // Calculate actual SUM for this specific combination
-    const periodStart = new Date(year, month - 1, 1);
-    const periodEnd = new Date(year, month, 0, 23, 59, 59, 999);
-    const txType = tx.type;
-
-    let qb = txRepo
-      .createQueryBuilder('t')
-      .select('SUM(t.amountBaseCurrency)', 'total')
-      .where('t.churchId = :churchId', { churchId })
-      .andWhere('t.date >= :start', { start: periodStart })
-      .andWhere('t.date <= :end', { end: periodEnd })
-      .andWhere('t.type = :txType', { txType })
-      .andWhere('t.status = :status', { status: TransactionStatus.COMPLETED })
-      .andWhere('t.deletedAt IS NULL');
-
-    if (line.ministryId) {
-      qb = qb.andWhere('t.ministryId = :minId', { minId: line.ministryId });
-    }
-    if (line.categoryId) {
-      qb = qb.andWhere('t.categoryId = :catId', { catId: line.categoryId });
-    }
-
-    const result = await qb.getRawOne();
-    const actual = parseFloat(result?.total || '0');
-    const budgeted = Number(line.budgetedAmount);
-    const pct = budgeted > 0 ? (actual / budgeted) * 100 : 0;
-
-    if (pct < 80) return null;
-
-    return {
-      level: pct > 100 ? 'EXCEEDED' as const : '80_PERCENT' as const,
-      executionPercentage: Math.round(pct * 100) / 100,
-      budgetedAmount: budgeted,
-      actualAmount: Math.round(actual * 100) / 100,
-    };
+    return null;
   }
 }

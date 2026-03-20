@@ -24,6 +24,7 @@ export class GetCategoryBreakdownUseCase {
             .andWhere('tx.type = :type', { type })
             .andWhere('tx.date BETWEEN :startDate AND :endDate', { startDate, endDate })
             .andWhere('tx.status = :status', { status: TransactionStatus.COMPLETED })
+            .andWhere('tx.isInvalidated = false')
             .andWhere('tx.deletedAt IS NULL')
             .groupBy('cat.id')
             .addGroupBy('cat.name')

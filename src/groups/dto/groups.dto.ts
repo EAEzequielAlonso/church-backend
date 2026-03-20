@@ -98,3 +98,26 @@ export class UpdateGroupDto {
   @IsOptional()
   visibility?: GroupVisibility;
 }
+
+export class RegisterAttendanceItemDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  churchPersonId: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  present: boolean;
+}
+
+export class RegisterAttendanceDto {
+  @ApiProperty({ type: [RegisterAttendanceItemDto] })
+  @IsNotEmpty()
+  items: RegisterAttendanceItemDto[];
+}
+
+export class BulkAddParticipantsDto {
+  @ApiProperty({ type: [String] })
+  @IsNotEmpty()
+  personIds: string[];
+}

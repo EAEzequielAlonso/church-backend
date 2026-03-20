@@ -36,9 +36,7 @@ jest.mock('../entities/treasury-audit-log.entity', () => ({
 jest.mock('../entities/closed-period.entity', () => ({
     ClosedPeriod: class ClosedPeriod { },
 }));
-jest.mock('../entities/budget-line.entity', () => ({
-    BudgetLine: class BudgetLine { },
-}));
+
 
 import { BadRequestException } from '@nestjs/common';
 import { CreateTransactionUseCase } from '../use-cases/create-transaction.use-case';
@@ -57,7 +55,7 @@ import {
 } from '../enums/treasury.enums';
 import { DataSource } from 'typeorm';
 import { ClosedPeriod } from '../entities/closed-period.entity';
-import { BudgetLine } from '../entities/budget-line.entity';
+
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -127,16 +125,7 @@ function buildMockDS(opts: {
                 findOne: jest.fn().mockResolvedValue(null), // Period is open
             };
         }
-        if (entity === BudgetLine) {
-            return {
-                createQueryBuilder: jest.fn().mockReturnValue({
-                    innerJoin: jest.fn().mockReturnThis(),
-                    where: jest.fn().mockReturnThis(),
-                    andWhere: jest.fn().mockReturnThis(),
-                    getOne: jest.fn().mockResolvedValue(null), // No budget lines
-                }),
-            };
-        }
+
         return {};
     };
 

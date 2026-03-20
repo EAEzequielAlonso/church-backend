@@ -6,6 +6,7 @@ import { Group } from './entities/group.entity';
 import { GroupParticipant } from './entities/group-participant.entity';
 import { GroupMeeting } from './entities/group-meeting.entity';
 import { GroupAttendance } from './entities/group-attendance.entity';
+import { AgendaModule } from '../agenda/agenda.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { GroupAttendance } from './entities/group-attendance.entity';
       GroupMeeting,
       GroupAttendance,
     ]),
+    AgendaModule,
   ],
   controllers: [GroupsController],
   providers: [GroupsService],

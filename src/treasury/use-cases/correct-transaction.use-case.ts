@@ -149,6 +149,7 @@ export class CorrectTransactionUseCase {
                 status: TransactionStatus.COMPLETED,
                 createdById: dto.userId,
                 isCorrection: true,
+                isInvalidated: true, // REVERSAL is invalidated for reports
                 correctedTransactionId: original.id,
                 date: correctionDate,
             });
@@ -156,6 +157,10 @@ export class CorrectTransactionUseCase {
             // Apply reversal balance impact
             this.applyBalanceImpact(reversal, lockedAccounts);
             const savedReversal = await txRepo.save(reversal);
+
+            // Mark original as invalidated
+            original.isInvalidated = true;
+            await txRepo.save(original);
 
             // Save updated account balances after reversal
             for (const account of lockedAccounts.values()) {
@@ -173,7 +178,7 @@ export class CorrectTransactionUseCase {
                 newCategory = await categoryRepo.findOne({
                     where: { id: dto.newCategoryId },
                 });
-                if (!newCategory) throw new NotFoundException('Nueva categoría no encontrada.');
+                if (!newCategory) throw new NotFoundException('La nueva categoría no fue encontrada.');
             }
 
             const correction = txRepo.create({
@@ -195,6 +200,7 @@ export class CorrectTransactionUseCase {
                 status: TransactionStatus.COMPLETED,
                 createdById: dto.userId,
                 isCorrection: true,
+                isInvalidated: false, // FINAL CORRECTION is valid for reports
                 correctedTransactionId: original.id,
                 date: correctionDate,
             });
@@ -226,6 +232,7 @@ export class CorrectTransactionUseCase {
                 performedByEmail: dto.userEmail || null,
                 performedByRole: dto.userRole || null,
                 ipAddress: dto.ipAddress || null,
+                reason: dto.reason,
             }));
 
             return { reversal: savedReversal, correction: savedCorrection };

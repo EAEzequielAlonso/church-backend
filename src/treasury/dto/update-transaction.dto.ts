@@ -4,6 +4,6 @@ import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class UpdateTransactionDto extends PartialType(CreateTransactionDto) {
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'El motivo debe ser una cadena de texto' })
   reason?: string; // Audit reason
 }

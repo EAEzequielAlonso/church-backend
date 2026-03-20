@@ -23,6 +23,7 @@ export class GetCashflowUseCase {
             .where('tx.churchId = :churchId', { churchId })
             .andWhere('tx.date BETWEEN :startDate AND :endDate', { startDate, endDate })
             .andWhere('tx.status = :status', { status: TransactionStatus.COMPLETED })
+            .andWhere('tx.isInvalidated = false')
             .andWhere('tx.deletedAt IS NULL')
             .setParameters({
                 income: TransactionType.INCOME,

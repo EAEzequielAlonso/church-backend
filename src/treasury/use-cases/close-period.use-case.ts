@@ -116,6 +116,7 @@ export class ClosePeriodUseCase {
             AND date >= $2
             AND date <= $3
             AND status = 'completed'
+            AND "isInvalidated" = false
             AND "deletedAt" IS NULL
           `,
                     [account.id, periodStart, periodEnd],
@@ -191,6 +192,7 @@ export class ClosePeriodUseCase {
           AND date >= $2
           AND date <= $3
           AND status = 'completed'
+          AND "isInvalidated" = false
           AND "deletedAt" IS NULL
         `,
                 [dto.churchId, periodStart, periodEnd],
@@ -308,6 +310,7 @@ export class ClosePeriodUseCase {
       WHERE ("sourceAccountId" = $1 OR "destinationAccountId" = $1)
         AND date <= $2
         AND status = 'completed'
+        AND "isInvalidated" = false
         AND "deletedAt" IS NULL
       `,
             [accountId, untilDate],
@@ -334,6 +337,7 @@ export class ClosePeriodUseCase {
         AND "churchId" = $2
         AND date <= $3
         AND status = 'completed'
+        AND "isInvalidated" = false
         AND "deletedAt" IS NULL
       ORDER BY date DESC
       LIMIT 1

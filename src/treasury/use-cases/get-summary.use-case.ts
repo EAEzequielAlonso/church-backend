@@ -24,6 +24,7 @@ export class GetSummaryUseCase {
             .where('tx.churchId = :churchId', { churchId })
             .andWhere('tx.date BETWEEN :startDate AND :endDate', { startDate, endDate })
             .andWhere('tx.status = :status', { status: TransactionStatus.COMPLETED })
+            .andWhere('tx.isInvalidated = false')
             .andWhere('tx.deletedAt IS NULL')
             .setParameters({
                 income: TransactionType.INCOME,
@@ -57,6 +58,7 @@ export class GetSummaryUseCase {
                 prevEnd: prevEnd.toISOString(),
             })
             .andWhere('tx.status = :status', { status: TransactionStatus.COMPLETED })
+            .andWhere('tx.isInvalidated = false')
             .andWhere('tx.deletedAt IS NULL')
             .setParameters({
                 income: TransactionType.INCOME,

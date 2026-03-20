@@ -32,7 +32,6 @@ export class GetMinistryUseCase {
 
         const events = await this.eventRepo.find({
             where: { ownerId: id },
-            relations: ['meetingNote']
         });
 
         return {

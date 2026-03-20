@@ -17,7 +17,7 @@ export class DeleteBudgetAllocationUseCase {
     });
 
     if (result.affected === 0) {
-      throw new NotFoundException('Allocation not found');
+      throw new NotFoundException('Asignación no encontrada');
     }
   }
 }

@@ -27,7 +27,9 @@ export class CreateBudgetPeriodUseCase {
       const start = new Date(dto.startDate);
       const end = new Date(dto.endDate);
       if (start > end) {
-        throw new BadRequestException('Start date must be before end date');
+        throw new BadRequestException(
+          'La fecha de inicio debe ser anterior a la fecha de fin',
+        );
       }
 
       // 2. Check for Overlaps (Same Type, Same Church)
@@ -42,7 +44,7 @@ export class CreateBudgetPeriodUseCase {
 
       if (overlap) {
         throw new BadRequestException(
-          `Budget Period overlaps with existing period: ${overlap.name}`,
+          `El período presupuestario se superpone con uno existente: ${overlap.name}`,
         );
       }
 

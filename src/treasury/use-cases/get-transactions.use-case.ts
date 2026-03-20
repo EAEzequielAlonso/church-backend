@@ -8,9 +8,11 @@ export interface GetTransactionsFilterDto {
   startDate?: Date;
   endDate?: Date;
   type?: string; // 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  status?: string; // 'completed' | 'pending_approval' | 'rejected'
   categoryId?: string;
   accountId?: string;
   withDeleted?: boolean;
+  includeHistory?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -29,6 +31,7 @@ export class GetTransactionsUseCase {
       .leftJoinAndSelect('tx.destinationAccount', 'dest')
       .leftJoinAndSelect('tx.category', 'category')
       .leftJoinAndSelect('tx.ministry', 'ministry')
+      .leftJoinAndSelect('tx.church', 'church')
       .where('tx.churchId = :churchId', { churchId });
 
     if (filters.startDate) {
@@ -46,6 +49,10 @@ export class GetTransactionsUseCase {
       query.andWhere('tx.type = :type', { type: filters.type });
     }
 
+    if (filters.status) {
+      query.andWhere('tx.status = :status', { status: filters.status });
+    }
+
     if (filters.categoryId) {
       query.andWhere('tx.category.id = :categoryId', {
         categoryId: filters.categoryId,
@@ -59,13 +66,17 @@ export class GetTransactionsUseCase {
       );
     }
 
+    // Phase 18: Filter out invalidated transactions unless history is requested
+    if (filters.includeHistory) {
+        // Show everything (no filter on isInvalidated)
+    } else {
+        query.andWhere('tx.isInvalidated = false');
+    }
+
     if (filters.withDeleted) {
       query.withDeleted().andWhere('tx.deletedAt IS NOT NULL');
     } else {
-      // Default TypeORM behavior handles deletedAt IS NULL unless withDeleted() is called,
-      // but explicit check is safer if logic varies.
-      // Actually, query builder requires explicit deleted check if we want to EXCLUDE them when soft delete is enabled?
-      // TypeORM QueryBuilder defaults to NOT showing deleted. 'withDeleted()' enables them.
+      // Default TypeORM behavior handles deletedAt IS NULL
     }
 
     query.orderBy('tx.date', 'DESC');
@@ -80,8 +91,14 @@ export class GetTransactionsUseCase {
 
     const [data, total] = await query.getManyAndCount();
 
+    // Attach baseCurrency from Church to satisfy UI TreasuryTransactionDto mapping
+    const enhancedData = data.map((tx) => ({
+      ...tx,
+      baseCurrency: tx.church?.baseCurrency,
+    }));
+
     return {
-      data,
+      data: enhancedData,
       meta: {
         total,
         page:

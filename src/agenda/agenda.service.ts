@@ -116,9 +116,14 @@ export class AgendaService {
                 },
               )
               .orWhere(
-                '(event.type = :groupType AND event.ownerId IN (:...groupIds))',
+                '(event.type IN (:...groupTypes) AND event.ownerId IN (:...groupIds))',
                 {
-                  groupType: 'SMALL_GROUP',
+                  groupTypes: [
+                    CalendarEventType.SMALL_GROUP,
+                    CalendarEventType.COURSE,
+                    CalendarEventType.ACTIVITY,
+                    CalendarEventType.DISCIPLESHIP,
+                  ],
                   groupIds:
                     groupIds.length > 0
                       ? groupIds
@@ -163,7 +168,6 @@ export class AgendaService {
           endDate: new Date(a.date + 'T23:59:59'),
           location: 'Iglesia',
           type: 'MINISTRY', // mimic ministry event
-          color: '#8b5cf6', // Violet
           isAllDay: true,
           ministry: { id: a.ministry.id, name: a.ministry.name },
           smallGroup: null,
@@ -242,7 +246,7 @@ export class AgendaService {
       endDate: new Date(endDate),
       location,
       type,
-      color,
+      color: type === CalendarEventType.PERSONAL ? color : undefined,
       isAllDay: isAllDay || false,
       ownerId,
     });
@@ -438,7 +442,11 @@ export class AgendaService {
     if (updateDto.location !== undefined) event.location = updateDto.location;
     if (updateDto.startDate) event.startDate = new Date(updateDto.startDate);
     if (updateDto.endDate) event.endDate = new Date(updateDto.endDate);
-    if (updateDto.color) event.color = updateDto.color;
+    if (updateDto.color && (event.type === CalendarEventType.PERSONAL || updateDto.type === CalendarEventType.PERSONAL)) {
+        event.color = updateDto.color;
+    } else if (updateDto.type && updateDto.type !== CalendarEventType.PERSONAL) {
+        event.color = null;
+    }
     if (updateDto.isAllDay !== undefined) event.isAllDay = updateDto.isAllDay;
 
     return this.eventRepository.save(event);

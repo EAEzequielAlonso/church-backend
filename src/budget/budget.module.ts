@@ -12,7 +12,9 @@ import { UpdateBudgetAllocationUseCase } from './use-cases/update-budget-allocat
 import { DeleteBudgetAllocationUseCase } from './use-cases/delete-budget-allocation.use-case';
 import { UpdateBudgetPeriodUseCase } from './use-cases/update-budget-period.use-case';
 import { DeleteBudgetPeriodUseCase } from './use-cases/delete-budget-period.use-case';
+import { ExportBudgetToPptUseCase } from './use-cases/export-budget-to-ppt.use-case';
 import { TreasuryTransaction } from '../treasury/entities/treasury-transaction.entity';
+import { Church } from '../churches/entities/church.entity';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { TreasuryTransaction } from '../treasury/entities/treasury-transaction.e
       BudgetPeriod,
       BudgetAllocation,
       TreasuryTransaction, // Required for Execution aggregation
+      Church,
     ]),
   ],
   controllers: [BudgetController],
@@ -33,6 +36,7 @@ import { TreasuryTransaction } from '../treasury/entities/treasury-transaction.e
     DeleteBudgetAllocationUseCase,
     UpdateBudgetPeriodUseCase,
     DeleteBudgetPeriodUseCase,
+    ExportBudgetToPptUseCase,
   ],
   exports: [],
 })

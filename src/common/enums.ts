@@ -215,3 +215,9 @@ export enum DiscipleshipTaskStatus {
   PENDING = 'PENDING',
   COMPLETED = 'COMPLETED',
 }
+
+export enum EventSourceType {
+  MINISTRY_MEETING = 'MINISTRY_MEETING',
+  GROUP_MEETING = 'GROUP_MEETING',
+  MENTORSHIP_MEETING = 'MENTORSHIP_MEETING',
+}

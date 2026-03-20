@@ -10,9 +10,9 @@ export class GetMeetingNoteUseCase {
         private readonly noteRepo: Repository<MeetingNote>,
     ) { }
 
-    async execute(eventId: string): Promise<MeetingNote | null> {
+    async execute(meetingId: string): Promise<MeetingNote | null> {
         return this.noteRepo.findOne({
-            where: { eventId },
+            where: { meetingId },
             relations: ['createdBy'],
         });
     }

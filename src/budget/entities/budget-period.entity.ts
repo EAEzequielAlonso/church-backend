@@ -15,6 +15,15 @@ import { Currency } from '../../treasury/enums/treasury.enums';
 export enum BudgetPeriodType {
   MONTHLY = 'MONTHLY',
   YEARLY = 'YEARLY',
+  QUARTERLY = 'QUARTERLY',
+  CUSTOM = 'CUSTOM',
+  PROJECT = 'PROJECT',
+}
+
+export enum BudgetPeriodStatus {
+  DRAFT = 'DRAFT',
+  ACTIVE = 'ACTIVE',
+  CLOSED = 'CLOSED',
 }
 
 @Entity('budget_periods')
@@ -39,11 +48,21 @@ export class BudgetPeriod {
   @Column({ type: 'enum', enum: BudgetPeriodType })
   type: BudgetPeriodType;
 
+  @Column({
+    type: 'enum',
+    enum: BudgetPeriodStatus,
+    default: BudgetPeriodStatus.ACTIVE,
+  })
+  status: BudgetPeriodStatus;
+
   @Column({ type: 'date', nullable: false })
   startDate: Date;
 
   @Column({ type: 'date', nullable: false })
   endDate: Date;
+
+  @Column({ nullable: true })
+  description: string;
 
   @Column({ type: 'enum', enum: Currency, default: Currency.ARS })
   currency: Currency;

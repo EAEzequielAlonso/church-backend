@@ -7,8 +7,7 @@ import { ReportsController } from './reports.controller';
 // Entities
 import { TreasuryTransaction } from './entities/treasury-transaction.entity';
 import { Account } from './entities/account.entity';
-import { Budget } from './entities/budget.entity';
-import { BudgetLine } from './entities/budget-line.entity';
+
 import { TreasuryAuditLog } from './entities/treasury-audit-log.entity';
 import { Ministry } from '../ministries/entities/ministry.entity';
 import { TransactionCategory } from './entities/transaction-category.entity';
@@ -38,15 +37,12 @@ import { GetCategoriesUseCase } from './use-cases/get-categories.use-case';
 import { UpdateCategoryUseCase } from './use-cases/update-category.use-case';
 import { DeleteCategoryUseCase } from './use-cases/delete-category.use-case';
 
-// Use Cases — Budgets
-import { CreateBudgetUseCase } from './use-cases/create-budget.use-case';
-import { GetBudgetsUseCase } from './use-cases/get-budgets.use-case';
-import { DeleteBudgetUseCase } from './use-cases/delete-budget.use-case';
-import { GetBudgetExecutionUseCase } from './use-cases/get-budget-execution.use-case';
+
 
 // Use Cases — Periods
 import { ClosePeriodUseCase } from './use-cases/close-period.use-case';
 import { ReopenPeriodUseCase } from './use-cases/reopen-period.use-case';
+import { GetPeriodStatusUseCase } from './use-cases/get-period-status.use-case';
 
 // Use Cases — Reports
 import { GetSummaryUseCase } from './use-cases/get-summary.use-case';
@@ -77,15 +73,12 @@ const USE_CASES = [
   UpdateCategoryUseCase,
   DeleteCategoryUseCase,
 
-  // Budgets
-  CreateBudgetUseCase,
-  GetBudgetsUseCase,
-  DeleteBudgetUseCase,
-  GetBudgetExecutionUseCase,
+
 
   // Periods
   ClosePeriodUseCase,
   ReopenPeriodUseCase,
+  GetPeriodStatusUseCase,
 
   // Reports
   GetSummaryUseCase,
@@ -101,8 +94,7 @@ const USE_CASES = [
     TypeOrmModule.forFeature([
       TreasuryTransaction,
       Account,
-      Budget,
-      BudgetLine,
+
       TreasuryAuditLog,
       Ministry,
       TransactionCategory,

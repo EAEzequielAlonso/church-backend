@@ -12,8 +12,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Person } from '../../users/entities/person.entity';
-import { MeetingNote } from '../../ministries/entities/meeting-note.entity';
-import { CalendarEventType, MinistryEventType } from '../../common/enums';
+import { CalendarEventType, MinistryEventType, EventSourceType } from '../../common/enums';
 
 @Entity('calendar_events')
 @Index(['type', 'ownerId', 'startDate'])
@@ -33,6 +32,12 @@ export class CalendarEvent {
 
   @Column({ type: 'timestamp' })
   endDate: Date;
+
+  @Column({ type: 'enum', enum: EventSourceType, nullable: true })
+  sourceType: EventSourceType;
+
+  @Column({ type: 'uuid', nullable: true })
+  sourceId: string;
 
   @Column({ nullable: true })
   location: string;
@@ -77,9 +82,6 @@ export class CalendarEvent {
   @ManyToMany(() => Person)
   @JoinTable({ name: 'calendar_event_attendees' })
   attendees: Person[];
-
-  @OneToOne(() => MeetingNote, (note) => note.event)
-  meetingNote: MeetingNote;
 
   @CreateDateColumn()
   createdAt: Date;

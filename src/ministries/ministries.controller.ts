@@ -43,6 +43,8 @@ import { UpdateMinistryTaskUseCase } from './use-cases/update-ministry-task.use-
 import { DeleteMinistryTaskUseCase } from './use-cases/delete-ministry-task.use-case';
 import { GetMinistryEventsUseCase } from './use-cases/get-ministry-events.use-case';
 import { CreateMinistryEventUseCase } from './use-cases/create-ministry-event.use-case';
+import { UpdateMinistryEventUseCase } from './use-cases/update-ministry-event.use-case';
+import { DeleteMinistryEventUseCase } from './use-cases/delete-ministry-event.use-case';
 import { GetMeetingNoteUseCase } from './use-cases/get-meeting-note.use-case';
 import { CreateOrUpdateMeetingNoteUseCase } from './use-cases/create-or-update-meeting-note.use-case';
 import { GetAllServiceDutiesUseCase } from './use-cases/get-all-service-duties.use-case';
@@ -71,6 +73,8 @@ export class MinistriesController {
     private readonly deleteMinistryTaskUseCase: DeleteMinistryTaskUseCase,
     private readonly getMinistryEventsUseCase: GetMinistryEventsUseCase,
     private readonly createMinistryEventUseCase: CreateMinistryEventUseCase,
+    private readonly updateMinistryEventUseCase: UpdateMinistryEventUseCase,
+    private readonly deleteMinistryEventUseCase: DeleteMinistryEventUseCase,
     private readonly getMeetingNoteUseCase: GetMeetingNoteUseCase,
     private readonly createOrUpdateMeetingNoteUseCase: CreateOrUpdateMeetingNoteUseCase,
     private readonly getAllServiceDutiesUseCase: GetAllServiceDutiesUseCase,
@@ -203,6 +207,46 @@ export class MinistriesController {
       req.user.personId,
       churchId,
       body,
+      req.user.systemRole,
+      req.user.functionalRole
+    );
+  }
+
+  @Patch(':id/events/:eventId')
+  @RequirePermissions(AppPermission.MINISTRY_EVENT_MANAGE)
+  @RequireMinistryRole(MinistryRole.LEADER, MinistryRole.COORDINATOR)
+  updateEvent(
+    @Param('id') id: string,
+    @Param('eventId') eventId: string,
+    @Request() req: any,
+    @CurrentChurch() churchId: string,
+    @Body() body: Partial<CreateMinistryEventDto>,
+  ) {
+    return this.updateMinistryEventUseCase.execute(
+      id,
+      eventId,
+      req.user.personId,
+      churchId,
+      body,
+      req.user.systemRole,
+      req.user.functionalRole
+    );
+  }
+
+  @Delete(':id/events/:eventId')
+  @RequirePermissions(AppPermission.MINISTRY_EVENT_MANAGE)
+  @RequireMinistryRole(MinistryRole.LEADER, MinistryRole.COORDINATOR)
+  deleteEvent(
+    @Param('id') id: string,
+    @Param('eventId') eventId: string,
+    @Request() req: any,
+    @CurrentChurch() churchId: string,
+  ) {
+    return this.deleteMinistryEventUseCase.execute(
+      id,
+      eventId,
+      req.user.personId,
+      churchId,
       req.user.systemRole,
       req.user.functionalRole
     );

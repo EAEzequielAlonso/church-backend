@@ -41,7 +41,3 @@ export enum AuditAction {
   REOPEN_PERIOD = 'REOPEN_PERIOD',
 }
 
-export enum BudgetLineType {
-  INCOME = 'INCOME',
-  EXPENSE = 'EXPENSE',
-}

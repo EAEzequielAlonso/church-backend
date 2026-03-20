@@ -41,4 +41,8 @@ export class Account {
 
   @OneToMany(() => TreasuryTransaction, (tx) => tx.destinationAccount)
   incomingTransactions: TreasuryTransaction[];
+
+  @Column({ default: false })
+  @Index()
+  isArchived: boolean;
 }

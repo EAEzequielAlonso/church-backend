@@ -10,7 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { GroupsService } from './groups.service';
-import { CreateGroupDto, UpdateGroupDto } from './dto/groups.dto';
+import { CreateGroupDto, UpdateGroupDto, BulkAddParticipantsDto } from './dto/groups.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentChurch } from '../common/decorators';
 import {
@@ -20,6 +20,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { GroupType } from './enums/group.enums';
+import { RegisterAttendanceDto } from './dto/groups.dto';
 
 @ApiTags('Groups')
 @ApiBearerAuth()
@@ -103,6 +104,16 @@ export class GroupsController {
     );
   }
 
+  @Post(':id/participants/bulk')
+  @ApiOperation({ summary: 'Add multiple participants to a group' })
+  bulkAddParticipants(
+    @Param('id') id: string,
+    @Body() dto: BulkAddParticipantsDto,
+    @CurrentChurch() churchId: string,
+  ) {
+    return this.groupsService.bulkAddParticipants(id, dto, churchId);
+  }
+
   @Patch(':id/participants/:churchPersonId/role')
   @ApiOperation({ summary: 'Update a participant role in a group' })
   updateParticipantRole(
@@ -127,5 +138,47 @@ export class GroupsController {
     @CurrentChurch() churchId: string,
   ) {
     return this.groupsService.createMeeting(id, churchId, body);
+  }
+
+  @Patch(':id/meetings/:meetingId')
+  @ApiOperation({ summary: 'Update a specific meeting/encounter for a group' })
+  updateMeeting(
+    @Param('id') id: string,
+    @Param('meetingId') meetingId: string,
+    @Body() body: { date?: string; location?: string; notes?: string },
+    @CurrentChurch() churchId: string,
+  ) {
+    return this.groupsService.updateMeeting(id, meetingId, churchId, body);
+  }
+
+  @Delete(':id/meetings/:meetingId')
+  @ApiOperation({ summary: 'Delete a specific meeting/encounter from a group' })
+  deleteMeeting(
+    @Param('id') id: string,
+    @Param('meetingId') meetingId: string,
+    @CurrentChurch() churchId: string,
+  ) {
+    return this.groupsService.deleteMeeting(id, meetingId, churchId);
+  }
+
+  @Get(':id/meetings/:meetingId/attendance')
+  @ApiOperation({ summary: 'Get attendance for a specific meeting' })
+  getMeetingAttendance(
+    @Param('id') id: string,
+    @Param('meetingId') meetingId: string,
+    @CurrentChurch() churchId: string,
+  ) {
+    return this.groupsService.getMeetingAttendance(id, meetingId, churchId);
+  }
+
+  @Post(':id/meetings/:meetingId/attendance')
+  @ApiOperation({ summary: 'Register attendance for a specific meeting' })
+  registerAttendance(
+    @Param('id') id: string,
+    @Param('meetingId') meetingId: string,
+    @Body() body: RegisterAttendanceDto,
+    @CurrentChurch() churchId: string,
+  ) {
+    return this.groupsService.registerAttendance(id, meetingId, body, churchId);
   }
 }

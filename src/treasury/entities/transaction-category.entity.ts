@@ -42,4 +42,8 @@ export class TransactionCategory {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column({ default: false })
+  @Index()
+  isArchived: boolean;
 }

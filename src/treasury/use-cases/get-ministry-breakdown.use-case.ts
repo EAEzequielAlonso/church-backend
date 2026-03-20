@@ -18,6 +18,7 @@ export class GetMinistryBreakdownUseCase {
             .andWhere('tx.type = :type', { type: TransactionType.EXPENSE })
             .andWhere('tx.date BETWEEN :startDate AND :endDate', { startDate, endDate })
             .andWhere('tx.status = :status', { status: TransactionStatus.COMPLETED })
+            .andWhere('tx.isInvalidated = false')
             .andWhere('tx.deletedAt IS NULL')
             .andWhere('tx.ministryId IS NOT NULL')
             .groupBy('min.id')

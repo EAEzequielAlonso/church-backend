@@ -12,14 +12,32 @@ export class GetCategoriesUseCase {
     ) { }
 
     async execute(churchId: string, type?: string) {
-        const where: any = { churchId };
-        if (type)
-            where.type =
-                type === 'income' ? TransactionType.INCOME : TransactionType.EXPENSE;
+        const queryBuilder = this.categoryRepo
+            .createQueryBuilder('category')
+            .where('category.churchId = :churchId', { churchId });
 
-        return this.categoryRepo.find({
-            where,
-            order: { type: 'ASC', name: 'ASC' },
-        });
+        if (type) {
+            queryBuilder.andWhere('category.type = :type', {
+                type: type === 'income' ? TransactionType.INCOME : TransactionType.EXPENSE,
+            });
+        }
+
+        queryBuilder.orderBy('category.type', 'ASC').addOrderBy('category.name', 'ASC');
+
+        const categories = await queryBuilder.getMany();
+
+        // Add hasTransactions flag
+        const txRepo = this.categoryRepo.manager.getRepository('treasury_transactions');
+        return Promise.all(
+            categories.map(async (cat) => {
+                const hasTransactions = await txRepo.count({
+                    where: { category: { id: cat.id } },
+                });
+                return {
+                    ...cat,
+                    hasTransactions: hasTransactions > 0,
+                };
+            }),
+        );
     }
 }

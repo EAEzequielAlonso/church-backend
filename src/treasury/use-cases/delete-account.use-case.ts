@@ -30,13 +30,13 @@ export class DeleteAccountUseCase {
             const account = await accountRepo.findOne({
                 where: { id, churchId },
             });
-            if (!account) throw new NotFoundException('Account not found');
+            if (!account) throw new NotFoundException('Cuenta no encontrada');
 
             const hasTransactions = await txRepo.count({
                 where: [{ sourceAccount: { id } }, { destinationAccount: { id } }],
             });
             if (hasTransactions > 0)
-                throw new BadRequestException('Cannot delete account with transactions.');
+                throw new BadRequestException('No se puede eliminar una cuenta que tiene movimientos financieros.');
 
             const beforeSnapshot = snapshotAccount(account);
 

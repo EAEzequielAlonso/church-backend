@@ -31,6 +31,9 @@ export class GroupMeeting {
   @Column({ type: 'date', nullable: false })
   date: Date;
 
+  @Column({ type: 'uuid', nullable: true })
+  calendarEventId: string;
+
   @Column({ nullable: true })
   location: string;
 

@@ -11,6 +11,8 @@ import { Ministry } from '../ministries/entities/ministry.entity';
 import { Group } from '../groups/entities/group.entity';
 import { GroupParticipant } from '../groups/entities/group-participant.entity';
 
+import { AgendaSyncService } from './agenda-sync.service';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -24,7 +26,7 @@ import { GroupParticipant } from '../groups/entities/group-participant.entity';
     ]),
   ],
   controllers: [AgendaController],
-  providers: [AgendaService],
-  exports: [AgendaService],
+  providers: [AgendaService, AgendaSyncService],
+  exports: [AgendaService, AgendaSyncService],
 })
 export class AgendaModule {}

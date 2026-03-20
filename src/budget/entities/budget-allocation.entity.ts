@@ -13,6 +13,7 @@ import { Church } from '../../churches/entities/church.entity';
 import { BudgetPeriod } from './budget-period.entity';
 import { Ministry } from '../../ministries/entities/ministry.entity';
 import { TransactionCategory } from '../../treasury/entities/transaction-category.entity';
+import { TransactionType } from '../../treasury/enums/treasury.enums';
 
 @Entity('budget_allocations')
 @Index(['churchId', 'budgetPeriodId'])
@@ -20,9 +21,11 @@ import { TransactionCategory } from '../../treasury/entities/transaction-categor
 @Index(['churchId', 'categoryId'])
 @Index(['churchId', 'budgetPeriodId', 'ministryId'])
 @Index(['churchId', 'budgetPeriodId', 'categoryId'])
-@Index(['churchId', 'budgetPeriodId', 'ministryId', 'categoryId'], { unique: true }) // Prevent duplicate allocations
+@Index(['churchId', 'budgetPeriodId', 'ministryId', 'categoryId', 'type'], {
+  unique: true,
+})
 @Check(`"amountBaseCurrency" > 0`)
-@Check(`("ministryId" IS NOT NULL OR "categoryId" IS NOT NULL)`) // At least one must be present
+@Check(`("ministryId" IS NOT NULL OR "categoryId" IS NOT NULL)`)
 export class BudgetAllocation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -55,8 +58,14 @@ export class BudgetAllocation {
   @JoinColumn({ name: 'categoryId' })
   category: TransactionCategory;
 
+  @Column({ type: 'enum', enum: TransactionType })
+  type: TransactionType;
+
   @Column('decimal', { precision: 15, scale: 2, nullable: false })
   amountBaseCurrency: number;
+
+  @Column({ nullable: true })
+  notes: string;
 
   @CreateDateColumn()
   createdAt: Date;

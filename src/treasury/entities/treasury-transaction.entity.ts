@@ -109,6 +109,9 @@ export class TreasuryTransaction {
   @Column({ default: false })
   isCorrection: boolean; // true if this tx is a reversal or correction entry
 
+  @Column({ default: false })
+  isInvalidated: boolean; // true if this tx was corrected or is a reversal (excluded from reports)
+
   @Column({ nullable: true })
   reference: string; // External ref number
 

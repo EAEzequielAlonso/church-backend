@@ -32,6 +32,8 @@ import { UpdateMinistryTaskUseCase } from './use-cases/update-ministry-task.use-
 import { DeleteMinistryTaskUseCase } from './use-cases/delete-ministry-task.use-case';
 import { GetMinistryEventsUseCase } from './use-cases/get-ministry-events.use-case';
 import { CreateMinistryEventUseCase } from './use-cases/create-ministry-event.use-case';
+import { UpdateMinistryEventUseCase } from './use-cases/update-ministry-event.use-case';
+import { DeleteMinistryEventUseCase } from './use-cases/delete-ministry-event.use-case';
 import { GetMeetingNoteUseCase } from './use-cases/get-meeting-note.use-case';
 import { CreateOrUpdateMeetingNoteUseCase } from './use-cases/create-or-update-meeting-note.use-case';
 import { GetAllServiceDutiesUseCase } from './use-cases/get-all-service-duties.use-case';
@@ -42,6 +44,8 @@ import { GetMinistryAssignmentsUseCase } from './use-cases/get-ministry-assignme
 import { CreateMinistryAssignmentsUseCase } from './use-cases/create-ministry-assignments.use-case';
 import { DeleteMinistryAssignmentUseCase } from './use-cases/delete-ministry-assignment.use-case';
 import { GetUserRoleInMinistryUseCase } from './use-cases/get-user-role-in-ministry.use-case';
+import { MinistryMeeting } from './entities/ministry-meeting.entity';
+import { AgendaModule } from '../agenda/agenda.module';
 
 const useCases = [
   CreateMinistryUseCase,
@@ -58,6 +62,8 @@ const useCases = [
   DeleteMinistryTaskUseCase,
   GetMinistryEventsUseCase,
   CreateMinistryEventUseCase,
+  UpdateMinistryEventUseCase,
+  DeleteMinistryEventUseCase,
   GetMeetingNoteUseCase,
   CreateOrUpdateMeetingNoteUseCase,
   GetAllServiceDutiesUseCase,
@@ -81,7 +87,9 @@ const useCases = [
       ChurchPerson,
       ServiceDuty,
       MinistryRoleAssignment,
+      MinistryMeeting
     ]),
+    AgendaModule,
   ],
   controllers: [MinistriesController, MinistriesScheduleController],
   providers: [

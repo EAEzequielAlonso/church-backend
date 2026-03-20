@@ -5,16 +5,21 @@ import { MinistryPolicy } from '../policies/ministry.policy';
 import { CalendarEvent } from '../../agenda/entities/calendar-event.entity';
 import { Person } from '../../users/entities/person.entity';
 import { CreateMinistryEventDto } from '../dto/create-ministry-event.dto';
-import { CalendarEventType } from '../../common/enums';
+import { EventSourceType, CalendarEventType } from '../../common/enums';
 import { SystemRole, FunctionalRole } from '../../common/enums';
 import { Ministry } from '../entities/ministry.entity';
+import { MinistryMeeting } from '../entities/ministry-meeting.entity';
+import { AgendaSyncService } from '../../agenda/agenda-sync.service';
 
 @Injectable()
 export class CreateMinistryEventUseCase {
     constructor(
-        @InjectRepository(CalendarEvent)
-        private readonly eventRepo: Repository<CalendarEvent>,
+        @InjectRepository(MinistryMeeting)
+        private readonly meetingRepo: Repository<MinistryMeeting>,
+        @InjectRepository(Ministry)
+        private readonly ministryRepo: Repository<Ministry>,
         private readonly ministryPolicy: MinistryPolicy,
+        private readonly agendaSyncService: AgendaSyncService,
     ) { }
 
     async execute(
@@ -24,9 +29,14 @@ export class CreateMinistryEventUseCase {
         data: CreateMinistryEventDto,
         systemRole: SystemRole,
         functionalRole: FunctionalRole
-    ): Promise<CalendarEvent> {
+    ): Promise<MinistryMeeting> {
 
         await this.ministryPolicy.assertCanManage(ministryId, personId, churchId, systemRole, functionalRole);
+
+        const ministry = await this.ministryRepo.findOne({ where: { id: ministryId } });
+        if (!ministry) {
+            throw new NotFoundException('Ministry not found');
+        }
 
         const subType =
             data.type && data.type !== CalendarEventType.MINISTRY
@@ -34,14 +44,30 @@ export class CreateMinistryEventUseCase {
                 : '';
         const description = subType + (data.description || '');
 
-        const event = this.eventRepo.create({
-            ...data,
-            description,
-            type: CalendarEventType.MINISTRY,
-            ownerId: ministryId,
-            organizer: { id: personId } as Person,
+        const startDate = new Date(data.startDate);
+        const endDate = new Date(data.endDate);
+
+        let meeting = this.meetingRepo.create({
+            ministryId: ministryId,
+            date: startDate,
+            location: data.location,
         });
 
-        return this.eventRepo.save(event);
+        meeting = await this.meetingRepo.save(meeting);
+
+        const projection = await this.agendaSyncService.createProjection({
+            title: data.title,
+            description: description,
+            startDate: startDate,
+            endDate: endDate,
+            location: data.location,
+            sourceType: EventSourceType.MINISTRY_MEETING,
+            sourceId: meeting.id,
+            ownerId: ministryId,
+            type: CalendarEventType.MINISTRY,
+        });
+
+        meeting.calendarEventId = projection.id;
+        return this.meetingRepo.save(meeting);
     }
 }
