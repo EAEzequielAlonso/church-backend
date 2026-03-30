@@ -4,7 +4,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
-import { SeedService } from './seed/seed.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -42,10 +41,5 @@ async function bootstrap() {
   console.log(
     `Swagger documentation available at: http://localhost:${port}/api`,
   );
-
-  // Run Seed AFTER app.listen to ensure DB is dropped/synced
-  const seedService = app.get(SeedService);
-  console.log('--- FORCING SEED EXECUTION ---');
-  await seedService.run();
 }
 bootstrap();

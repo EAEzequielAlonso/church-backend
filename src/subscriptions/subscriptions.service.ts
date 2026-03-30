@@ -23,7 +23,7 @@ import {
 } from '../common/date.helpers';
 import { ChurchPerson } from '../members/entities/church-person.entity';
 @Injectable()
-export class SubscriptionsService implements OnModuleInit {
+export class SubscriptionsService {
   private client: MercadoPagoConfig;
   private readonly logger = new Logger(SubscriptionsService.name);
 
@@ -40,10 +40,6 @@ export class SubscriptionsService implements OnModuleInit {
     } else {
       this.logger.warn('MP_ACCESS_TOKEN not found');
     }
-  }
-
-  async onModuleInit() {
-    await this.seedPlans();
   }
 
   async seedPlans() {

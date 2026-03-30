@@ -7,7 +7,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import { User } from '../users/entities/user.entity';
-// ... (rest of imports same)
 import { Person } from '../users/entities/person.entity';
 import { Church } from '../churches/entities/church.entity';
 import { ChurchPerson } from '../members/entities/church-person.entity';
@@ -55,6 +54,7 @@ import {
   LoanStatus,
 } from '../library/enums/library.enums';
 import { BookCategory } from '../library/entities/book-category.entity';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 @Injectable()
 export class SeedService {
@@ -88,10 +88,110 @@ export class SeedService {
     private ministryMemberRepository: Repository<MinistryMember>,
     @InjectRepository(ServiceDuty)
     private serviceDutyRepository: Repository<ServiceDuty>,
+
+    private subscriptionsService: SubscriptionsService,
   ) { }
 
+  /**
+   * Bootstrap the super admin user from environment variables.
+   * Only runs if BOOTSTRAP_ADMIN_ENABLED is true.
+   */
+  async bootstrapAdminFromEnv() {
+    const enabled = process.env.BOOTSTRAP_ADMIN_ENABLED === 'true';
+    if (!enabled) {
+      this.logger.log('Bootstrap admin is disabled (BOOTSTRAP_ADMIN_ENABLED !== true)');
+      return;
+    }
+
+    const email = process.env.BOOTSTRAP_ADMIN_EMAIL;
+    const password = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+    const name = process.env.BOOTSTRAP_ADMIN_NAME || 'Admin App';
+
+    if (!email || !password) {
+      this.logger.error('BOOTSTRAP_ADMIN_EMAIL or BOOTSTRAP_ADMIN_PASSWORD not set');
+      return;
+    }
+
+    const existingUser = await this.userRepository.findOne({ where: { email } });
+    if (existingUser) {
+      this.logger.log(`ADMIN_APP (${email}) already exists → skipping bootstrap`);
+      return;
+    }
+
+    this.logger.log(`🚀 Bootstrapping ADMIN_APP: ${email}`);
+
+    const [firstName, ...lastNameParts] = name.split(' ');
+    const lastName = lastNameParts.join(' ');
+
+    let person = await this.personRepository.findOne({ where: { email } });
+    if (!person) {
+      person = this.personRepository.create({
+        firstName,
+        lastName: lastName || '',
+        fullName: name,
+        email,
+        isActive: true,
+      });
+      person = await this.personRepository.save(person);
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = this.userRepository.create({
+      email,
+      password: hashedPassword,
+      systemRole: SystemRole.ADMIN_APP,
+      isOnboarded: true,
+      isEmailVerified: true,
+      person,
+    });
+
+    await this.userRepository.save(user);
+    this.logger.log(`✅ ADMIN_APP (${email}) created successfully`);
+  }
+
+  /**
+   * Seed essential data like subscription plans and global catalogs.
+   */
+  async seedEssentialData() {
+    this.logger.log('🌱 Seeding essential system data...');
+
+    // 1. Subscription Plans (from SubscriptionsService)
+    await this.subscriptionsService.seedPlans();
+
+    // 2. Global Book Categories
+    const DEFAULT_BOOK_CATEGORIES = [
+      { name: 'Teología', description: 'Libros de doctrina y teología sistemática', color: '#4f46e5' },
+      { name: 'Biografía', description: 'Vidas de hombres y mujeres de fe', color: '#0891b2' },
+      { name: 'Devocional', description: 'Libros para el crecimiento espiritual personal', color: '#16a34a' },
+      { name: 'Predicación', description: 'Homilética y exposición bíblica', color: '#dc2626' },
+      { name: 'Historia de la Iglesia', description: 'Historia del cristianismo', color: '#92400e' },
+      { name: 'Familia y Matrimonio', description: 'Libros sobre la vida familiar', color: '#be185d' },
+      { name: 'Liderazgo', description: 'Liderazgo cristiano y pastoral', color: '#7c3aed' },
+      { name: 'Apologética', description: 'Defensa de la fe cristiana', color: '#f59e0b' },
+      { name: 'Crecimiento Espiritual', description: 'Libros de madurez cristiana', color: '#10b981' },
+      { name: 'Vida Cristiana', description: 'Consejos prácticos para el creyente', color: '#3b82f6' },
+      { name: 'Estudio Bíblico', description: 'Guías y estudios de la Biblia', color: '#6366f1' },
+      { name: 'Ficción Cristiana', description: 'Alegorías y novelas cristianas', color: '#ec4899' },
+      { name: 'Varios', description: 'Otros libros', color: '#64748b' },
+    ];
+
+    for (const cat of DEFAULT_BOOK_CATEGORIES) {
+      const exists = await this.bookCategoryRepository.findOne({ where: { name: cat.name } });
+      if (!exists) {
+        await this.bookCategoryRepository.save(this.bookCategoryRepository.create(cat));
+        this.logger.log(`📚 Created book category: ${cat.name}`);
+      }
+    }
+
+    this.logger.log('✅ Essential data seeding complete');
+    return { message: 'Essential data seeded successfully' };
+  }
+
+  /**
+   * Run the full test-data seeding from JSON and Faker.
+   */
   async run() {
-    console.error('!!!! SEED RUNNING !!!!');
+    console.error('!!!! TEST DATA SEED RUNNING !!!!');
     this.logger.log('Starting seeding process...');
 
     // Use path.resolve to point to the actual SOURCE file, NOT the compiled one in dist,

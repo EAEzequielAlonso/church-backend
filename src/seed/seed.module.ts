@@ -22,9 +22,11 @@ import { TransactionCategory } from 'src/treasury/entities/transaction-category.
 import { Ministry } from 'src/ministries/entities/ministry.entity';
 import { MinistryMember } from 'src/ministries/entities/ministry-member.entity';
 import { ServiceDuty } from 'src/ministries/entities/service-duty.entity';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [
+    SubscriptionsModule,
     TypeOrmModule.forFeature([
       User,
       Church,
@@ -53,6 +55,8 @@ export class SeedModule implements OnModuleInit {
   constructor(private readonly seedService: SeedService) {}
 
   async onModuleInit() {
-    await this.seedService.run();
+    // Only bootstrap the super admin if enabled via ENV.
+    // Full seeding (essential/test) is now manual via Swagger.
+    await this.seedService.bootstrapAdminFromEnv();
   }
 }
