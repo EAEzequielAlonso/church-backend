@@ -13,17 +13,22 @@ import { SystemRole } from '../common/enums';
 export class SeedController {
   constructor(private readonly seedService: SeedService) {}
 
-  @Post('essential')
+  @Post('essentiall')
   @ApiOperation({ summary: 'Seed essential system data (Plans, Categories, etc.)' })
   async seedEssential() {
     return this.seedService.seedEssentialData();
   }
 
-  @Post('test-data')
+  @Post('test-dataa')
   @ApiOperation({ summary: 'Run full database seeding with test data (Faker/JSON)' })
   async runTestData() {
     return this.seedService.run();
   }
   // para crear un super admin naaaa es para pusher
+  @Post('super-admin')
+  @ApiOperation({ summary: 'Seed super admin' })
+  async seedSuperAdmin() {
+    return "hola ";
+  }
    
 }
