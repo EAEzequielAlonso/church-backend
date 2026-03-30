@@ -24,4 +24,6 @@ export class SeedController {
   async runTestData() {
     return this.seedService.run();
   }
+  // para crear un super admin naaaa es para pusher
+   
 }
