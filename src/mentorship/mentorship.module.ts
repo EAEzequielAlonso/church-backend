@@ -120,4 +120,4 @@ import { AgendaModule } from '../agenda/agenda.module';
     MentorshipVisibilityPolicy,
   ],
 })
-export class MentorshipModule { }
+export class MentorshipModule {}

@@ -41,6 +41,15 @@ export class Church {
   @Column({ nullable: true })
   address: string;
 
+  @Column({ nullable: true })
+  website: string;
+
+  @Column({ nullable: true })
+  instagram: string;
+
+  @Column({ nullable: true })
+  facebook: string;
+
   @Column({ type: 'enum', enum: PlanType, default: PlanType.TRIAL })
   plan: PlanType;
 
@@ -50,6 +59,9 @@ export class Church {
     default: SubscriptionStatus.TRIAL,
   })
   subscriptionStatus: SubscriptionStatus;
+
+  @Column({ default: 'America/Argentina/Buenos_Aires' })
+  timezone: string;
 
   @Column({ nullable: true })
   trialEndsAt: Date;

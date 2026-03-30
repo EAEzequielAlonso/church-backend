@@ -19,14 +19,15 @@ import { CreateMinistryAssignmentsUseCase } from './use-cases/create-ministry-as
 import { DeleteMinistryAssignmentUseCase } from './use-cases/delete-ministry-assignment.use-case';
 import { RequirePermissions } from 'src/auth/decorators/require-permissions.decorator';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('ministries/:id/schedule')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard)
 export class MinistriesScheduleController {
   constructor(
     private readonly getAssignmentsUseCase: GetMinistryAssignmentsUseCase,
     private readonly createAssignmentsUseCase: CreateMinistryAssignmentsUseCase,
     private readonly deleteAssignmentUseCase: DeleteMinistryAssignmentUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @RequirePermissions(AppPermission.MINISTRY_VIEW)
@@ -52,7 +53,7 @@ export class MinistriesScheduleController {
       churchId,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -62,7 +63,7 @@ export class MinistriesScheduleController {
     @Param('id') ministryId: string,
     @Param('assignmentId') assignmentId: string,
     @Request() req: any,
-    @CurrentChurch() churchId: string
+    @CurrentChurch() churchId: string,
   ) {
     return this.deleteAssignmentUseCase.execute(
       ministryId,
@@ -70,7 +71,7 @@ export class MinistriesScheduleController {
       churchId,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 }

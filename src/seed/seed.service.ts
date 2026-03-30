@@ -140,15 +140,46 @@ export class SeedService {
         { name: 'Varios', description: 'Otros libros', color: '#64748b' },
       ];
       for (const cat of DEFAULT_CATEGORIES) {
-        const exists = await this.bookCategoryRepository.findOne({ where: { name: cat.name } });
+        const exists = await queryRunner.manager.findOne(BookCategory, { where: { name: cat.name } });
         if (!exists) {
-          await this.bookCategoryRepository.save(this.bookCategoryRepository.create(cat));
+          await queryRunner.manager.save(this.bookCategoryRepository.create(cat));
           this.logger.log(`📚 Created book category: ${cat.name}`);
         }
       }
 
+      // ── Seed Global Admin (ADMIN_APP) ───────────────────────────────────
+      const globalAdminEmail = 'phyessoft@gmail.com';
+      let globalAdminUser = await queryRunner.manager.findOne(User, { where: { email: globalAdminEmail } });
+
+      if (!globalAdminUser) {
+        this.logger.log(`🚀 Creating Global Admin: ${globalAdminEmail}`);
+
+        let adminPerson = await queryRunner.manager.findOne(Person, { where: { email: globalAdminEmail } });
+        if (!adminPerson) {
+          adminPerson = this.personRepository.create({
+            firstName: 'Ezequiel',
+            lastName: 'Alonso',
+            fullName: 'Ezequiel Alonso',
+            email: globalAdminEmail,
+            isActive: true,
+          });
+          adminPerson = await queryRunner.manager.save(adminPerson);
+        }
+
+        const hashedPassword = await bcrypt.hash('123456', 10);
+        globalAdminUser = this.userRepository.create({
+          email: globalAdminEmail,
+          password: hashedPassword,
+          systemRole: SystemRole.ADMIN_APP,
+          isOnboarded: true,
+          person: adminPerson,
+        });
+        await queryRunner.manager.save(globalAdminUser);
+        this.logger.log(`✅ Global Admin created successfully`);
+      }
+
       for (const churchData of seedData.churches) {
-        let savedChurch = await this.churchRepository.findOne({
+        let savedChurch = await queryRunner.manager.findOne(Church, {
           where: { slug: churchData.slug },
         });
 
@@ -161,8 +192,9 @@ export class SeedService {
           const church = this.churchRepository.create({
             name: churchData.name,
             slug: churchData.slug,
-            plan: PlanType.PRO,
-            subscriptionStatus: SubscriptionStatus.ACTIVE,
+            plan: PlanType.TRIAL,
+            subscriptionStatus: SubscriptionStatus.TRIAL,
+            trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 👈 FIX: Set 14 days trial
             address: 'Calle Falsa 123',
             city: 'Buenos Aires',
             country: 'Argentina',
@@ -172,7 +204,7 @@ export class SeedService {
 
         // Admin Loop
         this.logger.log(`Checking Admin: ${churchData.adminEmail}`);
-        let adminPerson = await this.personRepository.findOne({
+        let adminPerson = await queryRunner.manager.findOne(Person, {
           where: { email: churchData.adminEmail },
         });
         if (!adminPerson) {
@@ -189,7 +221,7 @@ export class SeedService {
           adminPerson = await queryRunner.manager.save(adminPerson);
         }
 
-        let adminUser = await this.userRepository.findOne({
+        let adminUser = await queryRunner.manager.findOne(User, {
           where: { email: churchData.adminEmail },
         });
         if (!adminUser) {
@@ -199,13 +231,14 @@ export class SeedService {
             password: hashedPassword,
             systemRole: SystemRole.USER,
             isOnboarded: true,
+            isEmailVerified: churchData.adminEmail === 'nadiaayaelen@gmail.com' ? true : false,
             person: adminPerson,
           });
           await queryRunner.manager.save(adminUser);
         }
 
         // Church Admin Membership
-        let adminMember = await this.memberRepository.findOne({
+        let adminMember = await queryRunner.manager.findOne(ChurchPerson, {
           where: {
             person: { id: adminPerson.id },
             churchId: savedChurch.id,
@@ -254,7 +287,7 @@ export class SeedService {
         emailToMemberMap.set(churchData.adminEmail, adminMember);
 
         for (const mData of churchData.members) {
-          let person = await this.personRepository.findOne({
+          let person = await queryRunner.manager.findOne(Person, {
             where: { email: mData.email },
           });
           if (!person) {
@@ -275,7 +308,7 @@ export class SeedService {
             person = await queryRunner.manager.save(person);
           }
 
-          let user = await this.userRepository.findOne({
+          let user = await queryRunner.manager.findOne(User, {
             where: { email: mData.email },
           });
           if (!user) {
@@ -285,13 +318,14 @@ export class SeedService {
               password: hashedPassword,
               systemRole: SystemRole.USER,
               isOnboarded: true,
+              isEmailVerified: mData.email === 'nadiaayaelen@gmail.com' ? true : false,
               person: person,
             });
             user = await queryRunner.manager.save(user);
           }
           emailToUserMap.set(mData.email, user);
 
-          let member = await this.memberRepository.findOne({
+          let member = await queryRunner.manager.findOne(ChurchPerson, {
             where: {
               person: { id: person.id },
               churchId: savedChurch.id,
@@ -332,7 +366,7 @@ export class SeedService {
           // 1. Categories
           if (churchData.treasury.categories) {
             for (const catData of churchData.treasury.categories) {
-              let category = await this.categoryRepository.findOne({
+              let category = await queryRunner.manager.findOne(TransactionCategory, {
                 where: { name: catData.name, churchId: savedChurch.id },
               });
 
@@ -357,7 +391,7 @@ export class SeedService {
           // And try to map accounts correctly.
 
           for (const accData of churchData.treasury.accounts) {
-            let account = await this.accountRepository.findOne({
+            let account = await queryRunner.manager.findOne(Account, {
               where: { name: accData.name, churchId: savedChurch.id },
             });
             if (!account) {
@@ -401,7 +435,7 @@ export class SeedService {
             console.error(`Processing tx: ${txData.description}`);
 
             // Deduplication Check
-            const existingTx = await this.treasuryRepository.findOne({
+            const existingTx = await queryRunner.manager.findOne(TreasuryTransaction, {
               where: {
                 description: txData.description,
                 amount: txData.amount,
@@ -444,12 +478,12 @@ export class SeedService {
           const bookMap = new Map<string, Book>();
 
           // Pre-fetch all categories into a map for quick access
-          const categories = await this.bookCategoryRepository.find();
+          const categories = await queryRunner.manager.find(BookCategory);
           const categoryMap = new Map<string, BookCategory>(categories.map(c => [c.name, c]));
           const defaultCategory = categoryMap.get('Varios');
 
           for (const bookData of churchData.library.books) {
-            let savedBook = await this.bookRepository.findOne({
+            let savedBook = await queryRunner.manager.findOne(Book, {
               where: { title: bookData.title, churchId: savedChurch.id },
             });
 
@@ -478,7 +512,7 @@ export class SeedService {
 
               if (book && member) {
                 // Check if active loan exists
-                const activeLoan = await this.loanRepository.findOne({
+                const activeLoan = await queryRunner.manager.findOne(Loan, {
                   where: {
                     book: { id: book.id },
                     status: LoanStatus.DELIVERED,
@@ -510,7 +544,7 @@ export class SeedService {
         if (churchData.smallGroups) {
           this.logger.log(`Creating Groups for ${churchData.name}...`);
           for (const groupData of churchData.smallGroups) {
-            let savedGroup = await this.groupRepository.findOne({
+            let savedGroup = await queryRunner.manager.findOne(Group, {
               where: { name: groupData.name, churchId: savedChurch.id },
             });
 
@@ -630,7 +664,7 @@ export class SeedService {
         if (churchData.ministries) {
           this.logger.log(`Creating Ministries for ${churchData.name}...`);
           for (const minData of churchData.ministries) {
-            let savedMinistry = await this.ministryRepository.findOne({
+            let savedMinistry = await queryRunner.manager.findOne(Ministry, {
               where: { name: minData.name, churchId: savedChurch.id },
             });
 
@@ -660,7 +694,7 @@ export class SeedService {
                 if (leaderMember) {
                   // Check if already a member of this ministry
                   const existingMembership =
-                    await this.ministryMemberRepository.findOne({
+                    await queryRunner.manager.findOne(MinistryMember, {
                       where: {
                         ministryId: savedMinistry.id,
                         memberId: leaderMember.id,
@@ -703,7 +737,7 @@ export class SeedService {
 
             for (const member of selectedMembers) {
               const existingMembership =
-                await this.ministryMemberRepository.findOne({
+                await queryRunner.manager.findOne(MinistryMember, {
                   where: {
                     ministryId: savedMinistry.id,
                     memberId: member.id,
@@ -725,7 +759,7 @@ export class SeedService {
             // Create Roles (ServiceDuty)
             if (minData.roles) {
               for (const roleData of minData.roles) {
-                const existingRole = await this.serviceDutyRepository.findOne({
+                const existingRole = await queryRunner.manager.findOne(ServiceDuty, {
                   where: {
                     name: roleData.name,
                     ministryId: savedMinistry.id,
@@ -749,7 +783,7 @@ export class SeedService {
       }
 
       // FINAL LOG
-      const txCount = await this.treasuryRepository.count();
+      const txCount = await queryRunner.manager.count(TreasuryTransaction);
       this.logger.log(
         `✅ SEEDING COMPLETE. Treasury Transactions in DB: ${txCount}`,
       );

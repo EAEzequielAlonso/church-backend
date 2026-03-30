@@ -10,21 +10,21 @@ import { MarkNotificationAsReadUseCase } from './use-cases/mark-notification-as-
 import { MarkAllNotificationsAsReadUseCase } from './use-cases/mark-all-notifications-as-read.use-case';
 
 const UseCases = [
-    CreateNotificationUseCase,
-    GetMyNotificationsUseCase,
-    GetUnreadCountUseCase,
-    MarkNotificationAsReadUseCase,
-    MarkAllNotificationsAsReadUseCase,
+  CreateNotificationUseCase,
+  GetMyNotificationsUseCase,
+  GetUnreadCountUseCase,
+  MarkNotificationAsReadUseCase,
+  MarkAllNotificationsAsReadUseCase,
 ];
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Notification])],
-    controllers: [NotificationsController],
-    providers: [...UseCases],
-    /**
-     * Export CreateNotificationUseCase so other modules (Library, etc.)
-     * can import NotificationsModule and inject it.
-     */
-    exports: [CreateNotificationUseCase],
+  imports: [TypeOrmModule.forFeature([Notification])],
+  controllers: [NotificationsController],
+  providers: [...UseCases],
+  /**
+   * Export CreateNotificationUseCase so other modules (Library, etc.)
+   * can import NotificationsModule and inject it.
+   */
+  exports: [CreateNotificationUseCase],
 })
-export class NotificationsModule { }
+export class NotificationsModule {}

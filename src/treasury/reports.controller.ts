@@ -12,8 +12,9 @@ import { GetMinistryBreakdownUseCase } from './use-cases/get-ministry-breakdown.
 import { GetAccountBalancesUseCase } from './use-cases/get-account-balances.use-case';
 import { GetTrendAnalysisUseCase } from './use-cases/get-trend-analysis.use-case';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('treasury/reports')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
 export class ReportsController {
   constructor(
     private readonly getSummaryUseCase: GetSummaryUseCase,
@@ -22,7 +23,7 @@ export class ReportsController {
     private readonly getMinistryBreakdownUseCase: GetMinistryBreakdownUseCase,
     private readonly getAccountBalancesUseCase: GetAccountBalancesUseCase,
     private readonly getTrendAnalysisUseCase: GetTrendAnalysisUseCase,
-  ) { }
+  ) {}
 
   @Get('summary')
   @Roles(
@@ -83,7 +84,11 @@ export class ReportsController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.getMinistryBreakdownUseCase.execute(churchId, startDate, endDate);
+    return this.getMinistryBreakdownUseCase.execute(
+      churchId,
+      startDate,
+      endDate,
+    );
   }
 
   @Get('account-balances')

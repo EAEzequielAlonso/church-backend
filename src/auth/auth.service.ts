@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,9 +13,9 @@ import { User } from '../users/entities/user.entity';
 import { Person } from '../users/entities/person.entity';
 import { Church } from '../churches/entities/church.entity';
 import { ChurchPerson } from '../members/entities/church-person.entity';
+import { JoinRequest } from '../members/entities/join-request.entity';
 import {
   RegisterChurchDto,
-  JoinChurchDto,
   LoginDto,
   RegisterUserDto,
 } from './dto/dto';
@@ -28,20 +29,27 @@ import {
 } from '../common/enums';
 import { MembershipStatus } from '../members/enums/membership-status.enum';
 import { JwtPayload } from './interfaces';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(Person) private personRepository: Repository<Person>,
     @InjectRepository(Church) private churchRepository: Repository<Church>,
     @InjectRepository(ChurchPerson)
     private memberRepository: Repository<ChurchPerson>,
+    @InjectRepository(JoinRequest)
+    private joinRequestRepository: Repository<JoinRequest>,
     private jwtService: JwtService,
-  ) {}
+    private emailService: EmailService,
+  ) { }
 
+  // ==========================================
+  // REGISTER CHURCH (founder flow)
+  // ==========================================
   async registerChurch(dto: RegisterChurchDto) {
-    // 1. Check if email exists
     const existingUser = await this.userRepository.findOne({
       where: { email: dto.email },
     });
@@ -49,7 +57,6 @@ export class AuthService {
       throw new BadRequestException('User with this email already exists');
     }
 
-    // 2. Check if church slug exists (if provided)
     if (dto.churchSlug) {
       const existingSlug = await this.churchRepository.findOne({
         where: { slug: dto.churchSlug },
@@ -59,49 +66,54 @@ export class AuthService {
       }
     }
 
-    // 3. Create Church
+    // Create Church
     const church = this.churchRepository.create({
       name: dto.churchName,
       slug: dto.churchSlug || this.generateSlug(dto.churchName),
       plan: PlanType.TRIAL,
       subscriptionStatus: SubscriptionStatus.TRIAL,
-      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
+      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
     });
     const savedChurch = await this.churchRepository.save(church);
 
-    // 4. Create Person
+    // Create Person
     const person = this.personRepository.create({
       email: dto.email,
       fullName: dto.fullName,
     });
     const savedPerson = await this.personRepository.save(person);
 
-    // 5. Create User
+    // Create User
     const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const verificationCode = this.generateVerificationCode();
+
     const user = this.userRepository.create({
       email: dto.email,
       password: hashedPassword,
       systemRole: SystemRole.USER,
       person: savedPerson,
+      verificationCode,
+      verificationCodeExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
     });
     await this.userRepository.save(user);
 
-    // 6. Create ChurchPerson (Admin)
+    this.emailService.sendVerificationCode(user.email, verificationCode);
+
+    // Create ChurchPerson (Admin founder)
     const member = this.memberRepository.create({
       person: savedPerson,
       church: savedChurch,
-      ecclesiasticalRole: EcclesiasticalRole.PASTOR, // Default for creator
+      ecclesiasticalRole: EcclesiasticalRole.PASTOR,
       functionalRoles: [
         FunctionalRole.ADMIN_CHURCH,
         FunctionalRole.AUDITOR,
         FunctionalRole.COUNSELOR,
         FunctionalRole.MINISTRY_LEADER,
-      ], // Full access
+      ],
       membershipStatus: MembershipStatus.MEMBER,
     });
     await this.memberRepository.save(member);
 
-    // 7. Generate Token
     return this.login({
       email: dto.email,
       password: dto.password,
@@ -109,8 +121,10 @@ export class AuthService {
     });
   }
 
+  // ==========================================
+  // REGISTER USER (solo usuario, sin iglesia)
+  // ==========================================
   async registerUser(dto: RegisterUserDto) {
-    // 1. Check if email exists
     const existingUser = await this.userRepository.findOne({
       where: { email: dto.email },
     });
@@ -118,103 +132,83 @@ export class AuthService {
       throw new BadRequestException('User with this email already exists');
     }
 
-    let person = await this.personRepository.findOne({
-      where: { email: dto.email },
-    });
-    if (person && person.user) {
-      throw new BadRequestException('User with this email already exists');
-    }
+    let person: Person;
 
-    if (!person) {
-      person = this.personRepository.create({
-        email: dto.email,
-        fullName: dto.fullName || 'Usuario',
+    // Check if registering via invite link
+    if (dto.inviteToken) {
+      person = await this.personRepository.findOne({
+        where: { inviteToken: dto.inviteToken },
+        relations: ['user'],
       });
-      person = await this.personRepository.save(person);
+
+      if (!person) {
+        throw new BadRequestException('Token de invitación inválido');
+      }
+      if (person.user) {
+        throw new BadRequestException('Esta invitación ya ha sido utilizada');
+      }
+
+      person.email = dto.email;
+      if (dto.fullName) person.fullName = dto.fullName;
+      person.inviteToken = null;
+      await this.personRepository.save(person);
+    } else {
+      // AUTO-LINK: Check if Person exists by email (offline person)
+      person = await this.personRepository.findOne({
+        where: { email: dto.email },
+        relations: ['user', 'memberships'],
+      });
+
+      if (person && person.user) {
+        throw new BadRequestException('User with this email already exists');
+      }
+
+      if (!person) {
+        person = this.personRepository.create({
+          email: dto.email,
+          fullName: dto.fullName || 'Usuario',
+        });
+        person = await this.personRepository.save(person);
+      }
     }
 
-    // 3. Create User
+    // Create User
     const hashedPassword = await bcrypt.hash(dto.password, 10);
+    // If person already has church membership, skip email verification
+    const hasExistingMembership = person.memberships?.length > 0;
+    const verificationCode = (dto.inviteToken || hasExistingMembership) ? null : this.generateVerificationCode();
+
     const user = this.userRepository.create({
       email: dto.email,
       password: hashedPassword,
       systemRole: SystemRole.USER,
       person: person,
+      isEmailVerified: !!dto.inviteToken || hasExistingMembership,
+      isOnboarded: !!dto.inviteToken || hasExistingMembership,
+      provider: 'local',
+      verificationCode,
+      verificationCodeExpiresAt: verificationCode ? new Date(Date.now() + 15 * 60 * 1000) : null,
     });
     await this.userRepository.save(user);
 
-    // 4. Generate Token (No specific church context yet)
+    if (verificationCode) {
+      this.emailService.sendVerificationCode(user.email, verificationCode);
+    }
+
     return this.login({ email: dto.email, password: dto.password });
   }
 
-  async joinChurch(dto: JoinChurchDto) {
-    // 1. Find Church
-    const church = await this.churchRepository.findOne({
-      where: { slug: dto.churchSlug },
-    });
-    if (!church) throw new BadRequestException('Church not found');
-
-    // 2. Find User or Create Person/User
-    let user = await this.userRepository.findOne({
-      where: { email: dto.email },
-      relations: ['person'],
-    });
-    let person: Person;
-
-    if (!user) {
-      if (!dto.password)
-        throw new BadRequestException('Password required for new user');
-
-      // Create Person
-      person = this.personRepository.create({
-        email: dto.email,
-        fullName: dto.fullName || 'New Member',
-      });
-      person = await this.personRepository.save(person);
-
-      // Create User
-      const hashedPassword = await bcrypt.hash(dto.password, 10);
-      user = this.userRepository.create({
-        email: dto.email,
-        password: hashedPassword,
-        systemRole: SystemRole.USER,
-        person: person,
-      });
-      await this.userRepository.save(user);
-    } else {
-      person = user.person;
-    }
-
-    // 3. Check existing membership
-    const existingMember = await this.memberRepository.findOne({
-      where: { person: { id: person.id }, church: { id: church.id } },
-    });
-
-    if (existingMember) {
-      throw new BadRequestException('Already a member or pending approval');
-    }
-
-    // 4. Create Pending Membership
-    const member = this.memberRepository.create({
-      person: person,
-      church,
-      ecclesiasticalRole: EcclesiasticalRole.NONE,
-      membershipStatus: MembershipStatus.MEMBER,
-    });
-    await this.memberRepository.save(member);
-
-    return { message: 'Request sent. Waiting for approval.' };
-  }
-
+  // ==========================================
+  // LOGIN
+  // ==========================================
   async login(dto: LoginDto) {
     const user = await this.userRepository.findOne({
       where: { email: dto.email },
-      select: ['id', 'email', 'password', 'isOnboarded', 'systemRole'],
-      relations: ['person'], // Load Person to get ID
+      select: ['id', 'email', 'password', 'isOnboarded', 'systemRole', 'isEmailVerified', 'verificationCode', 'verificationCodeExpiresAt', 'provider'],
+      relations: ['person'],
     });
 
     if (!user) {
-      // Removed bcrypt check for safety if user not found, but logic was:
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -222,65 +216,60 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // DEBUG log
+    if (!user.isEmailVerified && user.verificationCode) {
+      this.logger.log('\n=============================================');
+      this.logger.log(`[LOGIN DEBUG] User: ${user.email} is NOT VERIFIED.`);
+      this.logger.log(`[LOGIN DEBUG] Current Code: ${user.verificationCode}`);
+      this.logger.log('=============================================\n');
+    }
+
     let churchId = null;
-    const authRoles: string[] = []; // Strings for JWT
+    const authRoles: string[] = [];
     let membership: ChurchPerson | null = null;
 
-    // If churchSlug provided, validate membership
-    if (dto.churchSlug) {
-      const church = await this.churchRepository.findOne({
-        where: { slug: dto.churchSlug },
-      });
-      if (!church) throw new BadRequestException('Church not found');
+    if (user.person) {
+      // Find church membership
+      if (dto.churchSlug) {
+        const church = await this.churchRepository.findOne({
+          where: { slug: dto.churchSlug },
+        });
+        if (!church) throw new BadRequestException('Church not found');
 
-      membership = await this.memberRepository.findOne({
-        where: { person: { id: user.person.id }, church: { id: church.id } },
-      });
+        membership = await this.memberRepository.findOne({
+          where: { person: { id: user.person.id }, church: { id: church.id } },
+        });
 
-      // Allow if status is MEMBER, or maybe PROSPECT can login but with limited access?
-      // For now, let's allow login but role check will limit access.
-      if (!membership) {
-        throw new UnauthorizedException(
-          'Not a member of this church or pending approval',
-        );
-      }
-
-      churchId = church.id;
-      // Push the single role to array
-      // Push the single role to array
-      // Push functional roles to roles array (for PermissionsGuard)
-      if (membership.functionalRoles && membership.functionalRoles.length > 0) {
-        authRoles.push(...membership.functionalRoles);
-      }
-    } else {
-      // Try to find a default church (first active membership)
-      membership = await this.memberRepository.findOne({
-        where: { person: { id: user.person.id } },
-        relations: ['church'],
-        order: { joinedAt: 'DESC' },
-      });
-      if (membership) {
-        churchId = membership.church.id;
-        if (
-          membership.functionalRoles &&
-          membership.functionalRoles.length > 0
-        ) {
-          authRoles.push(...membership.functionalRoles);
+        if (!membership) {
+          throw new UnauthorizedException('Not a member of this church');
         }
+
+        churchId = church.id;
+      } else {
+        // Auto-find first membership
+        membership = await this.memberRepository.findOne({
+          where: { person: { id: user.person.id } },
+          relations: ['church'],
+          order: { joinedAt: 'DESC' },
+        });
+        if (membership) {
+          churchId = membership.church?.id || membership.churchId;
+        }
+      }
+
+      if (membership?.functionalRoles?.length > 0) {
+        authRoles.push(...membership.functionalRoles);
       }
     }
 
-    // Add System Role if needed in JWT
-    // if (user.systemRole === SystemRole.ADMIN_APP) authRoles.push('SUPER_ADMIN');
-
+    // JWT payload — minimal, NO onboarding state
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      personId: user.person.id,
-      churchId,
-      memberId: membership?.id,
-      roles: authRoles,
-      ecclesiasticalRole: membership?.ecclesiasticalRole,
+      personId: user.person?.id || null,
+      systemRole: user.systemRole,
+      isEmailVerified: user.isEmailVerified,
+      provider: user.provider,
     };
 
     return {
@@ -288,53 +277,73 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.person?.fullName || 'Usuario', // Get from Person
-        personId: user.person.id,
+        fullName: user.person?.fullName || 'Usuario',
+        personId: user.person?.id,
         memberId: membership?.id,
         ecclesiasticalRole: membership?.ecclesiasticalRole,
+        membershipStatus: membership?.membershipStatus,
         isOnboarded: user.isOnboarded,
+        isEmailVerified: user.isEmailVerified,
+        systemRole: user.systemRole,
         roles: authRoles,
+        provider: user.provider,
       },
-      churchId, // Return to client so they know which context is active
+      churchId,
     };
   }
 
+  // ==========================================
+  // SOCIAL LOGIN (Auth0 / Google)
+  // ==========================================
   async validateSocialUser(dto: SocialLoginDto) {
     let user = await this.userRepository.findOne({
       where: { email: dto.email },
       relations: ['person'],
     });
 
-    // Flag to indicate if we are in "Claim Profile" state
     let potentialPersonMatch: Person | null = null;
     let isClaimProfileFlow = false;
 
     if (!user) {
-      // Check if there is an existing PERSON with this email (OFFLINE PERSON)
-      // We need to check if this person is already linked to a user.
+      // AUTO-LINK: Check if Person exists with this email (offline person)
       const existingPerson = await this.personRepository.findOne({
         where: { email: dto.email },
-        relations: ['user'], // Check if already has user
+        relations: ['user', 'memberships'],
       });
 
       if (existingPerson && !existingPerson.user) {
-        // MATCH FOUND!
-        potentialPersonMatch = existingPerson;
-        isClaimProfileFlow = true;
+        // Person exists without user — check if has memberships (auto-link)
+        if (existingPerson.memberships?.length > 0) {
+          // Direct auto-link: create user linked to this person
+          const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
+          user = this.userRepository.create({
+            email: dto.email,
+            password: randomPassword,
+            systemRole: SystemRole.USER,
+            person: existingPerson,
+            isEmailVerified: true,
+            isOnboarded: true,
+            provider: 'auth0',
+          });
+          user = await this.userRepository.save(user);
+          user.person = existingPerson;
+        } else {
+          // Person exists but no memberships — claim profile flow
+          potentialPersonMatch = existingPerson;
+          isClaimProfileFlow = true;
 
-        const randomPassword = await bcrypt.hash(
-          Math.random().toString(36),
-          10,
-        );
-        user = this.userRepository.create({
-          email: dto.email,
-          password: randomPassword,
-          systemRole: SystemRole.USER,
-          // person: null // Explicitly null
-        });
-        user = await this.userRepository.save(user);
+          const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
+          user = this.userRepository.create({
+            email: dto.email,
+            password: randomPassword,
+            systemRole: SystemRole.USER,
+            isEmailVerified: true,
+            provider: 'auth0',
+          });
+          user = await this.userRepository.save(user);
+        }
       } else {
-        // Standard Flow: Create Person + User linked
+        // Standard flow: create Person + User
         let person = this.personRepository.create({
           email: dto.email,
           fullName: dto.name || 'Usuario',
@@ -342,19 +351,16 @@ export class AuthService {
         });
         person = await this.personRepository.save(person);
 
-        const randomPassword = await bcrypt.hash(
-          Math.random().toString(36),
-          10,
-        );
+        const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
         user = this.userRepository.create({
           email: dto.email,
           password: randomPassword,
           systemRole: SystemRole.USER,
-          person: person, // Link relationship
+          person: person,
+          isEmailVerified: true,
+          provider: 'auth0',
         });
         user = await this.userRepository.save(user);
-
-        // Reload user with person relation to be safe
         user.person = person;
       }
     }
@@ -363,7 +369,10 @@ export class AuthService {
       const payload: JwtPayload = {
         sub: user.id,
         email: user.email,
-        personId: null, // No person yet
+        personId: null,
+        systemRole: user.systemRole,
+        isEmailVerified: user.isEmailVerified,
+        provider: user.provider,
       };
 
       return {
@@ -383,7 +392,7 @@ export class AuthService {
       };
     }
 
-    // Standard flow continue...
+    // Standard flow — find membership
     if (!user.person) {
       user = await this.userRepository.findOne({
         where: { id: user.id },
@@ -391,31 +400,32 @@ export class AuthService {
       });
     }
 
-    // Try to find a default church (first active membership linked to PERSON)
-    const membership = await this.memberRepository.findOne({
-      where: { person: { id: user.person.id } },
-      relations: ['church'],
-      order: { joinedAt: 'DESC' },
-    });
-
     let churchId = null;
     const authRoles: string[] = [];
+    let membership: ChurchPerson | null = null;
 
-    if (membership) {
-      churchId = membership.church.id;
-      if (membership.functionalRoles && membership.functionalRoles.length > 0) {
-        authRoles.push(...membership.functionalRoles);
+    if (user.person) {
+      membership = await this.memberRepository.findOne({
+        where: { person: { id: user.person.id } },
+        relations: ['church'],
+        order: { joinedAt: 'DESC' },
+      });
+
+      if (membership) {
+        churchId = membership.church?.id || membership.churchId;
+        if (membership.functionalRoles?.length > 0) {
+          authRoles.push(...membership.functionalRoles);
+        }
       }
     }
 
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      personId: user.person.id,
-      churchId,
-      memberId: membership?.id,
-      roles: authRoles,
-      ecclesiasticalRole: membership?.ecclesiasticalRole,
+      personId: user.person?.id || null,
+      systemRole: user.systemRole,
+      isEmailVerified: user.isEmailVerified,
+      provider: user.provider,
     };
 
     return {
@@ -423,18 +433,24 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.person.fullName,
-        personId: user.person.id,
+        fullName: user.person?.fullName,
+        personId: user.person?.id,
         memberId: membership?.id,
         ecclesiasticalRole: membership?.ecclesiasticalRole,
-        isOnboarded: user.isOnboarded,
-        avatarUrl: user.person.avatarUrl,
+        membershipStatus: membership?.membershipStatus,
+        isEmailVerified: user.isEmailVerified,
+        systemRole: user.systemRole,
+        avatarUrl: user.person?.avatarUrl,
         roles: authRoles,
+        provider: user.provider,
       },
       churchId,
     };
   }
 
+  // ==========================================
+  // SWITCH CHURCH
+  // ==========================================
   async switchChurch(userId: string, targetChurchId: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -443,7 +459,6 @@ export class AuthService {
 
     if (!user) throw new UnauthorizedException('User not found');
 
-    // Check if user is a member of the target church
     const membership = await this.memberRepository.findOne({
       where: {
         person: { id: user.person.id },
@@ -457,19 +472,17 @@ export class AuthService {
     }
 
     const authRoles: string[] = [];
-    if (membership.functionalRoles && membership.functionalRoles.length > 0) {
+    if (membership.functionalRoles?.length > 0) {
       authRoles.push(...membership.functionalRoles);
     }
 
-    // Generate new token with updated church context
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       personId: user.person.id,
-      churchId: targetChurchId,
-      memberId: membership.id,
-      roles: authRoles,
-      ecclesiasticalRole: membership.ecclesiasticalRole,
+      systemRole: user.systemRole,
+      isEmailVerified: user.isEmailVerified,
+      provider: user.provider,
     };
 
     return {
@@ -481,9 +494,13 @@ export class AuthService {
         personId: user.person.id,
         memberId: membership.id,
         ecclesiasticalRole: membership.ecclesiasticalRole,
+        membershipStatus: membership.membershipStatus,
         isOnboarded: user.isOnboarded,
+        isEmailVerified: user.isEmailVerified,
+        systemRole: user.systemRole,
         avatarUrl: user.person.avatarUrl,
         roles: authRoles,
+        provider: user.provider,
       },
       churchId: targetChurchId,
       churchName: membership.church.name,
@@ -491,6 +508,9 @@ export class AuthService {
     };
   }
 
+  // ==========================================
+  // CLAIM PROFILE
+  // ==========================================
   async claimProfile(
     userId: string,
     personIdToClaim: string | null,
@@ -501,14 +521,12 @@ export class AuthService {
       relations: ['person'],
     });
     if (!user) throw new UnauthorizedException('User not found');
-    if (user.person)
-      throw new BadRequestException('User is already linked to a person');
+    if (user.person) throw new BadRequestException('User is already linked to a person');
 
     if (createNew) {
-      // User rejected the claim, create NEW person
       const person = this.personRepository.create({
         email: user.email,
-        fullName: 'Usuario', // Or prompt for name? For now default.
+        fullName: 'Usuario',
       });
       const savedPerson = await this.personRepository.save(person);
       user.person = savedPerson;
@@ -530,37 +548,77 @@ export class AuthService {
     }
   }
 
-  private async generateTokenForUser(user: User) {
-    // Helper to re-generate full token after claim
-    // Reload person
+  // ==========================================
+  // VERIFY EMAIL — now returns new token!
+  // ==========================================
+  async verifyEmail(email: string, code: string) {
+    const user = await this.userRepository.findOne({
+      where: { email },
+      relations: ['person'],
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (user.isEmailVerified) {
+      return { message: 'Email is already verified' };
+    }
+
+    if (user.verificationCode !== code) {
+      throw new BadRequestException('Código de verificación incorrecto');
+    }
+
+    if (!user.verificationCodeExpiresAt || new Date() > user.verificationCodeExpiresAt) {
+      throw new BadRequestException('El código de verificación ha expirado');
+    }
+
+    user.isEmailVerified = true;
+    user.verificationCode = null;
+    user.verificationCodeExpiresAt = null;
+
+    await this.userRepository.save(user);
+
+    // Generate new token with updated isEmailVerified
+    const tokenResult = await this.generateTokenForUser(user);
+
+    return {
+      message: 'Email verificado con éxito',
+      ...tokenResult,
+    };
+  }
+
+  async resendVerificationCode(email: string) {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (user.isEmailVerified) {
+      throw new BadRequestException('Email is already verified');
+    }
+
+    const newCode = this.generateVerificationCode();
+    user.verificationCode = newCode;
+    user.verificationCodeExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.userRepository.save(user);
+    this.emailService.sendVerificationCode(user.email, newCode);
+
+    return { message: 'Nuevo código enviado' };
+  }
+
+  // ==========================================
+  // HELPERS
+  // ==========================================
+  async generateTokenForUser(user: User) {
     const reloadedUser = await this.userRepository.findOne({
       where: { id: user.id },
       relations: ['person'],
     });
 
-    // Find default church
-    const membership = await this.memberRepository.findOne({
-      where: { person: { id: reloadedUser.person.id } },
-      relations: ['church'],
-      order: { joinedAt: 'DESC' },
-    });
-
-    let churchId = null;
-    const authRoles: string[] = [];
-    if (membership) {
-      churchId = membership.church.id;
-      if (membership.functionalRoles && membership.functionalRoles.length > 0) {
-        authRoles.push(...membership.functionalRoles);
-      }
-    }
-
     const payload: JwtPayload = {
       sub: reloadedUser.id,
       email: reloadedUser.email,
-      personId: reloadedUser.person.id,
-      churchId,
-      memberId: membership?.id,
-      roles: authRoles,
+      personId: reloadedUser.person?.id || null,
+      systemRole: reloadedUser.systemRole,
+      isEmailVerified: reloadedUser.isEmailVerified,
+      provider: reloadedUser.provider,
     };
 
     return {
@@ -568,12 +626,13 @@ export class AuthService {
       user: {
         id: reloadedUser.id,
         email: reloadedUser.email,
-        fullName: reloadedUser.person.fullName,
-        personId: reloadedUser.person.id,
+        fullName: reloadedUser.person?.fullName,
+        personId: reloadedUser.person?.id,
         isOnboarded: reloadedUser.isOnboarded,
-        roles: authRoles,
+        isEmailVerified: reloadedUser.isEmailVerified,
+        systemRole: reloadedUser.systemRole,
+        provider: reloadedUser.provider,
       },
-      churchId,
     };
   }
 
@@ -586,5 +645,9 @@ export class AuthService {
       '-' +
       Math.floor(Math.random() * 1000)
     );
+  }
+
+  private generateVerificationCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 }

@@ -47,8 +47,6 @@ import { GetCategoriesUseCase } from './use-cases/get-categories.use-case';
 import { UpdateCategoryUseCase } from './use-cases/update-category.use-case';
 import { DeleteCategoryUseCase } from './use-cases/delete-category.use-case';
 
-
-
 // Use Cases — Periods
 import { ClosePeriodUseCase } from './use-cases/close-period.use-case';
 import { ReopenPeriodUseCase } from './use-cases/reopen-period.use-case';
@@ -60,8 +58,9 @@ import { Repository } from 'typeorm';
 import { ClosedPeriod } from './entities/closed-period.entity';
 import { AuditEntityType, AuditAction } from './enums/treasury.enums';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('treasury')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
 @UseInterceptors(ClassSerializerInterceptor)
 export class TreasuryController {
   constructor(
@@ -87,15 +86,13 @@ export class TreasuryController {
     private readonly updateCategoryUseCase: UpdateCategoryUseCase,
     private readonly deleteCategoryUseCase: DeleteCategoryUseCase,
 
-
-
     // Periods
     private readonly closePeriodUseCase: ClosePeriodUseCase,
     private readonly reopenPeriodUseCase: ReopenPeriodUseCase,
     private readonly getPeriodStatusUseCase: GetPeriodStatusUseCase,
     @InjectRepository(ClosedPeriod)
     private readonly closedPeriodRepo: Repository<ClosedPeriod>,
-  ) { }
+  ) {}
 
   // ═══════════════════════════════════════════════════════════════════════════
   // TRANSACTIONS
@@ -232,7 +229,15 @@ export class TreasuryController {
   @Roles(FunctionalRole.TREASURER)
   correctTransaction(
     @Param('id') id: string,
-    @Body() data: { reason: string; newAmount?: number; newSourceAccountId?: string; newDestinationAccountId?: string; newCategoryId?: string; newDescription?: string },
+    @Body()
+    data: {
+      reason: string;
+      newAmount?: number;
+      newSourceAccountId?: string;
+      newDestinationAccountId?: string;
+      newCategoryId?: string;
+      newDescription?: string;
+    },
     @CurrentChurch() churchId: string,
     @CurrentUser() user: any,
     @Req() req: Request,
@@ -292,7 +297,8 @@ export class TreasuryController {
     @Req() req: Request,
   ) {
     return this.createAccountUseCase.execute(
-      dto, churchId,
+      dto,
+      churchId,
       user.userId || user.id,
       user.functionalRole,
       user.email,
@@ -320,7 +326,9 @@ export class TreasuryController {
     @Req() req: Request,
   ) {
     return this.updateAccountUseCase.execute(
-      id, churchId, dto,
+      id,
+      churchId,
+      dto,
       user.userId || user.id,
       user.functionalRole,
       user.email,
@@ -337,15 +345,14 @@ export class TreasuryController {
     @Req() req: Request,
   ) {
     return this.deleteAccountUseCase.execute(
-      id, churchId,
+      id,
+      churchId,
       user.userId || user.id,
       user.functionalRole,
       user.email,
       req.ip || req.socket?.remoteAddress || null,
     );
   }
-
-
 
   // ═══════════════════════════════════════════════════════════════════════════
   // CATEGORIES
@@ -385,10 +392,7 @@ export class TreasuryController {
 
   @Delete('categories/:id')
   @Roles(FunctionalRole.TREASURER)
-  deleteCategory(
-    @Param('id') id: string,
-    @CurrentChurch() churchId: string,
-  ) {
+  deleteCategory(@Param('id') id: string, @CurrentChurch() churchId: string) {
     return this.deleteCategoryUseCase.execute(id, churchId);
   }
 
@@ -397,13 +401,21 @@ export class TreasuryController {
   // ═══════════════════════════════════════════════════════════════════════════
 
   @Get('periods/status')
-  @Roles(FunctionalRole.TREASURER, FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.ADMIN_CHURCH,
+    FunctionalRole.AUDITOR,
+  )
   getPeriodStatus(
     @CurrentChurch() churchId: string,
     @Query('year') year: string,
     @Query('month') month: string,
   ) {
-    return this.getPeriodStatusUseCase.execute(churchId, parseInt(year, 10), parseInt(month, 10));
+    return this.getPeriodStatusUseCase.execute(
+      churchId,
+      parseInt(year, 10),
+      parseInt(month, 10),
+    );
   }
 
   @Post('periods/close')

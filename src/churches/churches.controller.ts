@@ -10,8 +10,11 @@ import {
 } from '@nestjs/common';
 import { ChurchesService } from './churches.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { CreateChurchDto } from './dto/create-church.dto';
+import { UpdateChurchProfileDto } from './dto/update-church-profile.dto';
 import { CurrentChurch } from '../common/decorators';
+import { FunctionalRole } from '../common/enums';
 
 @Controller('churches')
 export class ChurchesController {
@@ -25,7 +28,30 @@ export class ChurchesController {
     return this.churchesService.create(req.user.userId, dto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
+  @Get('active')
+  getActive(@CurrentChurch() churchId: string) {
+    return this.churchesService.getActive(churchId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
+  @Patch('active')
+  updateActive(
+    @CurrentChurch() churchId: string,
+    @Body() dto: UpdateChurchProfileDto,
+  ) {
+    return this.churchesService.updateActive(churchId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(
+    FunctionalRole.ADMIN_CHURCH,
+    FunctionalRole.TREASURER,
+    FunctionalRole.AUDITOR,
+    FunctionalRole.MEMBER,
+  )
   @Get('current')
   getCurrent(@CurrentChurch() churchId: string) {
     return this.churchesService.findOne(churchId);

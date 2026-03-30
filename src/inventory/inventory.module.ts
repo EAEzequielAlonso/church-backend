@@ -40,4 +40,4 @@ const USE_CASES = [
   controllers: [InventoryController],
   providers: [InventoryPolicy, ...USE_CASES],
 })
-export class InventoryModule { }
+export class InventoryModule {}

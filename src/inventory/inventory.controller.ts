@@ -30,10 +30,11 @@ import { DeleteInventoryItemUseCase } from './use-cases/delete-inventory-item.us
 import { RegisterMovementUseCase } from './use-cases/register-movement.use-case';
 import { GetMovementsUseCase } from './use-cases/get-movements.use-case';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @ApiTags('Inventory')
 @ApiBearerAuth()
 @Controller('inventory')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard)
 export class InventoryController {
   constructor(
     private readonly createItemUseCase: CreateInventoryItemUseCase,
@@ -44,7 +45,7 @@ export class InventoryController {
     private readonly deleteItemUseCase: DeleteInventoryItemUseCase,
     private readonly registerMovementUseCase: RegisterMovementUseCase,
     private readonly getMovementsUseCase: GetMovementsUseCase,
-  ) { }
+  ) {}
 
   // ─── READ (any authenticated user) ─────────────────────────────────────────
 
@@ -83,7 +84,12 @@ export class InventoryController {
     @Request() req,
     @Body() dto: CreateInventoryItemDto,
   ) {
-    return this.createItemUseCase.execute(churchId, req.user.id, req.user.roles ?? [], dto);
+    return this.createItemUseCase.execute(
+      churchId,
+      req.user.id,
+      req.user.roles ?? [],
+      dto,
+    );
   }
 
   @Patch(':id')
@@ -93,7 +99,12 @@ export class InventoryController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateInventoryItemDto,
   ) {
-    return this.updateItemUseCase.execute(churchId, id, req.user.roles ?? [], dto);
+    return this.updateItemUseCase.execute(
+      churchId,
+      id,
+      req.user.roles ?? [],
+      dto,
+    );
   }
 
   @Post('movement')
@@ -102,7 +113,12 @@ export class InventoryController {
     @Request() req,
     @Body() dto: RegisterMovementDto,
   ) {
-    return this.registerMovementUseCase.execute(churchId, req.user.id, req.user.roles ?? [], dto);
+    return this.registerMovementUseCase.execute(
+      churchId,
+      req.user.id,
+      req.user.roles ?? [],
+      dto,
+    );
   }
 
   @Patch(':id/deactivate')
@@ -111,7 +127,11 @@ export class InventoryController {
     @Request() req,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.deactivateItemUseCase.execute(churchId, id, req.user.roles ?? []);
+    return this.deactivateItemUseCase.execute(
+      churchId,
+      id,
+      req.user.roles ?? [],
+    );
   }
 
   @Delete(':id')

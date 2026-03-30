@@ -22,8 +22,9 @@ import { ListFamiliesUseCase } from './use-cases/list-families.use-case';
 import { AddFamilyMemberUseCase } from './use-cases/add-family-member.use-case';
 import { RemoveFamilyMemberUseCase } from './use-cases/remove-family-member.use-case';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('families')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard)
 export class FamiliesController {
   constructor(
     private readonly createFamilyUseCase: CreateFamilyUseCase,

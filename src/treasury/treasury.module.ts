@@ -37,8 +37,6 @@ import { GetCategoriesUseCase } from './use-cases/get-categories.use-case';
 import { UpdateCategoryUseCase } from './use-cases/update-category.use-case';
 import { DeleteCategoryUseCase } from './use-cases/delete-category.use-case';
 
-
-
 // Use Cases — Periods
 import { ClosePeriodUseCase } from './use-cases/close-period.use-case';
 import { ReopenPeriodUseCase } from './use-cases/reopen-period.use-case';
@@ -73,8 +71,6 @@ const USE_CASES = [
   UpdateCategoryUseCase,
   DeleteCategoryUseCase,
 
-
-
   // Periods
   ClosePeriodUseCase,
   ReopenPeriodUseCase,
@@ -94,7 +90,6 @@ const USE_CASES = [
     TypeOrmModule.forFeature([
       TreasuryTransaction,
       Account,
-
       TreasuryAuditLog,
       Ministry,
       TransactionCategory,
@@ -103,10 +98,6 @@ const USE_CASES = [
     ]),
   ],
   controllers: [TreasuryController, ReportsController],
-  providers: [
-    ReportsService,
-    TreasuryPolicy,
-    ...USE_CASES,
-  ],
+  providers: [ReportsService, TreasuryPolicy, ...USE_CASES],
 })
-export class TreasuryModule { }
+export class TreasuryModule {}

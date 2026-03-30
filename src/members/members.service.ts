@@ -3,23 +3,37 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, EntityManager } from 'typeorm';
 import { ChurchPerson } from './entities/church-person.entity';
+import { JoinRequest, JoinRequestStatus } from './entities/join-request.entity';
 import { Person } from '../users/entities/person.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { EcclesiasticalRole, FunctionalRole } from '../common/enums';
 import { MembershipStatus } from './enums/membership-status.enum';
+import { SubscriptionsService } from 'src/subscriptions/subscriptions.service';
+import { EmailService } from '../auth/email.service';
+import { AuthService } from '../auth/auth.service';
+import { v4 as uuidv4 } from 'uuid';
+import { ApproveMemberDto } from './dto/approve-member.dto';
 
 @Injectable()
 export class MembersService {
   constructor(
     @InjectRepository(ChurchPerson)
     private memberRepository: Repository<ChurchPerson>,
+    @InjectRepository(JoinRequest)
+    private joinRequestRepository: Repository<JoinRequest>,
     @InjectRepository(Person) private personRepository: Repository<Person>,
     @InjectRepository(User) private userRepository: Repository<User>,
+    private readonly subService: SubscriptionsService,
+    private readonly emailService: EmailService,
+    @Inject(forwardRef(() => AuthService))
+    private readonly authService: AuthService,
   ) { }
 
   async search(churchId: string, query: string) {
@@ -43,6 +57,13 @@ export class MembersService {
     churchId: string,
     manager?: EntityManager,
   ) {
+    const usage = await this.subService.getSubscriptionUsage(churchId);
+    if (usage.limit !== null && usage.currentMembers >= usage.limit) {
+      throw new ForbiddenException(
+        'Has alcanzado el límite de miembros de tu plan. Actualiza tu suscripción para continuar.',
+      );
+    }
+
     const personRepo = manager
       ? manager.getRepository(Person)
       : this.personRepository;
@@ -54,7 +75,7 @@ export class MembersService {
       email,
       firstName,
       lastName,
-      fullName, // Optional now
+      fullName,
       status,
       ecclesiasticalRole,
       functionalRoles,
@@ -65,26 +86,22 @@ export class MembersService {
 
     let person: Person;
 
-    // Try to find person by email if provided
     if (email) {
       person = await personRepo.findOne({ where: { email } });
     }
 
-    // Try to find by documentId if provided and not found by email
     if (!person && documentId) {
       person = await personRepo.findOne({ where: { documentId } });
     }
 
     const constructedFullName = fullName || `${firstName} ${lastName}`.trim();
 
-    // Helper for safe date parsing from YYYY-MM-DD
     const parseDate = (d: string) => {
       if (!d) return null;
       const [year, month, day] = d.split('-').map(Number);
       return new Date(year, month - 1, day);
     };
 
-    // Create or Update Person info
     if (!person) {
       person = personRepo.create({
         email: email || null,
@@ -97,46 +114,20 @@ export class MembersService {
       });
       person = await personRepo.save(person);
     } else {
-      // Optional: Update existing person details if they were missing or if explicitly authorized
-      // For now, we update if fields are missing on the existing person record
       let needsUpdate = false;
-
-      if (!person.firstName && firstName) {
-        person.firstName = firstName;
-        needsUpdate = true;
-      }
-      if (!person.lastName && lastName) {
-        person.lastName = lastName;
-        needsUpdate = true;
-      }
-      if (!person.fullName && constructedFullName) {
-        person.fullName = constructedFullName;
-        needsUpdate = true;
-      }
-
-      if (!person.phoneNumber && phoneNumber) {
-        person.phoneNumber = phoneNumber;
-        needsUpdate = true;
-      }
-      if (!person.documentId && documentId) {
-        person.documentId = documentId;
-        needsUpdate = true;
-      }
-      if (!person.birthDate && birthDate) {
-        person.birthDate = parseDate(birthDate);
-        needsUpdate = true;
-      }
-
+      if (!person.firstName && firstName) { person.firstName = firstName; needsUpdate = true; }
+      if (!person.lastName && lastName) { person.lastName = lastName; needsUpdate = true; }
+      if (!person.fullName && constructedFullName) { person.fullName = constructedFullName; needsUpdate = true; }
+      if (!person.phoneNumber && phoneNumber) { person.phoneNumber = phoneNumber; needsUpdate = true; }
+      if (!person.documentId && documentId) { person.documentId = documentId; needsUpdate = true; }
+      if (!person.birthDate && birthDate) { person.birthDate = parseDate(birthDate); needsUpdate = true; }
       if (needsUpdate) {
         person = await personRepo.save(person);
       }
     }
 
     const existingMember = await memberRepo.findOne({
-      where: {
-        person: { id: person.id },
-        churchId: churchId,
-      },
+      where: { person: { id: person.id }, churchId },
     });
 
     if (existingMember) {
@@ -145,7 +136,7 @@ export class MembersService {
 
     const member = memberRepo.create({
       person,
-      churchId: churchId,
+      churchId,
       ecclesiasticalRole: ecclesiasticalRole || EcclesiasticalRole.NONE,
       functionalRoles: functionalRoles || [FunctionalRole.MEMBER],
       membershipStatus: status || MembershipStatus.MEMBER,
@@ -175,30 +166,15 @@ export class MembersService {
       where: { id, churchId },
       relations: ['person', 'person.user'],
     });
-
     if (!member) throw new NotFoundException('Member not found');
     return member;
   }
 
   async getMemberDetails(id: string, churchId: string) {
     const member = await this.findOne(id, churchId);
-
-    const counselingStats = {
-      total: 0,
-      open: 0,
-      closed: 0,
-    };
-
-    const discipleshipStats = {
-      status: 'Not started',
-      level: 0,
-    };
-
-    return {
-      ...member,
-      counselingStats,
-      discipleshipStats,
-    };
+    const counselingStats = { total: 0, asConselor: 0, asCounselee: 0 };
+    const discipleshipStats = { total: 0, asMentor: 0, asMentee: 0 };
+    return { ...member, counselingStats, discipleshipStats };
   }
 
   async update(
@@ -213,15 +189,9 @@ export class MembersService {
     });
     if (!member) throw new NotFoundException('Member not found');
 
-    // Security check: Prevent self-demotion from ADMIN_CHURCH
     if (actingMemberId && actingMemberId === id) {
-      const hasAdminRole = member.functionalRoles?.includes(
-        FunctionalRole.ADMIN_CHURCH,
-      );
-      const isRemovingAdmin =
-        updateData.functionalRoles &&
-        !updateData.functionalRoles.includes(FunctionalRole.ADMIN_CHURCH);
-
+      const hasAdminRole = member.functionalRoles?.includes(FunctionalRole.ADMIN_CHURCH);
+      const isRemovingAdmin = updateData.functionalRoles && !updateData.functionalRoles.includes(FunctionalRole.ADMIN_CHURCH);
       if (hasAdminRole && isRemovingAdmin) {
         throw new ForbiddenException(
           'No puedes quitarte el rol de Administrador de Iglesia a ti mismo. Otro administrador debe hacerlo.',
@@ -229,88 +199,34 @@ export class MembersService {
       }
     }
 
-    if (updateData.status) {
-      member.membershipStatus = updateData.status;
-    }
-
-    if (updateData.ecclesiasticalRole) {
-      member.ecclesiasticalRole = updateData.ecclesiasticalRole;
-    }
-
-    if (updateData.functionalRoles) {
-      member.functionalRoles = updateData.functionalRoles;
-    }
+    if (updateData.status) member.membershipStatus = updateData.status;
+    if (updateData.ecclesiasticalRole) member.ecclesiasticalRole = updateData.ecclesiasticalRole;
+    if (updateData.functionalRoles) member.functionalRoles = updateData.functionalRoles;
 
     const parseDate = (d: string) => {
       if (!d) return null;
-      if (d.includes('T')) return new Date(d); // Already ISO
       const [year, month, day] = d.split('-').map(Number);
       return new Date(year, month - 1, day);
     };
 
-    // Allow updating Person details if NO user is associated
-    if (!member.person.user) {
+    if (member.person) {
       let personUpdated = false;
-
-      if (
-        updateData.firstName !== undefined &&
-        member.person.firstName !== updateData.firstName
-      ) {
-        member.person.firstName = updateData.firstName;
-        personUpdated = true;
+      if (updateData.fullName !== undefined && member.person.fullName !== updateData.fullName) {
+        member.person.fullName = updateData.fullName; personUpdated = true;
       }
-      if (
-        updateData.lastName !== undefined &&
-        member.person.lastName !== updateData.lastName
-      ) {
-        member.person.lastName = updateData.lastName;
-        personUpdated = true;
+      if (updateData.email !== undefined && member.person.email !== updateData.email) {
+        member.person.email = updateData.email; personUpdated = true;
       }
-
-      // Auto update fullName if firstName or lastName changed
-      if (personUpdated) {
-        member.person.fullName =
-          `${member.person.firstName} ${member.person.lastName}`.trim();
+      if (updateData.phoneNumber !== undefined && member.person.phoneNumber !== updateData.phoneNumber) {
+        member.person.phoneNumber = updateData.phoneNumber; personUpdated = true;
       }
-
-      // Also allow explicit fullName update
-      if (
-        updateData.fullName !== undefined &&
-        member.person.fullName !== updateData.fullName
-      ) {
-        member.person.fullName = updateData.fullName;
-        personUpdated = true;
-      }
-
-      if (
-        updateData.email !== undefined &&
-        member.person.email !== updateData.email
-      ) {
-        member.person.email = updateData.email;
-        personUpdated = true;
-      }
-      if (
-        updateData.phoneNumber !== undefined &&
-        member.person.phoneNumber !== updateData.phoneNumber
-      ) {
-        member.person.phoneNumber = updateData.phoneNumber;
-        personUpdated = true;
-      }
-      if (
-        updateData.documentId !== undefined &&
-        member.person.documentId !== updateData.documentId
-      ) {
-        member.person.documentId = updateData.documentId;
-        personUpdated = true;
+      if (updateData.documentId !== undefined && member.person.documentId !== updateData.documentId) {
+        member.person.documentId = updateData.documentId; personUpdated = true;
       }
       if (updateData.birthDate !== undefined) {
-        member.person.birthDate = parseDate(updateData.birthDate);
-        personUpdated = true;
+        member.person.birthDate = parseDate(updateData.birthDate); personUpdated = true;
       }
-
-      if (personUpdated) {
-        await this.personRepository.save(member.person);
-      }
+      if (personUpdated) await this.personRepository.save(member.person);
     }
 
     return this.memberRepository.save(member);
@@ -322,7 +238,6 @@ export class MembersService {
       return await this.memberRepository.remove(member);
     } catch (error) {
       if (error.code === '23503') {
-        // Foreign Key Violation
         throw new ConflictException(
           'No se puede eliminar este miembro porque tiene registros asociados (como asistencias, grupos o ministerios). Te sugerimos ARCHIVARLO en su lugar para mantener la integridad de los datos.',
         );
@@ -331,7 +246,19 @@ export class MembersService {
     }
   }
 
-  async requestJoin(userId: string, personId: string, targetChurchId: string) {
+  // ==========================================
+  // JOIN REQUEST METHODS (nueva tabla)
+  // ==========================================
+
+  async requestJoin(userId: string, targetChurchId: string) {
+    const usage = await this.subService.getSubscriptionUsage(targetChurchId);
+    if (usage.limit !== null && usage.currentMembers >= usage.limit) {
+      throw new ForbiddenException(
+        'La iglesia ha alcanzado su límite de miembros. No puede aceptar nuevas solicitudes en este momento.',
+      );
+    }
+
+    // Ensure user has a person
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['person'],
@@ -358,48 +285,124 @@ export class MembersService {
       }
     }
 
+    // Check if already a member of this church
     const existingMember = await this.memberRepository.findOne({
-      where: {
-        person: { id: personId },
-        churchId: targetChurchId,
-      },
+      where: { person: { id: person.id }, churchId: targetChurchId },
     });
 
     if (existingMember) {
-      throw new ConflictException('Already a member or pending approval');
+      // If already a member, return fresh token so frontend can update immediately
+      const tokenData = await this.authService.generateTokenForUser(user);
+      return { 
+        status: 'ALREADY_MEMBER', 
+        message: 'Ya eres miembro de esta iglesia. Tu sesión se actualizará automáticamente.',
+        ...tokenData 
+      };
     }
 
-    const member = this.memberRepository.create({
-      person: person,
+    // Check if there's already a PENDING request (for any church)
+    const existingPending = await this.joinRequestRepository.findOne({
+      where: { userId, status: JoinRequestStatus.PENDING },
+      relations: ['church'],
+    });
+    if (existingPending) {
+      throw new ConflictException(
+        `Ya tienes una solicitud pendiente para la iglesia: ${existingPending.church.name}`,
+      );
+    }
+
+    // Cleanup: delete any previous REJECTED requests
+    await this.joinRequestRepository.delete({
+      userId,
+      status: JoinRequestStatus.REJECTED,
+    });
+
+    // Create the join request
+    const joinRequest = this.joinRequestRepository.create({
+      userId,
       churchId: targetChurchId,
-      ecclesiasticalRole: EcclesiasticalRole.NONE,
-      membershipStatus: MembershipStatus.MEMBER, // Pending/Prospect
+      status: JoinRequestStatus.PENDING,
+    });
+
+    return this.joinRequestRepository.save(joinRequest);
+  }
+
+  async getPendingRequests(churchId: string) {
+    return this.joinRequestRepository.find({
+      where: { churchId, status: JoinRequestStatus.PENDING },
+      relations: ['user', 'user.person'],
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async approveMember(joinRequestId: string, churchId: string, payload: ApproveMemberDto) {
+    const joinRequest = await this.joinRequestRepository.findOne({
+      where: { id: joinRequestId, churchId },
+      relations: ['user', 'user.person'],
+    });
+
+    if (!joinRequest) throw new NotFoundException('Solicitud no encontrada');
+    if (joinRequest.status !== JoinRequestStatus.PENDING) {
+      throw new ConflictException('Esta solicitud no está en estado pendiente');
+    }
+
+    const person = joinRequest.user.person;
+    if (!person) {
+      throw new ConflictException('El usuario no tiene un perfil asociado');
+    }
+
+    // Check subscription limit
+    const usage = await this.subService.getSubscriptionUsage(churchId);
+    if (usage.limit !== null && usage.currentMembers >= usage.limit) {
+      throw new ForbiddenException('Has alcanzado el límite de miembros de tu plan.');
+    }
+
+    // Create ChurchPerson (real membership)
+    const member = this.memberRepository.create({
+      person,
+      churchId,
+      membershipStatus: payload.membershipStatus,
+      ecclesiasticalRole: payload.ecclesiasticalRole,
+      functionalRoles: payload.functionalRoles,
+      joinedAt: new Date(),
     });
 
     const savedMember = await this.memberRepository.save(member);
 
-    if (user) {
-      user.isOnboarded = true;
-      await this.userRepository.save(user);
-    }
+    // Delete the join request
+    await this.joinRequestRepository.remove(joinRequest);
 
     return savedMember;
+  }
+
+  async rejectMember(joinRequestId: string, churchId: string) {
+    const joinRequest = await this.joinRequestRepository.findOne({
+      where: { id: joinRequestId, churchId },
+    });
+
+    if (!joinRequest) throw new NotFoundException('Solicitud no encontrada');
+
+    joinRequest.status = JoinRequestStatus.REJECTED;
+    return this.joinRequestRepository.save(joinRequest);
   }
 
   async createFromVisitor(
     visitor: any,
     churchId: string,
-    status: MembershipStatus = MembershipStatus.MEMBER,
+    status: MembershipStatus = MembershipStatus.VISITOR,
   ) {
-    // 1. Check if Person exists by email (if available)
-    let person: Person | null = null;
-    if (visitor.email) {
-      person = await this.personRepository.findOne({
-        where: { email: visitor.email },
-      });
+    const usage = await this.subService.getSubscriptionUsage(churchId);
+    if (usage.limit !== null && usage.currentMembers >= usage.limit) {
+      throw new ForbiddenException(
+        'Has alcanzado el límite de miembros de tu plan. Actualiza tu suscripción para continuar.',
+      );
     }
 
-    // 2. Create Person if not exists
+    let person: Person | null = null;
+    if (visitor.email) {
+      person = await this.personRepository.findOne({ where: { email: visitor.email } });
+    }
+
     if (!person) {
       person = this.personRepository.create({
         firstName: visitor.firstName,
@@ -411,29 +414,41 @@ export class MembersService {
       person = await this.personRepository.save(person);
     }
 
-    // 3. Check if already member
     const existingMember = await this.memberRepository.findOne({
-      where: {
-        person: { id: person.id },
-        churchId: churchId,
-      },
+      where: { person: { id: person.id }, churchId },
     });
+    if (existingMember) return existingMember;
 
-    if (existingMember) {
-      return existingMember; // Almost idempotent, return existing
-    }
-
-    // 4. Create Member
     const member = this.memberRepository.create({
       person,
-      churchId: churchId,
+      churchId,
       ecclesiasticalRole: EcclesiasticalRole.NONE,
-      // Default roles for new member
-      functionalRoles: [FunctionalRole.MEMBER],
+      functionalRoles: [],
       membershipStatus: status,
       joinedAt: new Date(),
     });
 
     return this.memberRepository.save(member);
+  }
+
+  async inviteMember(id: string, churchId: string) {
+    const member = await this.memberRepository.findOne({
+      where: { id, churchId },
+      relations: ['person'],
+    });
+
+    if (!member) throw new NotFoundException('Miembro no encontrado');
+
+    const person = member.person;
+    if (!person.email) {
+      throw new ConflictException('La persona debe tener un correo electrónico configurado para ser invitada');
+    }
+
+    const token = uuidv4();
+    person.inviteToken = token;
+    await this.personRepository.save(person);
+    await this.emailService.sendInvitationLink(person.email, token);
+
+    return { message: 'Invitación enviada con éxito' };
   }
 }

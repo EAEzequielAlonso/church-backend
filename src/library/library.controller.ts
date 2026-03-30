@@ -35,8 +35,9 @@ import { RejectLoanUseCase } from './use-cases/reject-loan.use-case';
 import { CancelLoanUseCase } from './use-cases/cancel-loan.use-case';
 import { BookStatus, LoanStatus } from './enums/library.enums';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('library')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
 export class LibraryController {
   constructor(
     private readonly getCategories: GetCategoriesUseCase,
@@ -53,7 +54,7 @@ export class LibraryController {
     private readonly markReturned: MarkLoanReturnedUseCase,
     private readonly rejectLoan: RejectLoanUseCase,
     private readonly cancelLoan: CancelLoanUseCase,
-  ) { }
+  ) {}
 
   // ─── CATEGORIES ────────────────────────────────────────────────────────────
 
@@ -138,7 +139,11 @@ export class LibraryController {
     @Query('borrowerId') borrowerId?: string,
     @Query('ownerMemberId') ownerMemberId?: string,
   ) {
-    return this.getLoans.execute(churchId, { status, borrowerId, ownerMemberId });
+    return this.getLoans.execute(churchId, {
+      status,
+      borrowerId,
+      ownerMemberId,
+    });
   }
 
   /**
@@ -147,7 +152,9 @@ export class LibraryController {
    */
   @Get('loans/my-book-loans')
   findMyBookLoans(@CurrentChurch() churchId: string, @Request() req) {
-    return this.getLoans.execute(churchId, { ownerMemberId: req.user.memberId });
+    return this.getLoans.execute(churchId, {
+      ownerMemberId: req.user.memberId,
+    });
   }
 
   /** Loans belonging to the current user (borrower view) */
@@ -259,10 +266,6 @@ export class LibraryController {
     @Param('id', ParseUUIDPipe) id: string,
     @Request() req,
   ) {
-    return this.cancelLoan.execute(
-      churchId,
-      id,
-      req.user.memberId,
-    );
+    return this.cancelLoan.execute(churchId, id, req.user.memberId);
   }
 }

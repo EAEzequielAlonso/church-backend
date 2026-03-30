@@ -6,9 +6,13 @@ import {
   UseGuards,
   Request,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Adjust path if needed
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard, Roles } from '../auth/guards/roles.guard';
+import { FunctionalRole } from '../common/enums';
+import { CurrentChurch } from 'src/common/decorators';
 
 @Controller('subscriptions')
 export class SubscriptionsController {
@@ -19,7 +23,8 @@ export class SubscriptionsController {
     return this.subService.findAllPlans();
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
   @Get('current')
   async getCurrentSubscription(@Request() req) {
     const churchId = req.user.churchId;
@@ -29,8 +34,29 @@ export class SubscriptionsController {
     return sub || {};
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('subscribe')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
+  @Get('payments')
+  async getPayments(@Request() req) {
+    const churchId = req.user.churchId;
+    if (!churchId)
+      throw new BadRequestException('User not associated with a church');
+    return this.subService.getPayments(churchId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
+  @Get('usage')
+  async getUsage(@Request() req) {
+    const churchId = req.user.churchId;
+    if (!churchId)
+      throw new BadRequestException('User not associated with a church');
+    return this.subService.getSubscriptionUsage(churchId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
+  @Post(['subscribe', 'create-checkout'])
   async createSubscriptionLink(@Request() req, @Body('planId') planId: string) {
     // req.user from JWT strategy
     const churchId = req.user.churchId;
@@ -43,10 +69,20 @@ export class SubscriptionsController {
     return this.subService.createSubscriptionLink(churchId, planId, email);
   }
 
+  @Get('validate-payment')
+  async validatePayment(@Query('payment_id') paymentId: string) {
+    if (!paymentId) throw new BadRequestException('payment_id is required');
+    return this.subService.validatePayment(paymentId);
+  }
+
   @Post('webhook')
   async handleWebhook(@Body() body: any) {
     console.log('Webhook received:', JSON.stringify(body));
-    // return this.subService.handleWebhook(body);
-    return { status: 'OK' };
+    try {
+      return await this.subService.handleWebhook(body);
+    } catch (error) {
+      console.error('Error handling webhook: ', error);
+      return { status: 'error', message: error.message };
+    }
   }
 }

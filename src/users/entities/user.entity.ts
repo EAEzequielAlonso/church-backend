@@ -24,12 +24,24 @@ export class User {
   @Column({ default: false })
   isOnboarded: boolean;
 
+  @Column({ default: false })
+  isEmailVerified: boolean;
+
+  @Column({ nullable: true })
+  verificationCode: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  verificationCodeExpiresAt: Date;
+
   @Column({
     type: 'enum',
     enum: SystemRole,
     default: SystemRole.USER,
   })
   systemRole: SystemRole;
+
+  @Column({ default: 'local' })
+  provider: string;
 
   @Column({ nullable: true })
   personId: string;

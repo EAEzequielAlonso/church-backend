@@ -10,7 +10,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { GroupsService } from './groups.service';
-import { CreateGroupDto, UpdateGroupDto, BulkAddParticipantsDto } from './dto/groups.dto';
+import {
+  CreateGroupDto,
+  UpdateGroupDto,
+  BulkAddParticipantsDto,
+} from './dto/groups.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentChurch } from '../common/decorators';
 import {
@@ -22,12 +26,13 @@ import {
 import { GroupType } from './enums/group.enums';
 import { RegisterAttendanceDto } from './dto/groups.dto';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @ApiTags('Groups')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard)
 @Controller('groups')
 export class GroupsController {
-  constructor(private readonly groupsService: GroupsService) { }
+  constructor(private readonly groupsService: GroupsService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new group/course/activity' })

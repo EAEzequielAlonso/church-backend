@@ -14,8 +14,9 @@ import { CreateCalendarEventDto } from './dto/create-calendar-event.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AgendaService } from './agenda.service';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('agenda')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard)
 export class AgendaController {
   constructor(private readonly agendaService: AgendaService) {}
 

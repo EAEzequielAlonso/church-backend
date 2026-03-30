@@ -18,6 +18,9 @@ import { RequirePermissions } from '../auth/decorators/require-permissions.decor
 import { AppPermission } from '../auth/authorization/permissions.enum';
 import { CurrentChurch } from '../common/decorators';
 import { MembershipStatus } from './enums/membership-status.enum';
+import { ApproveMemberDto } from './dto/approve-member.dto';
+
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 import {
   ApiTags,
   ApiOperation,
@@ -27,7 +30,7 @@ import {
 
 @ApiTags('Members')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
 @Controller('members')
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
@@ -45,10 +48,8 @@ export class MembersController {
   @Post('request-access')
   @ApiOperation({ summary: 'Request to join a church' })
   requestAccess(@Body('churchId') churchId: string, @Request() req) {
-    // Public endpoint for authenticated users to request access
     return this.membersService.requestJoin(
       req.user.userId,
-      req.user.personId,
       churchId,
     );
   }
@@ -69,6 +70,13 @@ export class MembersController {
     @Query('status') status?: MembershipStatus,
   ) {
     return this.membersService.findAll(churchId, status);
+  }
+
+  @Get('pending')
+  @RequirePermissions(AppPermission.MEMBER_UPDATE)
+  @ApiOperation({ summary: 'Get pending join requests' })
+  getPendingRequests(@CurrentChurch() churchId: string) {
+    return this.membersService.getPendingRequests(churchId);
   }
 
   @Get(':id')
@@ -100,6 +108,31 @@ export class MembersController {
       churchId,
       req.user?.memberId,
     );
+  }
+
+  @Post(':id/approve')
+  @RequirePermissions(AppPermission.MEMBER_UPDATE)
+  @ApiOperation({ summary: 'Approve a pending join request' })
+  approve(
+    @Param('id') joinRequestId: string,
+    @CurrentChurch() churchId: string,
+    @Body() approveMemberDto: ApproveMemberDto,
+  ) {
+    return this.membersService.approveMember(joinRequestId, churchId, approveMemberDto);
+  }
+
+  @Post(':id/reject')
+  @RequirePermissions(AppPermission.MEMBER_UPDATE)
+  @ApiOperation({ summary: 'Reject a pending join request' })
+  reject(@Param('id') joinRequestId: string, @CurrentChurch() churchId: string) {
+    return this.membersService.rejectMember(joinRequestId, churchId);
+  }
+
+  @Post(':id/invite')
+  @RequirePermissions(AppPermission.MEMBER_UPDATE)
+  @ApiOperation({ summary: 'Send invitation link to a member' })
+  invite(@Param('id') id: string, @CurrentChurch() churchId: string) {
+    return this.membersService.inviteMember(id, churchId);
   }
 
   @Delete(':id')

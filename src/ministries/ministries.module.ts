@@ -87,15 +87,12 @@ const useCases = [
       ChurchPerson,
       ServiceDuty,
       MinistryRoleAssignment,
-      MinistryMeeting
+      MinistryMeeting,
     ]),
     AgendaModule,
   ],
   controllers: [MinistriesController, MinistriesScheduleController],
-  providers: [
-    MinistryPolicy,
-    ...useCases,
-  ],
+  providers: [MinistryPolicy, ...useCases],
   exports: [GetUserRoleInMinistryUseCase],
 })
-export class MinistriesModule { }
+export class MinistriesModule {}

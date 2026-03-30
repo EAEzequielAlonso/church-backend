@@ -5,15 +5,18 @@ export enum SystemRole {
 
 export enum PlanType {
   TRIAL = 'TRIAL',
-  BASIC = 'BASIC',
-  PRO = 'PRO',
-  ELITE = 'ELITE',
+  SEMILLA = 'SEMILLA',
+  CRECIMIENTO = 'CRECIMIENTO',
+  EXPANSION = 'EXPANSION',
+  MULTIPLICACION = 'MULTIPLICACION',
 }
 
 export enum SubscriptionStatus {
   TRIAL = 'TRIAL',
   ACTIVE = 'ACTIVE',
+  PAYMENT_PENDING = 'PAYMENT_PENDING',
   CANCELLED = 'CANCELLED',
+  EXPIRED = 'EXPIRED',
 }
 
 export enum EcclesiasticalRole {

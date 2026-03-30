@@ -49,4 +49,4 @@ import { NotificationsModule } from '../notifications/notifications.module';
   providers: [LibraryPolicy, ...UseCases],
   exports: [...UseCases],
 })
-export class LibraryModule { }
+export class LibraryModule {}

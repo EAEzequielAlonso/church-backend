@@ -27,9 +27,11 @@ import { DeleteBudgetPeriodUseCase } from '../use-cases/delete-budget-period.use
 import { CreateBudgetPeriodDto } from '../dto/create-budget-period.dto';
 import { CreateBudgetAllocationDto } from '../dto/create-budget-allocation.dto';
 import { ExportBudgetToPptUseCase } from '../use-cases/export-budget-to-ppt.use-case';
+import { ExportBudgetToPdfUseCase } from '../use-cases/export-budget-to-pdf.use-case';
 
+import { SubscriptionGuard } from '../../subscriptions/guards/subscription.guard';
 @Controller('budget')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
 export class BudgetController {
   constructor(
     private readonly createBudgetPeriodUseCase: CreateBudgetPeriodUseCase,
@@ -42,7 +44,8 @@ export class BudgetController {
     private readonly updateBudgetPeriodUseCase: UpdateBudgetPeriodUseCase,
     private readonly deleteBudgetPeriodUseCase: DeleteBudgetPeriodUseCase,
     private readonly exportBudgetToPptUseCase: ExportBudgetToPptUseCase,
-  ) { }
+    private readonly exportBudgetToPdfUseCase: ExportBudgetToPdfUseCase,
+  ) {}
 
   // --- Periods ---
 
@@ -53,7 +56,11 @@ export class BudgetController {
   }
 
   @Get('periods')
-  @Roles(FunctionalRole.TREASURER, FunctionalRole.AUDITOR, FunctionalRole.ADMIN_CHURCH)
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.AUDITOR,
+    FunctionalRole.ADMIN_CHURCH,
+  )
   async getPeriods(@Request() req, @Query('year') year?: number) {
     return this.getBudgetPeriodsUseCase.execute(req.user.churchId, year);
   }
@@ -75,7 +82,11 @@ export class BudgetController {
   }
 
   @Get('periods/:id/export-ppt')
-  @Roles(FunctionalRole.TREASURER, FunctionalRole.AUDITOR, FunctionalRole.ADMIN_CHURCH)
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.AUDITOR,
+    FunctionalRole.ADMIN_CHURCH,
+  )
   async exportPpt(
     @Request() req,
     @Param('id') id: string,
@@ -93,6 +104,28 @@ export class BudgetController {
     return new StreamableFile(buffer);
   }
 
+  @Get('periods/:id/export-pdf')
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.AUDITOR,
+    FunctionalRole.ADMIN_CHURCH,
+  )
+  async exportPdf(
+    @Request() req,
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const buffer = await this.exportBudgetToPdfUseCase.execute(
+      req.user.churchId,
+      id,
+    );
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="Presupuesto.pdf"`,
+    });
+    return new StreamableFile(buffer);
+  }
+
   // --- Allocations ---
 
   @Post('allocations')
@@ -105,7 +138,11 @@ export class BudgetController {
   }
 
   @Get('allocations')
-  @Roles(FunctionalRole.TREASURER, FunctionalRole.AUDITOR, FunctionalRole.ADMIN_CHURCH)
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.AUDITOR,
+    FunctionalRole.ADMIN_CHURCH,
+  )
   async getAllocations(@Request() req, @Query('periodId') periodId: string) {
     return this.getBudgetAllocationsUseCase.execute(
       req.user.churchId,
@@ -116,7 +153,11 @@ export class BudgetController {
   // --- Execution ---
 
   @Get('execution/:periodId')
-  @Roles(FunctionalRole.TREASURER, FunctionalRole.AUDITOR, FunctionalRole.ADMIN_CHURCH)
+  @Roles(
+    FunctionalRole.TREASURER,
+    FunctionalRole.AUDITOR,
+    FunctionalRole.ADMIN_CHURCH,
+  )
   async getExecution(@Request() req, @Param('periodId') periodId: string) {
     return this.getBudgetExecutionUseCase.execute(req.user.churchId, periodId);
   }

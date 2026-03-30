@@ -16,8 +16,9 @@ import { AppPermission } from '../auth/authorization/permissions.enum'; // Assum
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentChurch } from '../common/decorators';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('worship-services')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard)
 export class WorshipServiceController {
   constructor(private readonly worshipService: WorshipServiceService) {}
 

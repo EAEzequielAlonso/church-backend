@@ -138,6 +138,29 @@ export class ChurchesService {
       .getMany();
   }
 
+  async getActive(id: string) {
+    const church = await this.findOne(id);
+    return church; // The entity has all necessary fields
+  }
+
+  async updateActive(id: string, dto: any) {
+    const church = await this.findOne(id);
+    
+    // Explicitly update only allowed fields
+    if (dto.name !== undefined) church.name = dto.name;
+    if (dto.logoUrl !== undefined) church.logoUrl = dto.logoUrl;
+    if (dto.coverUrl !== undefined) church.coverUrl = dto.coverUrl;
+    if (dto.address !== undefined) church.address = dto.address;
+    if (dto.city !== undefined) church.city = dto.city;
+    if (dto.state !== undefined) church.state = dto.state;
+    if (dto.country !== undefined) church.country = dto.country;
+    if (dto.website !== undefined) church.website = dto.website;
+    if (dto.instagram !== undefined) church.instagram = dto.instagram;
+    if (dto.facebook !== undefined) church.facebook = dto.facebook;
+
+    return this.churchRepository.save(church);
+  }
+
   private generateSlug(name: string): string {
     return (
       name

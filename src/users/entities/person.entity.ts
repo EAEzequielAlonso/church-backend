@@ -96,6 +96,9 @@ export class Person {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ nullable: true })
+  inviteToken: string;
+
   // 🔐 Relaciones
   @OneToOne(() => User, (user) => user.person, { nullable: true })
   user: User;

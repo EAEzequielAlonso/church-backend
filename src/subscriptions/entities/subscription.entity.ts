@@ -40,18 +40,21 @@ export class Subscription {
   status: SubscriptionStatus;
 
   @Column({ name: 'mercadopago_id', nullable: true })
-  mercadopagoId: string; // preapproval_id (subscription id in MP)
+  mercadopagoId: string;
+
+  @Column({ nullable: true })
+  preapprovalId: string;
 
   @Column({ nullable: true })
   payerEmail: string;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   startDate: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   endDate: Date; // Null if active auto-renew
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   nextPaymentDate: Date;
 
   @OneToMany(() => Payment, (payment) => payment.subscription)

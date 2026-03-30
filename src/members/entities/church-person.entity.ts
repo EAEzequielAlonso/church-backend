@@ -59,7 +59,7 @@ export class ChurchPerson {
     type: 'enum',
     enum: FunctionalRole,
     array: true,
-    default: [FunctionalRole.MEMBER],
+    default: [],
   })
   functionalRoles: FunctionalRole[];
 

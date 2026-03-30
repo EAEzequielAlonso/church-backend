@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SubscriptionsService } from './subscriptions.service';
 import { SubscriptionsController } from './subscriptions.controller';
@@ -6,11 +6,23 @@ import { Plan } from './entities/plan.entity';
 import { Subscription } from './entities/subscription.entity';
 import { Payment } from './entities/payment.entity';
 import { Church } from '../churches/entities/church.entity';
+import { ChurchPerson } from '../members/entities/church-person.entity';
 
+import { SubscriptionCronService } from './subscription-cron.service';
+
+@Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([Plan, Subscription, Payment, Church])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Plan,
+      Subscription,
+      Payment,
+      Church,
+      ChurchPerson,
+    ]),
+  ],
   controllers: [SubscriptionsController],
-  providers: [SubscriptionsService],
+  providers: [SubscriptionsService, SubscriptionCronService],
   exports: [SubscriptionsService],
 })
 export class SubscriptionsModule {}

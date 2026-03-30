@@ -13,6 +13,7 @@ import { DeleteBudgetAllocationUseCase } from './use-cases/delete-budget-allocat
 import { UpdateBudgetPeriodUseCase } from './use-cases/update-budget-period.use-case';
 import { DeleteBudgetPeriodUseCase } from './use-cases/delete-budget-period.use-case';
 import { ExportBudgetToPptUseCase } from './use-cases/export-budget-to-ppt.use-case';
+import { ExportBudgetToPdfUseCase } from './use-cases/export-budget-to-pdf.use-case';
 import { TreasuryTransaction } from '../treasury/entities/treasury-transaction.entity';
 import { Church } from '../churches/entities/church.entity';
 
@@ -37,6 +38,7 @@ import { Church } from '../churches/entities/church.entity';
     UpdateBudgetPeriodUseCase,
     DeleteBudgetPeriodUseCase,
     ExportBudgetToPptUseCase,
+    ExportBudgetToPdfUseCase,
   ],
   exports: [],
 })

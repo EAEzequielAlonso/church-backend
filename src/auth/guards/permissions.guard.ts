@@ -5,22 +5,28 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { DataSource } from 'typeorm';
 import { SystemRole, FunctionalRole } from '../../common/enums';
 import { AppPermission } from '../authorization/permissions.enum';
 import { RolePermissions } from '../role-permissions';
 import { PERMISSIONS_KEY } from '../decorators/require-permissions.decorator';
+import { ChurchPerson } from '../../members/entities/church-person.entity';
+import { getPermissionsForRoles } from '../authorization/role-permissions.config';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private readonly dataSource: DataSource,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermissions = this.reflector.getAllAndOverride<
       AppPermission[]
     >(PERMISSIONS_KEY, [context.getHandler(), context.getClass()]);
 
     if (!requiredPermissions) {
-      return true; // No permissions required
+      return true;
     }
 
     const { user } = context.switchToHttp().getRequest();
@@ -34,13 +40,52 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
-    // 2. Derive Permissions from Functional Roles
-    // User roles in JWT are now FunctionalRoles
+    // 2. Email Verification Check
+    const handlerName = context.getHandler()?.name || '';
+    const className = context.getClass()?.name || '';
+    const isPublicRoute = handlerName.toLowerCase().includes('auth') || className.toLowerCase().includes('auth');
+
+    if (!isPublicRoute && !user.isEmailVerified && user.provider === 'local') {
+      console.warn(`[PermissionsGuard] DENIED. User ${user.email} email not verified.`);
+      throw new ForbiddenException('Email no verificado');
+    }
+
+    // DB Lookup: Find active ChurchPerson
+    const churchPersonRepository = this.dataSource.getRepository(ChurchPerson);
+    let membership: ChurchPerson | null = null;
+    if (user.personId) {
+      membership = await churchPersonRepository.findOne({
+        where: { person: { id: user.personId } },
+        relations: ['church'],
+        order: { joinedAt: 'DESC' },
+      });
+    }
+
+    // Mutate request.user for controllers (Phase 3 Requirement)
+    if (membership) {
+      user.churchId = membership.church?.id || membership.churchId;
+      user.roles = membership.functionalRoles || [];
+      user.membership = membership;
+      user.memberId = membership.id;
+      user.permissions = getPermissionsForRoles(user.roles);
+    } else {
+      user.churchId = null;
+      user.roles = [];
+      user.membership = null;
+      user.memberId = null;
+      user.permissions = [];
+    }
+
+    // 3. Church Association Check
+    if (!user.churchId && requiredPermissions.length > 0) {
+      console.warn(`[PermissionsGuard] DENIED. User ${user.email} has no church context.`);
+      throw new ForbiddenException('Debes pertenecer a una iglesia para realizar esta acción.');
+    }
+
+    // 4. Derive Permissions from Functional Roles
     const userFunctionalRoles = (user.roles || []) as FunctionalRole[];
 
-    // Flatten all permissions from all roles
     const userPermissions = new Set<AppPermission>();
-
     userFunctionalRoles.forEach((role) => {
       const rolePerms = RolePermissions[role];
       if (rolePerms) {
@@ -48,22 +93,13 @@ export class PermissionsGuard implements CanActivate {
       }
     });
 
-    // DEBUG: Permission Check
-    console.log(
-      `[PermissionsGuard] User: ${user.email} | Roles: ${JSON.stringify(userFunctionalRoles)}`,
-    );
-    console.log(
-      `[PermissionsGuard] Required: ${JSON.stringify(requiredPermissions)}`,
-    );
-    // console.log(`[PermissionsGuard] Has: ${JSON.stringify(Array.from(userPermissions))}`);
-
-    // 3. Check if user has ALL required permissions
+    // 5. Check permissions
     const hasPermission = requiredPermissions.every((permission) =>
       userPermissions.has(permission),
     );
 
     if (!hasPermission) {
-      console.warn(`[PermissionsGuard] DENIED. Missing permissions.`);
+      console.warn(`[PermissionsGuard] DENIED. Missing permissions for ${user.email}.`);
       throw new ForbiddenException('Insufficient permissions');
     }
 

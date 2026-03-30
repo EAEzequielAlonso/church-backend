@@ -25,6 +25,7 @@ export class GetMinistryUseCase {
                 'tasks',
                 'tasks.assignedTo',
                 'tasks.assignedTo.person',
+                'serviceDuties'
             ],
         });
 

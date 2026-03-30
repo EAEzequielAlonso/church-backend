@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { MembersModule } from './members/members.module';
 import { GroupsModule } from './groups/groups.module';
@@ -22,6 +23,8 @@ import { DonationsModule } from './donations/donations.module';
 import { BudgetModule } from './budget/budget.module';
 import { MentorshipModule } from './mentorship/mentorship.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ProfileModule } from './profile/profile.module';
+import { AdminModule } from './admin/admin.module';
 
 import configuration from './config/configuration';
 
@@ -31,6 +34,7 @@ import configuration from './config/configuration';
       isGlobal: true,
       load: [configuration],
     }),
+    ScheduleModule.forRoot(),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -59,6 +63,8 @@ import configuration from './config/configuration';
     BudgetModule,
     MentorshipModule,
     NotificationsModule,
+    ProfileModule,
+    AdminModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

@@ -11,13 +11,15 @@ import { Auth0Strategy } from './strategies/auth0.strategy';
 import { User } from '../users/entities/user.entity';
 import { Church } from '../churches/entities/church.entity';
 import { ChurchPerson } from '../members/entities/church-person.entity';
+import { JoinRequest } from '../members/entities/join-request.entity';
 import { UsersModule } from '../users/users.module';
 import { Person } from 'src/users/entities/person.entity';
+import { EmailService } from './email.service';
 
 @Module({
   imports: [
     UsersModule,
-    TypeOrmModule.forFeature([User, Church, ChurchPerson, Person]),
+    TypeOrmModule.forFeature([User, Church, ChurchPerson, JoinRequest, Person]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -29,7 +31,7 @@ import { Person } from 'src/users/entities/person.entity';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, Auth0Strategy],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, Auth0Strategy, EmailService],
+  exports: [AuthService, EmailService],
 })
 export class AuthModule {}

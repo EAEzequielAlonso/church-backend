@@ -17,8 +17,9 @@ import { AppPermission } from '../auth/authorization/permissions.enum';
 import { CurrentChurch, CurrentUser } from '../common/decorators';
 import { PrayerRequestVisibility } from '../common/enums';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('prayers')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
 export class PrayersController {
   constructor(private readonly prayersService: PrayersService) {}
 

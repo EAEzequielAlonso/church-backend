@@ -55,9 +55,10 @@ import { GetMentorshipsDto } from './dto/get-mentorships.dto';
 import { GetNotesDto } from './dto/get-notes.dto';
 import { GetTasksDto } from './dto/get-tasks.dto';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @ApiTags('Mentorship')
 @Controller('mentorship')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
 @ApiBearerAuth()
 export class MentorshipController {
   constructor(
@@ -82,7 +83,7 @@ export class MentorshipController {
     private readonly reviewTaskUseCase: ReviewTaskUseCase,
     private readonly updateTaskUseCase: UpdateTaskUseCase,
     private readonly deleteTaskUseCase: DeleteTaskUseCase,
-  ) { }
+  ) {}
 
   @Post()
   @ApiOperation({
@@ -257,10 +258,10 @@ export class MentorshipController {
     @Request() req: any,
   ): Promise<MentorshipResponseDto> {
     const result = await this.addNoteUseCase.execute(
-      { 
-        ...dto, 
+      {
+        ...dto,
         processId,
-        authorChurchPersonId: req.user?.memberId 
+        authorChurchPersonId: req.user?.memberId,
       },
       {
         userId: req.user?.memberId,
@@ -279,10 +280,10 @@ export class MentorshipController {
     @Request() req: any,
   ): Promise<MentorshipResponseDto> {
     const result = await this.addTaskUseCase.execute(
-      { 
-        ...dto, 
+      {
+        ...dto,
         processId,
-        creatorChurchPersonId: req.user?.memberId
+        creatorChurchPersonId: req.user?.memberId,
       },
       {
         userId: req.user?.memberId,
@@ -300,15 +301,11 @@ export class MentorshipController {
     @Body() dto: UpdateNoteDto,
     @Request() req: any,
   ): Promise<any> {
-    const result = await this.updateNoteUseCase.execute(
-      noteId,
-      dto,
-      {
-        userId: req.user?.memberId,
-        roles: req.user?.roles || [],
-        permissions: req.user?.permissions || [],
-      },
-    );
+    const result = await this.updateNoteUseCase.execute(noteId, dto, {
+      userId: req.user?.memberId,
+      roles: req.user?.roles || [],
+      permissions: req.user?.permissions || [],
+    });
     return result;
   }
 
@@ -318,14 +315,11 @@ export class MentorshipController {
     @Param('id') noteId: string,
     @Request() req: any,
   ): Promise<void> {
-    await this.deleteNoteUseCase.execute(
-      noteId,
-      {
-        userId: req.user?.memberId,
-        roles: req.user?.roles || [],
-        permissions: req.user?.permissions || [],
-      },
-    );
+    await this.deleteNoteUseCase.execute(noteId, {
+      userId: req.user?.memberId,
+      roles: req.user?.roles || [],
+      permissions: req.user?.permissions || [],
+    });
   }
 
   @Post('tasks/:id/start')
@@ -334,14 +328,11 @@ export class MentorshipController {
     @Param('id') taskId: string,
     @Request() req: any,
   ): Promise<any> {
-    const result = await this.startTaskUseCase.execute(
-      taskId,
-      {
-        userId: req.user?.memberId,
-        roles: req.user?.roles || [],
-        permissions: req.user?.permissions || [],
-      },
-    );
+    const result = await this.startTaskUseCase.execute(taskId, {
+      userId: req.user?.memberId,
+      roles: req.user?.roles || [],
+      permissions: req.user?.permissions || [],
+    });
     return result;
   }
 
@@ -390,15 +381,11 @@ export class MentorshipController {
     @Body() dto: Partial<AddTaskDto>,
     @Request() req: any,
   ): Promise<any> {
-    const result = await this.updateTaskUseCase.execute(
-      taskId,
-      dto,
-      {
-        userId: req.user?.memberId,
-        roles: req.user?.roles || [],
-        permissions: req.user?.permissions || [],
-      },
-    );
+    const result = await this.updateTaskUseCase.execute(taskId, dto, {
+      userId: req.user?.memberId,
+      roles: req.user?.roles || [],
+      permissions: req.user?.permissions || [],
+    });
     return result;
   }
 
@@ -408,14 +395,11 @@ export class MentorshipController {
     @Param('id') taskId: string,
     @Request() req: any,
   ): Promise<any> {
-    await this.deleteTaskUseCase.execute(
-      taskId,
-      {
-        userId: req.user?.memberId,
-        roles: req.user?.roles || [],
-        permissions: req.user?.permissions || [],
-      },
-    );
+    await this.deleteTaskUseCase.execute(taskId, {
+      userId: req.user?.memberId,
+      roles: req.user?.roles || [],
+      permissions: req.user?.permissions || [],
+    });
     return { success: true };
   }
 

@@ -50,7 +50,7 @@ import { ServiceDuty } from 'src/ministries/entities/service-duty.entity';
   providers: [SeedService],
 })
 export class SeedModule implements OnModuleInit {
-  constructor(private readonly seedService: SeedService) { }
+  constructor(private readonly seedService: SeedService) {}
 
   async onModuleInit() {
     await this.seedService.run();

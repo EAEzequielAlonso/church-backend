@@ -55,8 +55,9 @@ import { GetMinistryAssignmentsUseCase } from './use-cases/get-ministry-assignme
 import { CreateMinistryAssignmentsUseCase } from './use-cases/create-ministry-assignments.use-case';
 import { DeleteMinistryAssignmentUseCase } from './use-cases/delete-ministry-assignment.use-case';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('ministries')
-@UseGuards(JwtAuthGuard) // Removing MinistryRolesGuard since we enforce it via MinistryPolicy in UseCases now
+@UseGuards(JwtAuthGuard, SubscriptionGuard) // Removing MinistryRolesGuard since we enforce it via MinistryPolicy in UseCases now
 export class MinistriesController {
   constructor(
     private readonly getMinistriesUseCase: GetMinistriesUseCase,
@@ -84,7 +85,7 @@ export class MinistriesController {
     private readonly getMinistryAssignmentsUseCase: GetMinistryAssignmentsUseCase,
     private readonly createMinistryAssignmentsUseCase: CreateMinistryAssignmentsUseCase,
     private readonly deleteMinistryAssignmentUseCase: DeleteMinistryAssignmentUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @RequirePermissions(AppPermission.MINISTRY_VIEW)
@@ -111,7 +112,7 @@ export class MinistriesController {
     @Param('id') id: string,
     @Request() req: any,
     @CurrentChurch() churchId: string,
-    @Body() body: UpdateMinistryDto
+    @Body() body: UpdateMinistryDto,
   ) {
     return this.updateMinistryUseCase.execute(
       id,
@@ -119,7 +120,7 @@ export class MinistriesController {
       body,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -132,7 +133,7 @@ export class MinistriesController {
     @Param('id') id: string,
     @Request() req: any,
     @CurrentChurch() churchId: string,
-    @Body() body: { memberId: string; role: MinistryRole }
+    @Body() body: { memberId: string; role: MinistryRole },
   ) {
     return this.addMinistryMemberUseCase.execute(
       id,
@@ -141,7 +142,7 @@ export class MinistriesController {
       churchId,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -153,7 +154,7 @@ export class MinistriesController {
     @Param('memberId') memberId: string,
     @Request() req: any,
     @CurrentChurch() churchId: string,
-    @Body() body: { role: MinistryRole }
+    @Body() body: { role: MinistryRole },
   ) {
     return this.updateMinistryMemberRoleUseCase.execute(
       id,
@@ -162,7 +163,7 @@ export class MinistriesController {
       churchId,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -173,7 +174,7 @@ export class MinistriesController {
     @Param('id') id: string,
     @Request() req: any,
     @CurrentChurch() churchId: string,
-    @Param('memberId') memberId: string
+    @Param('memberId') memberId: string,
   ) {
     return this.deleteMinistryMemberUseCase.execute(
       id,
@@ -181,7 +182,7 @@ export class MinistriesController {
       churchId,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -208,7 +209,7 @@ export class MinistriesController {
       churchId,
       body,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -229,7 +230,7 @@ export class MinistriesController {
       churchId,
       body,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -248,7 +249,7 @@ export class MinistriesController {
       req.user.personId,
       churchId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -274,7 +275,7 @@ export class MinistriesController {
     @Param('id') id: string,
     @Request() req: any,
     @CurrentChurch() churchId: string,
-    @Body() body: CreateMinistryTaskDto
+    @Body() body: CreateMinistryTaskDto,
   ) {
     return this.createMinistryTaskUseCase.execute(
       id,
@@ -282,7 +283,7 @@ export class MinistriesController {
       churchId,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -292,14 +293,14 @@ export class MinistriesController {
   updateTask(
     @Param('taskId') taskId: string,
     @Body() body: UpdateMinistryTaskDto,
-    @Request() req: any
+    @Request() req: any,
   ) {
     return this.updateMinistryTaskUseCase.execute(
       taskId,
       body,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -310,7 +311,7 @@ export class MinistriesController {
     @Param('id') id: string,
     @Param('taskId') taskId: string,
     @Request() req: any,
-    @CurrentChurch() churchId: string
+    @CurrentChurch() churchId: string,
   ) {
     return this.deleteMinistryTaskUseCase.execute(
       id,
@@ -318,7 +319,7 @@ export class MinistriesController {
       churchId,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -347,7 +348,7 @@ export class MinistriesController {
       ministryId,
       body,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
   // --- SERVICE DUTIES CONFIGURATION ---
@@ -380,7 +381,7 @@ export class MinistriesController {
       churchId,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -391,7 +392,7 @@ export class MinistriesController {
     @Param('id') id: string,
     @Param('dutyId') dutyId: string,
     @Request() req: any,
-    @CurrentChurch() churchId: string
+    @CurrentChurch() churchId: string,
   ) {
     return this.deleteServiceDutyUseCase.execute(
       id,
@@ -399,12 +400,11 @@ export class MinistriesController {
       churchId,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
   // --- MEMBER MANAGEMENT --
-
 
   // --- SCHEDULE & ASSIGNMENTS ---
 
@@ -433,7 +433,7 @@ export class MinistriesController {
       churchId,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 
@@ -444,7 +444,7 @@ export class MinistriesController {
     @Param('id') id: string,
     @Param('assignmentId') assignmentId: string,
     @Request() req: any,
-    @CurrentChurch() churchId: string
+    @CurrentChurch() churchId: string,
   ) {
     return this.deleteMinistryAssignmentUseCase.execute(
       id,
@@ -452,7 +452,7 @@ export class MinistriesController {
       churchId,
       req.user.personId,
       req.user.systemRole,
-      req.user.functionalRole
+      req.user.functionalRole,
     );
   }
 }

@@ -15,6 +15,18 @@ export class ExportBudgetToPptUseCase {
     private readonly getBudgetExecutionUseCase: GetBudgetExecutionUseCase,
   ) {}
 
+  private readonly COLORS = {
+    PRIMARY: '059669', // Emerald 600
+    SECONDARY: '1E293B', // Slate 800
+    ACCENT: 'F1F5F9', // Slate 100
+    TEXT_MAIN: '0F172A', // Slate 900
+    TEXT_MUTED: '64748B', // Slate 500
+    WHITE: 'FFFFFF',
+    SUCCESS: '16A34A',
+    DANGER: 'DC2626',
+    WARNING: 'D97706'
+  };
+
   async execute(churchId: string, periodId: string): Promise<Buffer> {
     const church = await this.churchRepository.findOneBy({ id: churchId });
     if (!church) throw new NotFoundException('Iglesia no encontrada');
@@ -23,8 +35,16 @@ export class ExportBudgetToPptUseCase {
     
     const pptx = new ((PptxGenJS as any).default || PptxGenJS)();
     pptx.layout = 'LAYOUT_16x9';
+    pptx.defineSlideMaster({
+        title: 'MASTER_SLIDE',
+        background: { color: 'FFFFFF' },
+        objects: [
+            { rect: { x: 0, y: 0, w: '100%', h: 0.1, fill: { color: this.COLORS.PRIMARY } } },
+            { text: { text: 'Elyon.app - Gestión Presupuestaria', options: { x: 0.5, y: 5.3, w: 4, h: 0.3, fontSize: 10, color: this.COLORS.TEXT_MUTED } } }
+        ]
+    });
 
-    this.addSlideCover(pptx, church, execution);
+    await this.addSlideCover(pptx, church, execution);
     this.addSlideSummary(pptx, execution, church.baseCurrency);
     this.addSlideExecution(pptx, execution, church.baseCurrency);
     this.addAllocationSlides(pptx, execution, church.baseCurrency);
@@ -34,111 +54,139 @@ export class ExportBudgetToPptUseCase {
     return buffer as Buffer;
   }
 
-  private addSlideCover(pptx: any, church: Church, execution: any) {
+  private async addSlideCover(pptx: any, church: Church, execution: any) {
     const slide = pptx.addSlide();
     
-    // Background color/branding
-    slide.background = { color: 'F1F5F9' };
+    // Background Decoration
+    slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '35%', h: '100%', fill: { color: this.COLORS.SECONDARY } });
+    
+    // Logo
+    if (church.logoUrl) {
+        slide.addImage({ path: church.logoUrl, x: 0.8, y: 0.5, w: 1.5, h: 1.5 });
+    }
 
     slide.addText(church.name, {
-      x: 0.5, y: 1.5, w: '90%', h: 1, 
-      fontSize: 36, bold: true, color: '1E293B', align: 'center'
+      x: 3.5, y: 1.8, w: '60%', h: 1, 
+      fontSize: 44, bold: true, color: this.COLORS.PRIMARY, align: 'left'
     });
 
-    slide.addText(`Presupuesto: ${execution.period.name}`, {
-      x: 0.5, y: 2.5, w: '90%', h: 0.8, 
-      fontSize: 28, color: '334155', align: 'center'
+    slide.addText(`Informe de Ejecución Presupuestaria`, {
+      x: 3.5, y: 3.2, w: '60%', h: 0.8, 
+      fontSize: 28, color: this.COLORS.SECONDARY, align: 'left'
     });
 
-    slide.addText(`Período: ${format(new Date(execution.period.startDate), 'dd/MM/yyyy')} - ${format(new Date(execution.period.endDate), 'dd/MM/yyyy')}`, {
-      x: 0.5, y: 3.5, w: '90%', fontSize: 18, color: '64748B', align: 'center'
+    slide.addText(`${execution.period.name}`, {
+        x: 0.5, y: 4.0, w: 2.5, h: 0.5,
+        fontSize: 18, bold: true, color: this.COLORS.WHITE, align: 'center'
     });
 
-    slide.addText(`Fecha de reporte: ${format(new Date(), 'PPP', { locale: es })}`, {
-      x: 0.5, y: 5.0, w: '90%', fontSize: 14, color: '94A3B8', align: 'center'
+    slide.addText(`${format(new Date(execution.period.startDate), 'dd/MM/yyyy')} - ${format(new Date(execution.period.endDate), 'dd/MM/yyyy')}`, {
+      x: 0.5, y: 4.7, w: 2.5, fontSize: 12, color: 'CBD5E1', align: 'center'
+    });
+
+    slide.addShape(pptx.ShapeType.line, { x: 3.5, y: 4.5, w: 5.5, h: 0, line: { color: this.COLORS.PRIMARY, width: 2 } });
+
+    slide.addText(`Generado: ${format(new Date(), 'PPP', { locale: es })}`, {
+      x: 3.5, y: 4.8, w: '60%', fontSize: 14, color: this.COLORS.TEXT_MUTED, align: 'left'
     });
   }
 
   private addSlideSummary(pptx: any, execution: any, currency: string) {
-    const slide = pptx.addSlide();
-    slide.addText('Resumen de Proyección (Coherencia)', { x: 0.5, y: 0.5, fontSize: 24, bold: true, color: '0F172A' });
+    const slide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+    slide.addText('Proyección del Período', { x: 0.5, y: 0.4, fontSize: 28, bold: true, color: this.COLORS.TEXT_MAIN });
 
     const c = execution.coherence;
-    const rows = [
-      [{ text: 'Concepto' }, { text: 'Monto Presupuestado' }],
-      [{ text: 'Total Ingresos Estipulados' }, { text: this.formatCurrency(c.totalIncomeBudgeted, currency) }],
-      [{ text: 'Total Egresos Estipulados' }, { text: this.formatCurrency(c.totalExpenseBudgeted, currency) }],
-      [{ text: 'Balance Proyectado' }, { text: this.formatCurrency(c.projectedBalance, currency) }]
+
+    const cards = [
+        { label: 'INGRESOS PROYECTADOS', val: c.totalIncomeBudgeted, x: 0.5, color: this.COLORS.PRIMARY },
+        { label: 'EGRESOS PROYECTADOS', val: c.totalExpenseBudgeted, x: 3.5, color: this.COLORS.DANGER },
+        { label: 'BALANCE PROYECTADO', val: c.projectedBalance, x: 6.5, color: this.COLORS.SECONDARY }
     ];
 
-    slide.addTable(rows as any, {
-      x: 0.5, y: 1.5, w: 9, 
-      border: { type: 'solid', color: 'E2E8F0', pt: 1 },
-      fill: { color: 'FFFFFF' },
-      fontSize: 18,
-      autoPage: true,
-      colW: [5, 4]
+    cards.forEach(card => {
+        slide.addShape(pptx.ShapeType.rect, { x: card.x, y: 1.5, w: 2.8, h: 1.5, fill: { color: this.COLORS.ACCENT }, line: { color: 'CBD5E1', width: 1 } });
+        slide.addText(card.label, { x: card.x + 0.1, y: 1.6, w: 2.6, fontSize: 10, color: this.COLORS.TEXT_MUTED, align: 'center' });
+        slide.addText(this.formatCurrency(card.val, currency), { x: card.x + 0.1, y: 2.2, w: 2.6, fontSize: 22, bold: true, color: card.color, align: 'center' });
     });
 
-    slide.addText(`Moneda base: ${currency}`, { x: 0.5, y: 5.0, fontSize: 12, color: '64748B' });
+    slide.addText(`Análisis de Coherencia: El balance proyectado para este período es de ${this.formatCurrency(c.projectedBalance, currency)}.`, {
+        x: 0.5, y: 3.5, w: 9, fontSize: 14, color: this.COLORS.TEXT_MAIN
+    });
   }
 
   private addSlideExecution(pptx: any, execution: any, currency: string) {
-    const slide = pptx.addSlide();
-    slide.addText('Estado de Ejecución Real', { x: 0.5, y: 0.5, fontSize: 24, bold: true, color: '0F172A' });
+    const slide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+    slide.addText('Ejecución Acumulada', { x: 0.5, y: 0.4, fontSize: 28, bold: true, color: this.COLORS.TEXT_MAIN });
 
     const c = execution.coherence;
     const incPct = c.totalIncomeBudgeted > 0 ? (c.totalIncomeActual / c.totalIncomeBudgeted * 100).toFixed(1) : '0';
     const expPct = c.totalExpenseBudgeted > 0 ? (c.totalExpenseActual / c.totalExpenseBudgeted * 100).toFixed(1) : '0';
 
     const rows = [
-      [{ text: 'Concepto' }, { text: 'Presupuestado' }, { text: 'Real' }, { text: '% Ejecución' }],
-      [{ text: 'Ingresos' }, { text: this.formatCurrency(c.totalIncomeBudgeted, currency) }, { text: this.formatCurrency(c.totalIncomeActual, currency) }, { text: `${incPct}%` }],
-      [{ text: 'Egresos' }, { text: this.formatCurrency(c.totalExpenseBudgeted, currency) }, { text: this.formatCurrency(c.totalExpenseActual, currency) }, { text: `${expPct}%` }],
-      [{ text: 'Balance Neto' }, { text: this.formatCurrency(c.projectedBalance, currency) }, { text: this.formatCurrency(c.actualBalance, currency) }, { text: '-' }]
+      [
+        { text: 'Concepto', options: { fill: this.COLORS.SECONDARY, color: this.COLORS.WHITE, bold: true } }, 
+        { text: 'Presp.', options: { fill: this.COLORS.SECONDARY, color: this.COLORS.WHITE, bold: true, align: 'right' } }, 
+        { text: 'Real', options: { fill: this.COLORS.SECONDARY, color: this.COLORS.WHITE, bold: true, align: 'right' } }, 
+        { text: '%', options: { fill: this.COLORS.SECONDARY, color: this.COLORS.WHITE, bold: true, align: 'right' } }
+      ],
+      [{ text: 'INGRESOS' }, { text: this.formatCurrency(c.totalIncomeBudgeted, currency) }, { text: this.formatCurrency(c.totalIncomeActual, currency) }, { text: `${incPct}%` }],
+      [{ text: 'EGRESOS' }, { text: this.formatCurrency(c.totalExpenseBudgeted, currency) }, { text: this.formatCurrency(c.totalExpenseActual, currency) }, { text: `${expPct}%` }],
+      [{ text: 'BALANCE NETO' }, { text: this.formatCurrency(c.projectedBalance, currency) }, { text: this.formatCurrency(c.actualBalance, currency) }, { text: '-' }]
     ];
 
     slide.addTable(rows as any, {
-      x: 0.5, y: 1.5, w: 9,
-      border: { type: 'solid', color: 'E2E8F0', pt: 1 },
-      fontSize: 16,
-      colW: [3, 2, 2, 2],
-      autoPage: true
+      x: 0.5, y: 1.2, w: 9,
+      border: { type: 'solid', color: 'CBD5E1', pt: 0.5 },
+      fontSize: 18,
+      colW: [4, 1.8, 1.8, 1.4],
+      rowH: 0.6,
+      align: 'left',
+      valign: 'middle'
     });
+
+    const balanceColor = c.actualBalance >= 0 ? this.COLORS.SUCCESS : this.COLORS.DANGER;
+    slide.addShape(pptx.ShapeType.rect, { x: 6.5, y: 4.0, w: 3, h: 1, fill: { color: balanceColor } });
+    slide.addText('BALANCE REAL', { x: 6.6, y: 4.1, w: 2.8, fontSize: 10, color: this.COLORS.WHITE, align: 'center' });
+    slide.addText(this.formatCurrency(c.actualBalance, currency), { x: 6.6, y: 4.4, w: 2.8, fontSize: 20, bold: true, color: this.COLORS.WHITE, align: 'center' });
   }
 
   private addAllocationSlides(pptx: any, execution: any, currency: string) {
     const allocations = execution.allocations;
     if (!allocations.length) return;
 
-    // Grouping by type and ministry/category for better presentation
-    // But for a simple version, we use tables that auto-page
-    const slide = pptx.addSlide();
-    slide.addText('Detalle por Ministerio / Categoría', { x: 0.5, y: 0.5, fontSize: 24, bold: true, color: '0F172A' });
-
-    const tableRows = [
-      [{ text: 'Categoría/Ministerio' }, { text: 'Pres.' }, { text: 'Ejec.' }, { text: 'Rest.' }, { text: '%' }]
-    ];
-
-    allocations.forEach((acc: any) => {
-      const name = acc.ministry ? `${acc.ministry.name}` : (acc.category ? acc.category.name : 'Varios');
-      tableRows.push([
-        { text: name },
-        { text: this.formatCurrency(acc.allocatedAmount, currency) },
-        { text: this.formatCurrency(acc.executedAmount, currency) },
-        { text: this.formatCurrency(acc.remainingAmount, currency) },
-        { text: `${acc.usagePercentage}%` }
-      ]);
+    const dataRows = allocations.map((acc: any, i: number) => {
+        const name = acc.ministry ? `${acc.ministry.name}` : (acc.category ? acc.category.name : 'Varios');
+        const fill = i % 2 === 0 ? 'F8FAFC' : 'FFFFFF';
+        const statusColor = acc.status === 'EXCEEDED' ? this.COLORS.DANGER : (acc.status === 'WARNING_80' ? this.COLORS.WARNING : this.COLORS.SUCCESS);
+        
+        return [
+            { text: name, options: { fill } },
+            { text: this.formatCurrency(acc.allocatedAmount, currency), options: { fill, align: 'right' } },
+            { text: this.formatCurrency(acc.executedAmount, currency), options: { fill, align: 'right' } },
+            { text: this.formatCurrency(acc.remainingAmount, currency), options: { fill, align: 'right' } },
+            { text: `${Math.round(acc.usagePercentage)}%`, options: { fill, align: 'right', color: statusColor, bold: true } }
+        ];
     });
 
-    slide.addTable(tableRows as any, {
-      x: 0.5, y: 1.2, w: 9,
-      fontSize: 11,
-      colW: [3, 1.5, 1.5, 1.5, 1.5],
-      autoPage: true, // This automatically creates new slides if the table is too long
+    const tableHeader = [
+        { text: 'Categoría / Ministerio', options: { fill: this.COLORS.PRIMARY, color: this.COLORS.WHITE, bold: true } },
+        { text: 'Presp.', options: { fill: this.COLORS.PRIMARY, color: this.COLORS.WHITE, bold: true, align: 'right' } },
+        { text: 'Ejecut.', options: { fill: this.COLORS.PRIMARY, color: this.COLORS.WHITE, bold: true, align: 'right' } },
+        { text: 'Restante', options: { fill: this.COLORS.PRIMARY, color: this.COLORS.WHITE, bold: true, align: 'right' } },
+        { text: '%', options: { fill: this.COLORS.PRIMARY, color: this.COLORS.WHITE, bold: true, align: 'right' } }
+    ];
+
+    const slide = pptx.addSlide({ masterName: 'MASTER_SLIDE' });
+    slide.addText('Detalle por Asignación', { x: 0.5, y: 0.4, fontSize: 28, bold: true, color: this.COLORS.TEXT_MAIN });
+
+    slide.addTable([tableHeader, ...dataRows] as any, {
+      x: 0.5, y: 1.0, w: 9,
+      fontSize: 10,
+      colW: [3.5, 1.4, 1.4, 1.4, 1.3],
+      autoPage: true,
       border: { type: 'solid', color: 'CBD5E1', pt: 0.5 },
-      fill: { color: 'F8FAFC' },
-      rowH: 0.3
+      rowH: 0.35,
+      valign: 'middle'
     });
   }
 
@@ -147,17 +195,21 @@ export class ExportBudgetToPptUseCase {
     const balance = execution.coherence.actualBalance;
     const isSurplus = balance >= 0;
 
-    slide.addText(isSurplus ? '¡Balance Saludable!' : 'Atención: Déficit Detectado', {
-        x: 0.5, y: 2.0, w: '90%', fontSize: 32, bold: true, 
-        color: isSurplus ? '059669' : 'DC2626', align: 'center'
+    slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: '100%', fill: { color: this.COLORS.SECONDARY } });
+
+    slide.addText(isSurplus ? '¡ESTADO FINANCIERO SALUDABLE!' : 'ANÁLISIS DE RIESGO: DÉFICIT', {
+        x: 1, y: 2.0, w: 8, fontSize: 36, bold: true, 
+        color: isSurplus ? this.COLORS.PRIMARY : this.COLORS.DANGER, align: 'center'
     });
 
-    slide.addText(`Resultado neto actual: ${this.formatCurrency(balance, currency)}`, {
-        x: 0.5, y: 3.0, w: '90%', fontSize: 24, color: '334155', align: 'center'
+    slide.addText(`El resultado neto del período analizado arroja un saldo de ${this.formatCurrency(balance, currency)}.`, {
+        x: 1, y: 3.2, w: 8, fontSize: 18, color: 'CBD5E1', align: 'center'
     });
 
-    slide.addText('Reporte generado para fines administrativos.', {
-        x: 0.5, y: 5.0, w: '90%', fontSize: 12, italic: true, color: '94A3B8', align: 'center'
+    slide.addShape(pptx.ShapeType.line, { x: 4, y: 4.2, w: 2, h: 0, line: { color: this.COLORS.PRIMARY, width: 3 } });
+
+    slide.addText('Elyon.app - Software de Gestión para Iglesias', {
+        x: 1, y: 4.8, w: 8, fontSize: 10, color: '94A3B8', align: 'center'
     });
   }
 

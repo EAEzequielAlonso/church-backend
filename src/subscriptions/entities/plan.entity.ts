@@ -12,6 +12,9 @@ export class Plan {
   @Column({ nullable: true })
   description: string;
 
+  @Column('int', { nullable: true })
+  churchPersonLimit: number;
+
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
@@ -29,6 +32,15 @@ export class Plan {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ default: false })
+  isRecommended: boolean;
+
+  @Column({ default: false })
+  isCustom: boolean;
+
+  @Column({ type: 'int', default: 0 })
+  displayOrder: number;
 
   @OneToMany(() => Subscription, (sub) => sub.plan)
   subscriptions: Subscription[];

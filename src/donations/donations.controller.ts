@@ -10,11 +10,12 @@ import {
 import { DonationsService } from './donations.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('donations')
 export class DonationsController {
   constructor(private readonly donationsService: DonationsService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SubscriptionGuard)
   @Post('preference')
   async createPreference(@Request() req, @Body() body: { amount: number }) {
     const userId = req.user.id;

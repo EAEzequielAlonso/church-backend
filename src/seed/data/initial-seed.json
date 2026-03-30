@@ -1,14 +1,14 @@
 {
     "churches": [
         {
-            "name": "Iglesia Phyessoft",
-            "slug": "iglesia-phyessoft",
-            "adminEmail": "phyessoft@gmail.com",
-            "adminName": "Admin Phyessoft",
+            "name": "Iglesia Bautista Misionera en Santa Teresita",
+            "slug": "IBM-Santa-Teresita",
+            "adminEmail": "nadiaayaelen@gmail.com",
+            "adminName": "Ezequiel Alonso",
             "members": [
                 {
                     "email": "pastor1@phyessoft.com",
-                    "name": "Ricardo Mendez",
+                    "name": "Matias Albasini",
                     "ecclesiasticalRole": "PASTOR",
                     "status": "MEMBER",
                     "isCounselor": true
@@ -124,7 +124,7 @@
                     "meetingTime": "20:00",
                     "address": "Av. Corrientes 1234, 5to A",
                     "openEnrollment": true,
-                    "leaderEmail": "leader1@phyessoft.com",
+                    "leaderEmail": "nadiaayaelen@gmail.com",
                     "membersEmails": [
                         "member1@phyessoft.com",
                         "member2@phyessoft.com",
@@ -161,7 +161,7 @@
             "ministries": [
                 {
                     "name": "Ujieres",
-                    "leaderEmail": "phyessoft@gmail.com",
+                    "leaderEmail": "nadiaayaelen@gmail.com",
                     "roles": [
                         {
                             "name": "Recepción",
@@ -187,7 +187,7 @@
                 },
                 {
                     "name": "Alabanza",
-                    "leaderEmail": "phyessoft@gmail.com",
+                    "leaderEmail": "nadiaayaelen@gmail.com",
                     "roles": [
                         {
                             "name": "Guitarra",
@@ -213,7 +213,7 @@
                 },
                 {
                     "name": "Predicación y Enseñanza",
-                    "leaderEmail": "phyessoft@gmail.com",
+                    "leaderEmail": "nadiaayaelen@gmail.com",
                     "roles": [
                         {
                             "name": "Lectura y Oración",
@@ -231,7 +231,7 @@
                 },
                 {
                     "name": "Multimedia",
-                    "leaderEmail": "phyessoft@gmail.com",
+                    "leaderEmail": "nadiaayaelen@gmail.com",
                     "roles": [
                         {
                             "name": "Sonido",
@@ -541,15 +541,15 @@
                 "loans": [
                     {
                         "bookTitle": "La Santidad de Dios",
-                        "memberEmail": "phyessoft@gmail.com"
+                        "memberEmail": "nadiaayaelen@gmail.com"
                     },
                     {
                         "bookTitle": "El Caso de Cristo",
-                        "memberEmail": "phyessoft@gmail.com"
+                        "memberEmail": "nadiaayaelen@gmail.com"
                     },
                     {
                         "bookTitle": "Una Vida con Propósito",
-                        "memberEmail": "phyessoft@gmail.com"
+                        "memberEmail": "nadiaayaelen@gmail.com"
                     }
                 ]
             },
