@@ -16,6 +16,10 @@ export class EmailService {
     }
   }
 
+  private getFromEmail(): string {
+    return this.configService.get<string>('RESEND_FROM_EMAIL') || 'ELYON <noreply@elyon.app>';
+  }
+
   async sendVerificationCode(email: string, code: string): Promise<boolean> {
     const subject = 'Tu código de verificación de ELYON';
     const html = `
@@ -36,7 +40,7 @@ export class EmailService {
     if (this.resend) {
       try {
         await this.resend.emails.send({
-          from: 'ELYON <noreply@elyon.app>', // Using a generic domain, may need to be updated with actual verified domain
+          from: this.getFromEmail(),
           to: email,
           subject: subject,
           html: html,
@@ -89,7 +93,7 @@ export class EmailService {
     if (this.resend) {
       try {
         await this.resend.emails.send({
-          from: 'ELYON <noreply@elyon.app>',
+          from: this.getFromEmail(),
           to: email,
           subject: subject,
           html: html,
