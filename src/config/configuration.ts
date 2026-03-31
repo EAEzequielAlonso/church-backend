@@ -8,8 +8,6 @@ export const getDatabaseConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
   url: process.env.DATABASE_URL,
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-  synchronize: true, // Enable for dev/POC as per user context. In prod, set to false.
-  dropSchema: true,
   autoLoadEntities: true,
   logging: false, // Set to true to debug queries
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
