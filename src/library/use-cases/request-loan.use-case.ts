@@ -55,7 +55,7 @@ export class RequestLoanUseCase {
       }
 
       const borrower = await this.memberRepo.findOne({
-        where: { id: memberId, church: { id: churchId } },
+        where: { id: memberId, churchId: churchId },
       });
       if (!borrower) throw new NotFoundException('Miembro no encontrado');
 

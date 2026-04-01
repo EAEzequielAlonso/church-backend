@@ -40,7 +40,7 @@ export class ExportBudgetToPptUseCase {
         background: { color: 'FFFFFF' },
         objects: [
             { rect: { x: 0, y: 0, w: '100%', h: 0.1, fill: { color: this.COLORS.PRIMARY } } },
-            { text: { text: 'Elyon.app - Gestión Presupuestaria', options: { x: 0.5, y: 5.3, w: 4, h: 0.3, fontSize: 10, color: this.COLORS.TEXT_MUTED } } }
+            { text: { text: 'Telyon.app - Gestión Presupuestaria', options: { x: 0.5, y: 5.3, w: 4, h: 0.3, fontSize: 10, color: this.COLORS.TEXT_MUTED } } }
         ]
     });
 
@@ -208,7 +208,7 @@ export class ExportBudgetToPptUseCase {
 
     slide.addShape(pptx.ShapeType.line, { x: 4, y: 4.2, w: 2, h: 0, line: { color: this.COLORS.PRIMARY, width: 3 } });
 
-    slide.addText('Elyon.app - Software de Gestión para Iglesias', {
+    slide.addText('Telyon.app - Software de Gestión para Iglesias', {
         x: 1, y: 4.8, w: 8, fontSize: 10, color: '94A3B8', align: 'center'
     });
   }

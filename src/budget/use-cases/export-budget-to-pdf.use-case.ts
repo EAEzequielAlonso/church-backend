@@ -215,7 +215,7 @@ export class ExportBudgetToPdfUseCase {
             .fontSize(8)
             .fillColor('#94A3B8')
             .text(
-                `Elyon.app | Página ${i + 1} de ${range.count} | ${periodName}`,
+                `Telyon.app | Página ${i + 1} de ${range.count} | ${periodName}`,
                 50,
                 doc.page.height - 30,
                 { align: 'center', width: 500, lineBreak: false }

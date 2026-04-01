@@ -132,7 +132,7 @@ export class AuthController {
     return {
       id: user.id,
       email: user.email,
-      fullName: user.person?.fullName,
+      fullName: `${user.person?.firstName || ''} ${user.person?.lastName || ''}`.trim() || 'S/N',
       avatarUrl: user.person?.avatarUrl,
       personId: user.person?.id,
       systemRole: user.systemRole,

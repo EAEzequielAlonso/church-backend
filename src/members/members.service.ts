@@ -45,7 +45,7 @@ export class MembersService {
       .leftJoin('member.church', 'church')
       .where('church.id = :churchId', { churchId })
       .andWhere(
-        '(person.fullName ILIKE :search OR person.firstName ILIKE :search OR person.lastName ILIKE :search)',
+        '(concat(person.firstName, \' \', person.lastName) ILIKE :search OR person.firstName ILIKE :search OR person.lastName ILIKE :search)',
         { search: `%${query}%` },
       )
       .limit(10)
@@ -75,7 +75,6 @@ export class MembersService {
       email,
       firstName,
       lastName,
-      fullName,
       status,
       ecclesiasticalRole,
       functionalRoles,
@@ -94,7 +93,7 @@ export class MembersService {
       person = await personRepo.findOne({ where: { documentId } });
     }
 
-    const constructedFullName = fullName || `${firstName} ${lastName}`.trim();
+    // No longer using fullName
 
     const parseDate = (d: string) => {
       if (!d) return null;
@@ -107,7 +106,6 @@ export class MembersService {
         email: email || null,
         firstName,
         lastName,
-        fullName: constructedFullName,
         documentId,
         phoneNumber,
         birthDate: parseDate(birthDate),
@@ -117,7 +115,7 @@ export class MembersService {
       let needsUpdate = false;
       if (!person.firstName && firstName) { person.firstName = firstName; needsUpdate = true; }
       if (!person.lastName && lastName) { person.lastName = lastName; needsUpdate = true; }
-      if (!person.fullName && constructedFullName) { person.fullName = constructedFullName; needsUpdate = true; }
+      // Removed fullName update
       if (!person.phoneNumber && phoneNumber) { person.phoneNumber = phoneNumber; needsUpdate = true; }
       if (!person.documentId && documentId) { person.documentId = documentId; needsUpdate = true; }
       if (!person.birthDate && birthDate) { person.birthDate = parseDate(birthDate); needsUpdate = true; }
@@ -146,7 +144,7 @@ export class MembersService {
     return memberRepo.save(member);
   }
 
-  async findAll(churchId: string, status?: MembershipStatus) {
+  async findAll(churchId: string, status?: MembershipStatus, role?: FunctionalRole) {
     const query = this.memberRepository
       .createQueryBuilder('member')
       .leftJoinAndSelect('member.person', 'person')
@@ -156,6 +154,10 @@ export class MembersService {
 
     if (status) {
       query.andWhere('member.membershipStatus = :status', { status });
+    }
+    
+    if (role) {
+      query.andWhere(':role = ANY(member.functionalRoles)', { role });
     }
 
     return query.getMany();
@@ -211,8 +213,11 @@ export class MembersService {
 
     if (member.person) {
       let personUpdated = false;
-      if (updateData.fullName !== undefined && member.person.fullName !== updateData.fullName) {
-        member.person.fullName = updateData.fullName; personUpdated = true;
+      if (updateData.firstName !== undefined && member.person.firstName !== updateData.firstName) {
+        member.person.firstName = updateData.firstName; personUpdated = true;
+      }
+      if (updateData.lastName !== undefined && member.person.lastName !== updateData.lastName) {
+        member.person.lastName = updateData.lastName; personUpdated = true;
       }
       if (updateData.email !== undefined && member.person.email !== updateData.email) {
         member.person.email = updateData.email; personUpdated = true;
@@ -276,8 +281,8 @@ export class MembersService {
         await this.userRepository.save(user);
       } else {
         person = this.personRepository.create({
-          email: user.email,
-          fullName: user.email.split('@')[0],
+          firstName: user.email.split('@')[0],
+          lastName: '',
         });
         person = await this.personRepository.save(person);
         user.person = person;
@@ -407,7 +412,6 @@ export class MembersService {
       person = this.personRepository.create({
         firstName: visitor.firstName,
         lastName: visitor.lastName,
-        fullName: `${visitor.firstName} ${visitor.lastName}`.trim(),
         email: visitor.email || null,
         phoneNumber: visitor.phone || null,
       });

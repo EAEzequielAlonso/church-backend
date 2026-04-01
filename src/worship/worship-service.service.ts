@@ -41,23 +41,23 @@ export class WorshipServiceService {
     return this.templateRepo.save(template);
   }
 
-  async findTemplate(id: string) {
+  async findTemplate(id: string, churchId: string) {
     return this.templateRepo.findOne({
-      where: { id },
+      where: { id, churchId },
       relations: ['sections', 'sections.requiredRoles'],
       order: { sections: { order: 'ASC' } },
     });
   }
 
-  async deleteTemplate(id: string) {
-    const template = await this.templateRepo.findOne({ where: { id } });
+  async deleteTemplate(id: string, churchId: string) {
+    const template = await this.templateRepo.findOne({ where: { id, churchId } });
     if (!template) throw new NotFoundException('Plantilla no encontrada');
     return this.templateRepo.remove(template);
   }
 
-  async addTemplateSection(templateId: string, data: any) {
+  async addTemplateSection(templateId: string, churchId: string, data: any) {
     const template = await this.templateRepo.findOne({
-      where: { id: templateId },
+      where: { id: templateId, churchId },
     });
     if (!template) throw new NotFoundException('Plantilla no encontrada');
 
@@ -84,7 +84,11 @@ export class WorshipServiceService {
     return savedSection;
   }
 
-  async deleteTemplateSection(templateId: string, sectionId: string) {
+  async deleteTemplateSection(templateId: string, sectionId: string, churchId: string) {
+    // First verify the template belongs to the church
+    const template = await this.templateRepo.findOne({ where: { id: templateId, churchId } });
+    if (!template) throw new NotFoundException('Plantilla no encontrada');
+
     const section = await this.templateSectionRepo.findOne({
       where: { id: sectionId, templateId: templateId },
     });
@@ -123,9 +127,9 @@ export class WorshipServiceService {
     });
   }
 
-  async findOneService(id: string) {
+  async findOneService(id: string, churchId: string) {
     let service = await this.serviceRepo.findOne({
-      where: { id },
+      where: { id, churchId },
       relations: [
         'sections',
         'sections.requiredRoles',
@@ -259,7 +263,7 @@ export class WorshipServiceService {
 
     // 5. Refetch the fresh service to return it
     return this.serviceRepo.findOne({
-      where: { id: service.id },
+      where: { id: service.id, churchId: service.churchId },
       relations: [
         'sections',
         'sections.requiredRoles',
@@ -271,8 +275,8 @@ export class WorshipServiceService {
     });
   }
 
-  async deleteService(id: string) {
-    const service = await this.serviceRepo.findOne({ where: { id } });
+  async deleteService(id: string, churchId: string) {
+    const service = await this.serviceRepo.findOne({ where: { id, churchId } });
     if (!service) throw new NotFoundException('Culto no encontrado');
     return this.serviceRepo.remove(service);
   }
@@ -283,7 +287,7 @@ export class WorshipServiceService {
     date: string,
   ) {
     const template = await this.templateRepo.findOne({
-      where: { id: templateId },
+      where: { id: templateId, churchId },
       relations: ['sections', 'sections.requiredRoles', 'sections.ministry'],
     });
     if (!template) throw new NotFoundException('Plantilla no encontrada');
@@ -312,20 +316,21 @@ export class WorshipServiceService {
     });
 
     await this.sectionRepo.save(sections);
-    return this.findOneService(savedService.id);
+    return this.findOneService(savedService.id, churchId);
   }
 
-  async updateSection(sectionId: string, data: any) {
+  async updateSection(sectionId: string, churchId: string, data: any) {
     const section = await this.sectionRepo.findOne({
-      where: { id: sectionId },
+      where: { id: sectionId, service: { churchId } },
+      relations: ['service'],
     });
     if (!section) throw new NotFoundException('Sección no encontrada');
     Object.assign(section, data);
     return this.sectionRepo.save(section);
   }
 
-  async confirmService(id: string) {
-    const service = await this.serviceRepo.findOne({ where: { id } });
+  async confirmService(id: string, churchId: string) {
+    const service = await this.serviceRepo.findOne({ where: { id, churchId } });
     if (!service) throw new NotFoundException('Culto no encontrado');
 
     service.status = ServiceStatus.CONFIRMED;

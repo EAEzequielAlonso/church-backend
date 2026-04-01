@@ -152,10 +152,12 @@ export class MentorshipController {
   async acceptInvitation(
     @Param('id') participantId: string,
     @Request() req,
+    @CurrentChurch() churchId: string,
   ): Promise<any> {
     return this.acceptParticipationUseCase.execute(
       participantId,
       req.user?.memberId,
+      churchId,
     );
   }
 
@@ -164,10 +166,12 @@ export class MentorshipController {
   async declineInvitation(
     @Param('id') participantId: string,
     @Request() req,
+    @CurrentChurch() churchId: string,
   ): Promise<any> {
     return this.declineParticipationUseCase.execute(
       participantId,
       req.user?.memberId,
+      churchId,
     );
   }
 
@@ -177,11 +181,13 @@ export class MentorshipController {
     @Param('id') processId: string,
     @Body() dto: Omit<AddMeetingDto, 'processId'>,
     @Request() req: any,
+    @CurrentChurch() churchId: string,
   ): Promise<MentorshipResponseDto> {
     const result = await this.addMeetingUseCase.execute(
       { ...dto, processId },
       req.user?.memberId,
-      req.user?.roles,
+      req.user?.roles || [],
+      churchId,
     );
     return MentorshipResponseDto.fromEntity(result);
   }
@@ -193,13 +199,15 @@ export class MentorshipController {
     @Param('meetingId') meetingId: string,
     @Body() dto: Partial<AddMeetingDto>,
     @Request() req: any,
+    @CurrentChurch() churchId: string,
   ): Promise<MentorshipResponseDto> {
     const result = await this.updateMeetingUseCase.execute(
       processId,
       meetingId,
       dto,
       req.user?.memberId,
-      req.user?.roles,
+      req.user?.roles || [],
+      churchId,
     );
     return MentorshipResponseDto.fromEntity(result);
   }
@@ -213,6 +221,7 @@ export class MentorshipController {
   ): Promise<any> {
     const result = await this.getNotesUseCase.execute(processId, query, {
       userId: req.user?.memberId,
+      churchId: req.user?.churchId,
       roles: req.user?.roles || [],
       permissions: req.user?.permissions || [],
     });
@@ -228,6 +237,7 @@ export class MentorshipController {
   ): Promise<any> {
     const result = await this.getTasksUseCase.execute(processId, query, {
       userId: req.user?.memberId,
+      churchId: req.user?.churchId,
       roles: req.user?.roles || [],
       permissions: req.user?.permissions || [],
     });
@@ -240,12 +250,14 @@ export class MentorshipController {
     @Param('id') processId: string,
     @Param('meetingId') meetingId: string,
     @Request() req: any,
+    @CurrentChurch() churchId: string,
   ): Promise<MentorshipResponseDto> {
     const result = await this.deleteMeetingUseCase.execute(
       processId,
       meetingId,
       req.user?.memberId,
-      req.user?.roles,
+      req.user?.roles || [],
+      churchId,
     );
     return MentorshipResponseDto.fromEntity(result);
   }
@@ -265,6 +277,7 @@ export class MentorshipController {
       },
       {
         userId: req.user?.memberId,
+        churchId: req.user?.churchId,
         roles: req.user?.roles || [],
         permissions: req.user?.permissions || [],
       },
@@ -287,6 +300,7 @@ export class MentorshipController {
       },
       {
         userId: req.user?.memberId,
+        churchId: req.user?.churchId,
         roles: req.user?.roles || [],
         permissions: req.user?.permissions || [],
       },
@@ -303,6 +317,7 @@ export class MentorshipController {
   ): Promise<any> {
     const result = await this.updateNoteUseCase.execute(noteId, dto, {
       userId: req.user?.memberId,
+      churchId: req.user?.churchId,
       roles: req.user?.roles || [],
       permissions: req.user?.permissions || [],
     });
@@ -317,6 +332,7 @@ export class MentorshipController {
   ): Promise<void> {
     await this.deleteNoteUseCase.execute(noteId, {
       userId: req.user?.memberId,
+      churchId: req.user?.churchId,
       roles: req.user?.roles || [],
       permissions: req.user?.permissions || [],
     });
@@ -330,6 +346,7 @@ export class MentorshipController {
   ): Promise<any> {
     const result = await this.startTaskUseCase.execute(taskId, {
       userId: req.user?.memberId,
+      churchId: req.user?.churchId,
       roles: req.user?.roles || [],
       permissions: req.user?.permissions || [],
     });
@@ -347,6 +364,7 @@ export class MentorshipController {
       taskId,
       {
         userId: req.user?.memberId,
+        churchId: req.user?.churchId,
         roles: req.user?.roles || [],
         permissions: req.user?.permissions || [],
       },
@@ -366,6 +384,7 @@ export class MentorshipController {
       taskId,
       {
         userId: req.user?.memberId,
+        churchId: req.user?.churchId,
         roles: req.user?.roles || [],
         permissions: req.user?.permissions || [],
       },
@@ -383,6 +402,7 @@ export class MentorshipController {
   ): Promise<any> {
     const result = await this.updateTaskUseCase.execute(taskId, dto, {
       userId: req.user?.memberId,
+      churchId: req.user?.churchId,
       roles: req.user?.roles || [],
       permissions: req.user?.permissions || [],
     });
@@ -397,6 +417,7 @@ export class MentorshipController {
   ): Promise<any> {
     await this.deleteTaskUseCase.execute(taskId, {
       userId: req.user?.memberId,
+      churchId: req.user?.churchId,
       roles: req.user?.roles || [],
       permissions: req.user?.permissions || [],
     });
@@ -410,6 +431,7 @@ export class MentorshipController {
     @Param('id') processId: string,
     @Body() deleteInstruction: { confirmString: string },
     @Request() req,
+    @CurrentChurch() churchId: string,
   ): Promise<{ message: string }> {
     const executorChurchPersonId = req.user?.memberId;
     const executorFunctionalRoles = req.user?.roles || [];
@@ -419,7 +441,7 @@ export class MentorshipController {
       executorChurchPersonId,
       executorFunctionalRoles,
       confirmString: deleteInstruction.confirmString,
-    });
+    }, churchId);
 
     return { message: 'El proceso ha sido eliminado permanentemente.' };
   }

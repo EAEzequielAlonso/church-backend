@@ -34,26 +34,27 @@ export class WorshipServiceController {
   }
 
   @Get('templates/:id')
-  getTemplate(@Param('id') id: string) {
-    return this.worshipService.findTemplate(id);
+  getTemplate(@CurrentChurch() churchId: string, @Param('id') id: string) {
+    return this.worshipService.findTemplate(id, churchId);
   }
 
   @Delete('templates/:id')
-  deleteTemplate(@Param('id') id: string) {
-    return this.worshipService.deleteTemplate(id);
+  deleteTemplate(@CurrentChurch() churchId: string, @Param('id') id: string) {
+    return this.worshipService.deleteTemplate(id, churchId);
   }
 
   @Post('templates/:id/sections')
-  addTemplateSection(@Param('id') id: string, @Body() body: any) {
-    return this.worshipService.addTemplateSection(id, body);
+  addTemplateSection(@CurrentChurch() churchId: string, @Param('id') id: string, @Body() body: any) {
+    return this.worshipService.addTemplateSection(id, churchId, body);
   }
 
   @Delete('templates/:id/sections/:sectionId')
   deleteTemplateSection(
+    @CurrentChurch() churchId: string,
     @Param('id') id: string,
     @Param('sectionId') sectionId: string,
   ) {
-    return this.worshipService.deleteTemplateSection(id, sectionId);
+    return this.worshipService.deleteTemplateSection(id, sectionId, churchId);
   }
 
   // --- SERVICES ---
@@ -69,8 +70,8 @@ export class WorshipServiceController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.worshipService.findOneService(id);
+  findOne(@CurrentChurch() churchId: string, @Param('id') id: string) {
+    return this.worshipService.findOneService(id, churchId);
   }
 
   @Post()
@@ -86,16 +87,16 @@ export class WorshipServiceController {
   }
 
   @Patch('sections/:id')
-  updateSection(@Param('id') id: string, @Body() body: any) {
-    return this.worshipService.updateSection(id, body);
+  updateSection(@CurrentChurch() churchId: string, @Param('id') id: string, @Body() body: any) {
+    return this.worshipService.updateSection(id, churchId, body);
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string) {
-    return this.worshipService.deleteService(id);
+  delete(@CurrentChurch() churchId: string, @Param('id') id: string) {
+    return this.worshipService.deleteService(id, churchId);
   }
   @Patch(':id/confirm')
-  confirm(@Param('id') id: string) {
-    return this.worshipService.confirmService(id);
+  confirm(@CurrentChurch() churchId: string, @Param('id') id: string) {
+    return this.worshipService.confirmService(id, churchId);
   }
 }

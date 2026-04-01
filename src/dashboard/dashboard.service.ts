@@ -59,7 +59,7 @@ export class DashboardService {
 
     // Active Groups
     const totalGroups = await this.groupRepository.count({
-      where: { church: { id: churchId } },
+      where: { churchId: churchId },
     });
 
     return {
@@ -81,7 +81,7 @@ export class DashboardService {
     // 1. Get Confirmed Worship Services (Future)
     const services = await this.worshipRepo.find({
       where: {
-        church: { id: churchId },
+        churchId: churchId,
         status: ServiceStatus.CONFIRMED,
         date: MoreThan(new Date()),
       },

@@ -128,7 +128,6 @@ export class SeedService {
       person = this.personRepository.create({
         firstName,
         lastName: lastName || '',
-        fullName: name,
         email,
         isActive: true,
       });
@@ -259,7 +258,6 @@ export class SeedService {
           adminPerson = this.personRepository.create({
             firstName: 'Ezequiel',
             lastName: 'Alonso',
-            fullName: 'Ezequiel Alonso',
             email: globalAdminEmail,
             isActive: true,
           });
@@ -314,7 +312,6 @@ export class SeedService {
           adminPerson = this.personRepository.create({
             firstName: firstName,
             lastName: lastName,
-            fullName: churchData.adminName,
             email: churchData.adminEmail,
             avatarUrl: faker.image.avatar(),
           });
@@ -397,7 +394,6 @@ export class SeedService {
             person = this.personRepository.create({
               firstName: firstName,
               lastName: lastName,
-              fullName: mData.name,
               email: mData.email,
               avatarUrl: faker.image.avatar(),
               sex: faker.helpers.enumValue(Sex),

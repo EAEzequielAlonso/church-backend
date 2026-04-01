@@ -30,7 +30,8 @@ export class UsersService {
     // Update Person fields
     if (user.person) {
       Object.assign(user.person, {
-        fullName: data.fullName,
+        firstName: data.firstName,
+        lastName: data.lastName,
         phoneNumber: data.phoneNumber,
         birthDate: data.birthDate,
         avatarUrl: data.avatarUrl,

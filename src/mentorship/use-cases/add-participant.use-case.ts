@@ -15,8 +15,8 @@ export class AddParticipantToProcessUseCase {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async execute(dto: AddParticipantToProcessDto): Promise<MentorshipProcess> {
-    const process = await this.mentorshipService.findById(dto.processId);
+  async execute(dto: AddParticipantToProcessDto, churchId: string): Promise<MentorshipProcess> {
+    const process = await this.mentorshipService.findById(dto.processId, churchId);
 
     if (!process) {
       throw new NotFoundException(`El proceso de mentoría con ID ${dto.processId} no existe.`);

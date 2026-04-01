@@ -78,7 +78,8 @@ export class ChurchesService {
         console.log('Creating new person...');
         person = this.personRepository.create({
           email: user.email,
-          fullName: user.email.split('@')[0], // Fallback name
+          firstName: user.email.split('@')[0], // Fallback name
+          lastName: '',
         });
         person = await this.personRepository.save(person);
         user.person = person;

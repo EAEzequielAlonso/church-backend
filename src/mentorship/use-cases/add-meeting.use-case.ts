@@ -20,10 +20,11 @@ export class AddMeetingUseCase {
 
   async execute(
     dto: AddMeetingDto,
-    executorChurchPersonId?: string,
+    executorChurchPersonId: string,
     executorRoles: string[] = [],
+    churchId: string,
   ): Promise<MentorshipProcess> {
-    const process = await this.mentorshipService.findById(dto.processId);
+    const process = await this.mentorshipService.findById(dto.processId, churchId);
 
     if (!process) {
       throw new NotFoundException(`El proceso de mentoría con ID ${dto.processId} no existe.`);

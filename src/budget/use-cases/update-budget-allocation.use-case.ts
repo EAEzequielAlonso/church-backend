@@ -17,7 +17,7 @@ export class UpdateBudgetAllocationUseCase {
     churchId: string,
   ): Promise<BudgetAllocation> {
     const allocation = await this.budgetAllocationRepository.findOne({
-      where: { id, church: { id: churchId } },
+      where: { id, churchId: churchId },
     });
 
     if (!allocation) {

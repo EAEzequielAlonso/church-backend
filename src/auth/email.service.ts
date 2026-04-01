@@ -17,11 +17,11 @@ export class EmailService {
   }
 
   private getFromEmail(): string {
-    return this.configService.get<string>('RESEND_FROM_EMAIL') || 'ELYON <noreply@elyon.app>';
+    return this.configService.get<string>('RESEND_FROM_EMAIL') || 'Telyon <noreply@elyon.app>';
   }
 
   async sendVerificationCode(email: string, code: string): Promise<boolean> {
-    const subject = 'Tu código de verificación de ELYON';
+    const subject = 'Tu código de verificación de Telyon';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
         <h2 style="color: #1e293b; text-align: center;">Verifica tu correo electrónico</h2>
@@ -68,16 +68,16 @@ export class EmailService {
   }
 
   async sendInvitationLink(email: string, inviteToken: string): Promise<boolean> {
-    const subject = 'Has sido invitado a unirte a tu iglesia en ELYON';
+    const subject = 'Has sido invitado a unirte a tu iglesia en Telyon';
     // Using a placeholder frontend URL; this should ideally come from ConfigService
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const inviteLink = `${frontendUrl}/auth/register?invite=${inviteToken}`;
     
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #1e293b; text-align: center;">Invitación a ELYON</h2>
+        <h2 style="color: #1e293b; text-align: center;">Invitación a Telyon</h2>
         <p style="color: #475569; font-size: 16px; text-align: center;">
-          Has sido invitado a unirte a tu iglesia en el sistema ELYON. Por favor, crea tu cuenta haciendo clic en el siguiente enlace:
+          Has sido invitado a unirte a tu iglesia en el sistema Telyon. Por favor, crea tu cuenta haciendo clic en el siguiente enlace:
         </p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${inviteLink}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
@@ -114,7 +114,7 @@ export class EmailService {
   private logInviteToConsole(email: string, link: string) {
     this.logger.log('\n=============================================');
     this.logger.log(`[EMAIL FALLBACK] To: ${email}`);
-    this.logger.log(`[EMAIL FALLBACK] Subject: Invitación a ELYON`);
+    this.logger.log(`[EMAIL FALLBACK] Subject: Invitación a Telyon`);
     this.logger.log(`[EMAIL FALLBACK] Link: ${link}`);
     this.logger.log('=============================================\n');
   }

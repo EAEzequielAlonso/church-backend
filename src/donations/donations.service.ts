@@ -57,7 +57,7 @@ export class DonationsService {
           items: [
             {
               id: `donation-${donation.id}`,
-              title: 'Apoyo a la Visión - Ecclesia SaaS',
+              title: 'Apoyo a la Visión - Telyon.app',
               quantity: 1,
               unit_price: Number(amount),
               currency_id: 'ARS',
@@ -75,7 +75,7 @@ export class DonationsService {
             pending: `${frontendUrl}/dashboard?donation=pending`,
           },
           // auto_return: 'approved',
-          statement_descriptor: 'ECCLESIA DONACION',
+          statement_descriptor: 'TELYON DONACION',
         },
       });
 

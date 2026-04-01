@@ -13,13 +13,14 @@ export class GetFamilyUseCase {
     private readonly familyMemberRepository: Repository<FamilyMember>,
   ) {}
 
-  async byId(id: string): Promise<Family> {
+  async byId(id: string, churchId: string): Promise<Family> {
     const family = await this.familyRepository
       .createQueryBuilder('family')
       .leftJoinAndSelect('family.members', 'members')
       .leftJoinAndSelect('members.member', 'member')
       .leftJoinAndSelect('member.person', 'person')
       .where('family.id = :id', { id })
+      .andWhere('family.churchId = :churchId', { churchId })
       .getOne();
 
     if (!family) {
@@ -41,6 +42,6 @@ export class GetFamilyUseCase {
     if (!membership) return null;
 
     // Now get full family details
-    return this.byId(membership.family.id);
+    return this.byId(membership.family.id, membership.family.churchId);
   }
 }

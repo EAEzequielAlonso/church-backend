@@ -30,7 +30,7 @@ export class PrayersService {
     visibility: PrayerRequestVisibility,
     isAnonymous: boolean = false,
   ) {
-    const member = await this.memberRepo.findOne({ where: { id: memberId } });
+    const member = await this.memberRepo.findOne({ where: { id: memberId, churchId } });
     if (!member) throw new NotFoundException('Member not found');
 
     const request = this.requestRepo.create({
@@ -62,7 +62,7 @@ export class PrayersService {
       .leftJoinAndSelect('pr.member', 'm')
       .leftJoinAndSelect('m.person', 'p')
       .leftJoinAndSelect('pr.updates', 'pu')
-      .where('pr.church.id = :churchId', { churchId })
+      .where('pr.churchId = :churchId', { churchId })
       .orderBy('pr.createdAt', 'DESC')
       .skip((page - 1) * limit)
       .take(limit);
@@ -138,9 +138,9 @@ export class PrayersService {
     };
   }
 
-  async markAnswered(requestId: string, memberId: string, testimony?: string) {
+  async markAnswered(requestId: string, churchId: string, memberId: string, testimony?: string) {
     const request = await this.requestRepo.findOne({
-      where: { id: requestId },
+      where: { id: requestId, churchId },
       relations: ['member'],
     });
     if (!request) throw new NotFoundException('Petición no encontrada');
@@ -157,9 +157,9 @@ export class PrayersService {
     return this.requestRepo.save(request);
   }
 
-  async update(requestId: string, memberId: string, motive: string) {
+  async update(requestId: string, churchId: string, memberId: string, motive: string) {
     const request = await this.requestRepo.findOne({
-      where: { id: requestId },
+      where: { id: requestId, churchId },
       relations: ['member'],
     });
     if (!request) throw new NotFoundException('Petición no encontrada');
@@ -172,9 +172,9 @@ export class PrayersService {
     return this.requestRepo.save(request);
   }
 
-  async addUpdate(requestId: string, memberId: string, content: string) {
+  async addUpdate(requestId: string, churchId: string, memberId: string, content: string) {
     const request = await this.requestRepo.findOne({
-      where: { id: requestId },
+      where: { id: requestId, churchId },
       relations: ['member'],
     });
     if (!request) throw new NotFoundException('Petición no encontrada');
@@ -195,29 +195,29 @@ export class PrayersService {
 
   // --- MODERATION ---
 
-  async setStatus(requestId: string, status: PrayerRequestStatus) {
+  async setStatus(requestId: string, churchId: string, status: PrayerRequestStatus) {
     // Validation handled in Controller (Admin/Pastor only)
     const request = await this.requestRepo.findOne({
-      where: { id: requestId },
+      where: { id: requestId, churchId },
     });
     if (!request) throw new NotFoundException('Petición no encontrada');
 
     request.status = status;
     return this.requestRepo.save(request);
   }
-  async toggleHidden(requestId: string, isHidden: boolean) {
+  async toggleHidden(requestId: string, churchId: string, isHidden: boolean) {
     // Validation handled in Controller (Admin/Pastor only)
     const request = await this.requestRepo.findOne({
-      where: { id: requestId },
+      where: { id: requestId, churchId },
     });
     if (!request) throw new NotFoundException('Petición no encontrada');
 
     request.isHidden = isHidden;
     return this.requestRepo.save(request);
   }
-  async delete(requestId: string, memberId: string, userRoles: string[]) {
+  async delete(requestId: string, churchId: string, memberId: string, userRoles: string[]) {
     const request = await this.requestRepo.findOne({
-      where: { id: requestId },
+      where: { id: requestId, churchId },
       relations: ['member'],
     });
     if (!request) throw new NotFoundException('Petición no encontrada');

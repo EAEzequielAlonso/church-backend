@@ -70,46 +70,49 @@ export class PrayersController {
 
   @Put(':id')
   update(
+    @CurrentChurch() churchId: string,
     @Param('id') id: string,
     @CurrentUser() user: any,
     @Body() body: { motive: string },
   ) {
-    return this.prayersService.update(id, user.memberId, body.motive);
+    return this.prayersService.update(id, churchId, user.memberId, body.motive);
   }
 
   @Put(':id/answer')
   markAnswered(
+    @CurrentChurch() churchId: string,
     @Param('id') id: string,
     @CurrentUser() user: any,
     @Body() body: { testimony?: string },
   ) {
-    return this.prayersService.markAnswered(id, user.memberId, body.testimony);
+    return this.prayersService.markAnswered(id, churchId, user.memberId, body.testimony);
   }
 
   @Post(':id/updates')
   addUpdate(
+    @CurrentChurch() churchId: string,
     @Param('id') id: string,
     @CurrentUser() user: any,
     @Body() body: { content: string },
   ) {
-    return this.prayersService.addUpdate(id, user.memberId, body.content);
+    return this.prayersService.addUpdate(id, churchId, user.memberId, body.content);
   }
 
   // --- MODERATION ---
 
   @Put(':id/status')
   @RequirePermissions(AppPermission.PRAYER_VIEW_ALL) // Assume Moderation permission
-  setStatus(@Param('id') id: string, @Body() body: { status: any }) {
-    return this.prayersService.setStatus(id, body.status);
+  setStatus(@CurrentChurch() churchId: string, @Param('id') id: string, @Body() body: { status: any }) {
+    return this.prayersService.setStatus(id, churchId, body.status);
   }
   @Put(':id/hidden')
   @RequirePermissions(AppPermission.PRAYER_VIEW_ALL) // Assume Moderation permission
-  toggleHidden(@Param('id') id: string, @Body() body: { isHidden: boolean }) {
-    return this.prayersService.toggleHidden(id, body.isHidden);
+  toggleHidden(@CurrentChurch() churchId: string, @Param('id') id: string, @Body() body: { isHidden: boolean }) {
+    return this.prayersService.toggleHidden(id, churchId, body.isHidden);
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.prayersService.delete(id, user.memberId, user.roles);
+  delete(@CurrentChurch() churchId: string, @Param('id') id: string, @CurrentUser() user: any) {
+    return this.prayersService.delete(id, churchId, user.memberId, user.roles);
   }
 }

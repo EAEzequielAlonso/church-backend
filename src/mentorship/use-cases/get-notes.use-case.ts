@@ -27,9 +27,10 @@ export class GetNotesUseCase {
       userId: string;
       roles: string[];
       permissions: string[];
+      churchId: string;
     },
   ) {
-    const process = await this.mentorshipService.findById(processId);
+    const process = await this.mentorshipService.findById(processId, executor.churchId);
     if (!process) {
       throw new NotFoundException(`El proceso de mentoría con ID ${processId} no existe.`);
     }

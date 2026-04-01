@@ -24,7 +24,7 @@ export class DeleteMinistryUseCase {
         await this.ministryPolicy.assertCanManage(id, personId, churchId, systemRole, functionalRole);
 
         const ministry = await this.ministryRepo.findOne({
-            where: { id },
+            where: { id, churchId },
         });
 
         if (!ministry) throw new NotFoundException('Ministerio no encontrado');

@@ -20,6 +20,7 @@ export class AddFamilyMemberUseCase {
     familyId: string,
     memberId: string,
     role: string,
+    churchId: string,
   ): Promise<FamilyMember> {
     return this.dataSource.transaction(async (manager) => {
       const familyRepo = manager.getRepository(Family);
@@ -29,7 +30,7 @@ export class AddFamilyMemberUseCase {
       // We need members to check duplicates if not trusting DB constraint solely,
       // but policy method 'ensureCanAddMember' expects family with members.
       const family = await familyRepo.findOne({
-        where: { id: familyId },
+        where: { id: familyId, churchId },
         relations: ['members', 'members.member'],
       });
 

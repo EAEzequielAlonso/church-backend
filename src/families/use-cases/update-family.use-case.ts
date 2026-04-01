@@ -11,13 +11,12 @@ export class UpdateFamilyUseCase {
     private readonly policy: FamilyPolicy,
   ) {}
 
-  async execute(id: string, updateDto: UpdateFamilyDto): Promise<Family> {
+  async execute(id: string, updateDto: UpdateFamilyDto, churchId: string): Promise<Family> {
     return this.dataSource.transaction(async (manager) => {
       const familyRepo = manager.getRepository(Family);
 
       const family = await familyRepo.findOne({
-        where: { id },
-        relations: ['church'],
+        where: { id, churchId },
       });
       if (!family) {
         throw new NotFoundException('Family not found');

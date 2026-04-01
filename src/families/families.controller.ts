@@ -53,30 +53,31 @@ export class FamiliesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.getFamilyUseCase.byId(id);
+  findOne(@Param('id') id: string, @Request() req) {
+    return this.getFamilyUseCase.byId(id, req.user.churchId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFamilyDto: UpdateFamilyDto) {
-    return this.updateFamilyUseCase.execute(id, updateFamilyDto);
+  update(@Param('id') id: string, @Body() updateFamilyDto: UpdateFamilyDto, @Request() req) {
+    return this.updateFamilyUseCase.execute(id, updateFamilyDto, req.user.churchId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.deleteFamilyUseCase.execute(id);
+  remove(@Param('id') id: string, @Request() req) {
+    return this.deleteFamilyUseCase.execute(id, req.user.churchId);
   }
 
   @Post(':id/members')
   addMember(
     @Param('id') id: string,
     @Body() body: { memberId: string; role: string },
+    @Request() req
   ) {
-    return this.addFamilyMemberUseCase.execute(id, body.memberId, body.role);
+    return this.addFamilyMemberUseCase.execute(id, body.memberId, body.role, req.user.churchId);
   }
 
   @Delete(':id/members/:memberId')
-  removeMember(@Param('id') id: string, @Param('memberId') memberId: string) {
-    return this.removeFamilyMemberUseCase.execute(id, memberId);
+  removeMember(@Param('id') id: string, @Param('memberId') memberId: string, @Request() req) {
+    return this.removeFamilyMemberUseCase.execute(id, memberId, req.user.churchId);
   }
 }

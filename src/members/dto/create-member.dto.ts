@@ -26,10 +26,7 @@ export class CreateMemberDto {
   @IsNotEmpty()
   lastName: string;
 
-  @ApiProperty({ example: 'John Doe', required: false })
-  @IsString()
-  @IsOptional()
-  fullName?: string;
+
 
   @ApiProperty({
     enum: MembershipStatus,

@@ -7,6 +7,7 @@ import { MentorshipPolicy } from './mentorship.policy';
 
 export interface VisibilityUserContext {
   userId: string;
+  churchId: string;
   roles: string[];
   permissions: string[];
 }

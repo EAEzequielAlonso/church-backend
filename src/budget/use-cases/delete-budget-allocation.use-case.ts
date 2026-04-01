@@ -13,7 +13,7 @@ export class DeleteBudgetAllocationUseCase {
   async execute(id: string, churchId: string): Promise<void> {
     const result = await this.budgetAllocationRepository.delete({
       id,
-      church: { id: churchId },
+      churchId: churchId,
     });
 
     if (result.affected === 0) {

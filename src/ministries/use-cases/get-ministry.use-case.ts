@@ -13,9 +13,9 @@ export class GetMinistryUseCase {
         private readonly eventRepo: Repository<CalendarEvent>,
     ) { }
 
-    async execute(id: string): Promise<any> {
+    async execute(id: string, churchId: string): Promise<any> {
         const ministry = await this.ministryRepo.findOne({
-            where: { id },
+            where: { id, churchId },
             relations: [
                 'leader',
                 'leader.person',

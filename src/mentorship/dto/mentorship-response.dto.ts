@@ -190,8 +190,7 @@ export class MentorshipResponseDto {
     dto.participants = (entity.participants || []).map((p) => {
       const person = p.churchPerson?.person;
       const fullName = person
-        ? person.fullName ||
-          `${person.firstName || ''} ${person.lastName || ''}`.trim()
+        ? `${person.firstName || ''} ${person.lastName || ''}`.trim()
         : 'S/N';
 
       return {

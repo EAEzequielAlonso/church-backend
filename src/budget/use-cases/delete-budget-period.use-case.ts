@@ -12,7 +12,7 @@ export class DeleteBudgetPeriodUseCase {
 
   async execute(id: string, churchId: string): Promise<void> {
     const period = await this.budgetPeriodRepository.findOne({
-      where: { id, church: { id: churchId } },
+      where: { id, churchId: churchId },
     });
 
     if (!period) {

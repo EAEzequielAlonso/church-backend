@@ -48,7 +48,7 @@ export class CreateBookUseCase {
     let ownerMember: ChurchPerson | null = null;
     if (ownershipType === BookOwnershipType.MEMBER) {
       ownerMember = await this.memberRepo.findOne({
-        where: { id: memberId, church: { id: churchId } },
+        where: { id: memberId, churchId: churchId },
       });
       if (!ownerMember) throw new NotFoundException('Miembro no encontrado');
     }
@@ -66,7 +66,7 @@ export class CreateBookUseCase {
       ownerMember: ownerMember ?? undefined,
       ownerMemberId: ownerMember?.id ?? undefined,
       category,
-      church: { id: churchId },
+      churchId: churchId,
       status: BookStatus.AVAILABLE,
     });
 

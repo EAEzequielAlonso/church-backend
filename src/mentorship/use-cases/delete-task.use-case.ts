@@ -15,18 +15,18 @@ export class DeleteTaskUseCase {
     taskId: string,
     executor: VisibilityUserContext,
   ): Promise<void> {
-    const task = await this.mentorshipService.findTaskById(taskId);
+    const task = await this.mentorshipService.findTaskById(taskId, executor.churchId);
     if (!task) {
       throw new NotFoundException(`La tarea con ID ${taskId} no existe.`);
     }
 
-    const process = await this.mentorshipService.findById(task.processId);
+    const process = await this.mentorshipService.findById(task.processId, executor.churchId);
     
     // Policy check: only mentors or authorized users can delete tasks
     if (!this.visibilityPolicy.canAddTask(executor, process)) {
       throw new ForbiddenException('No tienes permisos para eliminar tareas en este proceso.');
     }
 
-    await this.mentorshipService.deleteTask(taskId);
+    await this.mentorshipService.deleteTask(taskId, executor.churchId);
   }
 }

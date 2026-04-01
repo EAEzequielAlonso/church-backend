@@ -101,8 +101,8 @@ export class MinistriesController {
 
   @Get(':id')
   @RequirePermissions(AppPermission.MINISTRY_VIEW)
-  findOne(@Param('id') id: string) {
-    return this.getMinistryUseCase.execute(id);
+  findOne(@CurrentChurch() churchId: string, @Param('id') id: string) {
+    return this.getMinistryUseCase.execute(id, churchId);
   }
 
   @Put(':id')

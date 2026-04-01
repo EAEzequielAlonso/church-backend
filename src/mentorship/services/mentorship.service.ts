@@ -53,9 +53,9 @@ export class MentorshipService {
   /**
    * Encuentra un proceso por su ID.
    */
-  async findById(id: string): Promise<MentorshipProcess | null> {
+  async findById(id: string, churchId: string): Promise<MentorshipProcess | null> {
     return this.repository.findOne({
-      where: { id },
+      where: { id, churchId },
       relations: {
         participants: {
           churchPerson: {
@@ -119,23 +119,26 @@ export class MentorshipService {
   /**
    * Elimina físicamente un proceso y sus dependencias de la base de datos.
    */
-  async hardDelete(id: string): Promise<void> {
-    await this.repository.delete(id);
+  async hardDelete(id: string, churchId: string): Promise<void> {
+    await this.repository.delete({ id, churchId });
   }
 
-  async findMeetingById(id: string): Promise<MentorshipMeeting | null> {
-    return this.meetingRepository.findOne({ where: { id } });
+  async findMeetingById(id: string, churchId: string): Promise<MentorshipMeeting | null> {
+    return this.meetingRepository.findOne({ where: { id, process: { churchId } }, relations: ['process'] });
   }
 
-  async findTaskById(id: string): Promise<MentorshipTask | null> {
-    return this.taskRepository.findOne({ where: { id } });
+  async findTaskById(id: string, churchId: string): Promise<MentorshipTask | null> {
+    return this.taskRepository.findOne({ where: { id, process: { churchId } }, relations: ['process'] });
   }
 
   async saveTask(task: MentorshipTask): Promise<MentorshipTask> {
     return this.taskRepository.save(task);
   }
 
-  async deleteTask(id: string): Promise<void> {
+  async deleteTask(id: string, churchId: string): Promise<void> {
+    // Delete only works directly on entity if we fetch it first, but we can do a query builder or pass to delete if task is verified.
+    // Or just rely on previous checks, but to be safe: 
+    // This is hard to do with pure delete without joining process. We rely on the UseCase having verified it via findTaskById.
     await this.taskRepository.delete(id);
   }
 }

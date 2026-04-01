@@ -21,10 +21,11 @@ export class UpdateMeetingUseCase {
     processId: string,
     meetingId: string,
     dto: UpdateMeetingDto,
-    executorChurchPersonId?: string,
+    executorChurchPersonId: string,
     executorRoles: string[] = [],
+    churchId: string,
   ) {
-    const process = await this.mentorshipService.findById(processId);
+    const process = await this.mentorshipService.findById(processId, churchId);
 
     if (!process) {
       throw new NotFoundException(`El proceso de mentoría con ID ${processId} no existe.`);

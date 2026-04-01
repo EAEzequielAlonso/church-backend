@@ -20,7 +20,7 @@ export class AddNoteUseCase {
     dto: AddNoteDto,
     executor: VisibilityUserContext,
   ): Promise<MentorshipProcess> {
-    const process = await this.mentorshipService.findById(dto.processId);
+    const process = await this.mentorshipService.findById(dto.processId, executor.churchId);
 
     if (!process) {
       throw new NotFoundException(`El proceso de mentoría con ID ${dto.processId} no existe.`);

@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { MinistryRole, FunctionalRole, SystemRole } from '../../common/enums';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -71,8 +71,12 @@ export class MinistryPolicy {
         functionalRole: FunctionalRole
     ): Promise<MinistryMember | null> {
 
-        const ministryId = task.ministry.id;
-        const churchId = task.ministry.church.id;
+        const ministryId = task.ministry?.id;
+        const churchId = task.ministry?.churchId;
+
+        if (!ministryId || !churchId) {
+            throw new BadRequestException('La tarea debe estar vinculada a un ministerio y una iglesia cargada en el objeto.');
+        }
 
         if (this.canBypass(systemRole, functionalRole)) {
             return null; // By-pass OK

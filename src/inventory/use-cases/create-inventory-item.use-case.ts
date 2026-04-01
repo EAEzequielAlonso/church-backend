@@ -38,7 +38,7 @@ export class CreateInventoryItemUseCase {
         let ministry: Ministry | null = null;
         if (dto.ministryId) {
             ministry = await this.ministryRepo.findOne({
-                where: { id: dto.ministryId, church: { id: churchId } },
+                where: { id: dto.ministryId, churchId: churchId },
                 relations: ['church'],
             });
             if (!ministry) throw new NotFoundException('Ministerio no encontrado en esta iglesia');

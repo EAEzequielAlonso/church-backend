@@ -11,9 +11,9 @@ export class DeclineParticipationUseCase {
     private readonly participantRepository: Repository<MentorshipProcessParticipant>,
   ) {}
 
-  async execute(participantId: string, executorChurchPersonId: string) {
+  async execute(participantId: string, executorChurchPersonId: string, churchId: string) {
     const participant = await this.participantRepository.findOne({
-      where: { id: participantId },
+      where: { id: participantId, process: { churchId } },
     });
 
     if (!participant) {

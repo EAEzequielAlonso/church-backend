@@ -40,7 +40,7 @@ export class UpdateNoteUseCase {
     }
 
     if (dto.meetingId) {
-      const meeting = await this.mentorshipService.findMeetingById(dto.meetingId);
+      const meeting = await this.mentorshipService.findMeetingById(dto.meetingId, executor.churchId);
       if (!meeting || meeting.processId !== process.id) {
         throw new BadRequestException('El encuentro especificado no pertenece a este proceso de mentoría.');
       }

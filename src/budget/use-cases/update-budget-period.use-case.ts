@@ -17,7 +17,7 @@ export class UpdateBudgetPeriodUseCase {
     churchId: string,
   ): Promise<BudgetPeriod> {
     const period = await this.budgetPeriodRepository.findOne({
-      where: { id, church: { id: churchId } },
+      where: { id, churchId: churchId },
     });
 
     if (!period) {

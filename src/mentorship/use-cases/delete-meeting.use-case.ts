@@ -15,10 +15,11 @@ export class DeleteMeetingUseCase {
   async execute(
     processId: string,
     meetingId: string,
-    executorChurchPersonId?: string,
+    executorChurchPersonId: string,
     executorRoles: string[] = [],
+    churchId: string,
   ) {
-    const process = await this.mentorshipService.findById(processId);
+    const process = await this.mentorshipService.findById(processId, churchId);
 
     if (!process) {
       throw new NotFoundException(`El proceso de mentoría con ID ${processId} no existe.`);

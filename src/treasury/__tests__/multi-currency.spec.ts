@@ -67,7 +67,7 @@ function makeAccount(id: string, currency: Currency, balance = 0): any {
         currency,
         balance,
         churchId: 'church-1',
-        church: { id: 'church-1' },
+        churchId: 'church-1',
     };
 }
 
@@ -377,7 +377,7 @@ describe('Multi-Currency Validation', () => {
                 category: null,
                 ministry: null,
                 description: 'USD donation',
-                church: { id: 'church-1' },
+                churchId: 'church-1',
             };
 
             const ds = buildMockDS({

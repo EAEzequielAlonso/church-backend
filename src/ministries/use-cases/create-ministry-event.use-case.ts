@@ -33,7 +33,7 @@ export class CreateMinistryEventUseCase {
 
         await this.ministryPolicy.assertCanManage(ministryId, personId, churchId, systemRole, functionalRole);
 
-        const ministry = await this.ministryRepo.findOne({ where: { id: ministryId } });
+        const ministry = await this.ministryRepo.findOne({ where: { id: ministryId, churchId } });
         if (!ministry) {
             throw new NotFoundException('Ministry not found');
         }

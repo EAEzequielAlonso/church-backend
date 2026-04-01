@@ -19,6 +19,7 @@ import { AppPermission } from '../auth/authorization/permissions.enum';
 import { CurrentChurch } from '../common/decorators';
 import { MembershipStatus } from './enums/membership-status.enum';
 import { ApproveMemberDto } from './dto/approve-member.dto';
+import { FunctionalRole } from '../common/enums';
 
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 import {
@@ -65,11 +66,13 @@ export class MembersController {
   @RequirePermissions(AppPermission.MEMBER_VIEW)
   @ApiOperation({ summary: 'List all members' })
   @ApiQuery({ name: 'status', enum: MembershipStatus, required: false })
+  @ApiQuery({ name: 'role', enum: FunctionalRole, required: false })
   findAll(
     @CurrentChurch() churchId: string,
     @Query('status') status?: MembershipStatus,
+    @Query('role') role?: FunctionalRole,
   ) {
-    return this.membersService.findAll(churchId, status);
+    return this.membersService.findAll(churchId, status, role);
   }
 
   @Get('pending')

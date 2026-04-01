@@ -79,7 +79,8 @@ export class AuthService {
     // Create Person
     const person = this.personRepository.create({
       email: dto.email,
-      fullName: dto.fullName,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
     });
     const savedPerson = await this.personRepository.save(person);
 
@@ -149,7 +150,8 @@ export class AuthService {
       }
 
       person.email = dto.email;
-      if (dto.fullName) person.fullName = dto.fullName;
+      if (dto.firstName) person.firstName = dto.firstName;
+      if (dto.lastName) person.lastName = dto.lastName;
       person.inviteToken = null;
       await this.personRepository.save(person);
     } else {
@@ -165,8 +167,8 @@ export class AuthService {
 
       if (!person) {
         person = this.personRepository.create({
-          email: dto.email,
-          fullName: dto.fullName || 'Usuario',
+          firstName: dto.firstName || 'Usuario',
+          lastName: dto.lastName || '',
         });
         person = await this.personRepository.save(person);
       }
@@ -237,7 +239,7 @@ export class AuthService {
         if (!church) throw new BadRequestException('Church not found');
 
         membership = await this.memberRepository.findOne({
-          where: { person: { id: user.person.id }, church: { id: church.id } },
+          where: { person: { id: user.person.id }, churchId: church.id },
         });
 
         if (!membership) {
@@ -277,7 +279,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.person?.fullName || 'Usuario',
+        fullName: `${user.person?.firstName || ''} ${user.person?.lastName || ''}`.trim() || 'Usuario',
         personId: user.person?.id,
         memberId: membership?.id,
         ecclesiasticalRole: membership?.ecclesiasticalRole,
@@ -346,7 +348,8 @@ export class AuthService {
         // Standard flow: create Person + User
         let person = this.personRepository.create({
           email: dto.email,
-          fullName: dto.name || 'Usuario',
+          firstName: dto.name ? dto.name.split(' ')[0] : 'Usuario',
+          lastName: dto.name ? dto.name.split(' ').slice(1).join(' ') : '',
           avatarUrl: dto.picture,
         });
         person = await this.personRepository.save(person);
@@ -385,7 +388,7 @@ export class AuthService {
           found: true,
           person: {
             id: potentialPersonMatch.id,
-            fullName: potentialPersonMatch.fullName,
+            fullName: `${potentialPersonMatch.firstName || ''} ${potentialPersonMatch.lastName || ''}`.trim() || 'S/N',
             email: potentialPersonMatch.email,
           },
         },
@@ -433,7 +436,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.person?.fullName,
+        fullName: `${user.person?.firstName || ''} ${user.person?.lastName || ''}`.trim() || 'S/N',
         personId: user.person?.id,
         memberId: membership?.id,
         ecclesiasticalRole: membership?.ecclesiasticalRole,
@@ -462,7 +465,7 @@ export class AuthService {
     const membership = await this.memberRepository.findOne({
       where: {
         person: { id: user.person.id },
-        church: { id: targetChurchId },
+        churchId: targetChurchId,
       },
       relations: ['church'],
     });
@@ -490,7 +493,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.person.fullName,
+        fullName: `${user.person?.firstName || ''} ${user.person?.lastName || ''}`.trim() || 'S/N',
         personId: user.person.id,
         memberId: membership.id,
         ecclesiasticalRole: membership.ecclesiasticalRole,
@@ -526,7 +529,8 @@ export class AuthService {
     if (createNew) {
       const person = this.personRepository.create({
         email: user.email,
-        fullName: 'Usuario',
+        firstName: 'Usuario',
+        lastName: '',
       });
       const savedPerson = await this.personRepository.save(person);
       user.person = savedPerson;
@@ -626,7 +630,7 @@ export class AuthService {
       user: {
         id: reloadedUser.id,
         email: reloadedUser.email,
-        fullName: reloadedUser.person?.fullName,
+        fullName: `${reloadedUser.person?.firstName || ''} ${reloadedUser.person?.lastName || ''}`.trim() || 'S/N',
         personId: reloadedUser.person?.id,
         isOnboarded: reloadedUser.isOnboarded,
         isEmailVerified: reloadedUser.isEmailVerified,

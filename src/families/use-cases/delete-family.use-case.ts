@@ -6,11 +6,11 @@ import { Family } from '../entities/family.entity';
 export class DeleteFamilyUseCase {
   constructor(private readonly dataSource: DataSource) {}
 
-  async execute(id: string): Promise<void> {
+  async execute(id: string, churchId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const familyRepo = manager.getRepository(Family);
 
-      const family = await familyRepo.findOne({ where: { id } });
+      const family = await familyRepo.findOne({ where: { id, churchId } });
       if (!family) {
         throw new NotFoundException('Family not found');
       }

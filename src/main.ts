@@ -25,8 +25,8 @@ async function bootstrap() {
 
   // Swagger Configuration
   const config = new DocumentBuilder()
-    .setTitle('Ecclesia API')
-    .setDescription('The Ecclesia church management API description')
+    .setTitle('Telyon API')
+    .setDescription('The Telyon church management API description')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

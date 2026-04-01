@@ -23,7 +23,10 @@ export class RegisterChurchDto {
   password: string;
 
   @IsString()
-  fullName: string;
+  firstName: string;
+
+  @IsString()
+  lastName: string;
 }
 
 export class LoginDto {
@@ -48,7 +51,11 @@ export class RegisterUserDto {
 
   @IsString()
   @IsOptional()
-  fullName?: string;
+  firstName?: string;
+
+  @IsString()
+  @IsOptional()
+  lastName?: string;
 
   @IsString()
   @IsOptional()

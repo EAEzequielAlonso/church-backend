@@ -44,6 +44,7 @@ export class AgendaService {
     memberId?: string,
     churchId?: string,
     isHistorical: boolean = false,
+    limit?: number,
   ) {
     try {
       // console.log('Fetching agenda for personId:', personId);
@@ -192,25 +193,53 @@ export class AgendaService {
         ...assignmentEvents,
       ].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 
+      // If limit is provided, we sort everything together and then slice.
+      // But we still want to return the structured object for frontend compatibility.
+      let finalSessions = sessions.map((s) => ({
+        id: s.id,
+        date: s.date,
+        topics: s.topics,
+        location: s.location,
+        processId: s.process?.id,
+        motive: s.process?.motive,
+        type: 'SESSION',
+      }));
+
+      let finalTasks = tasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        date: t.session?.date,
+        processId: t.session?.process?.id,
+        type: 'TASK',
+      }));
+
+      let finalEvents = allEvents;
+
+      if (limit) {
+        // Create a combined list to find which ones are the "top X"
+        const combined = [
+          ...finalSessions.map(s => ({ id: s.id, type: 'SESSION', sortDate: new Date(s.date) })),
+          ...finalTasks.map(t => ({ id: t.id, type: 'TASK', sortDate: new Date(t.date || 0) })),
+          ...finalEvents.map(e => ({ id: e.id, type: 'EVENT', sortDate: new Date(e.startDate) }))
+        ]
+        .filter(item => item.sortDate >= new Date(new Date().setHours(0,0,0,0)))
+        .sort((a, b) => a.sortDate.getTime() - b.sortDate.getTime())
+        .slice(0, limit);
+
+        const allowedSessionIds = combined.filter(c => c.type === 'SESSION').map(c => c.id);
+        const allowedTaskIds = combined.filter(c => c.type === 'TASK').map(c => c.id);
+        const allowedEventIds = combined.filter(c => c.type === 'EVENT').map(c => c.id);
+
+        finalSessions = finalSessions.filter(s => allowedSessionIds.includes(s.id));
+        finalTasks = finalTasks.filter(t => allowedTaskIds.includes(t.id));
+        finalEvents = finalEvents.filter(e => allowedEventIds.includes(e.id));
+      }
+
       return {
-        sessions: sessions.map((s) => ({
-          id: s.id,
-          date: s.date,
-          topics: s.topics,
-          location: s.location,
-          processId: s.process?.id,
-          motive: s.process?.motive,
-          type: 'SESSION',
-        })),
-        tasks: tasks.map((t) => ({
-          id: t.id,
-          title: t.title,
-          description: t.description,
-          date: t.session?.date,
-          processId: t.session?.process?.id,
-          type: 'TASK',
-        })),
-        events: allEvents,
+        sessions: finalSessions,
+        tasks: finalTasks,
+        events: finalEvents,
       };
     } catch (error) {
       console.error('Error in AgendaService:', error);

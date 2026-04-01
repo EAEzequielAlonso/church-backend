@@ -15,7 +15,7 @@ export class FamilyPolicy {
         'El nombre de la familia debe tener al menos 2 caracteres.',
       );
     }
-    if (!family.church) {
+    if (!family.churchId) {
       throw new BadRequestException(
         'La familia debe pertenecer a una iglesia.',
       );

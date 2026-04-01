@@ -16,7 +16,7 @@ export class ListFamiliesUseCase {
       .leftJoinAndSelect('family.members', 'members')
       .leftJoinAndSelect('members.member', 'member')
       .leftJoinAndSelect('member.person', 'person')
-      .where('family.church.id = :churchId', { churchId })
+      .where('family.churchId = :churchId', { churchId })
       .getMany();
   }
 }

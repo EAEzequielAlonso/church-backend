@@ -7,14 +7,14 @@ import { MentorshipService } from '../services/mentorship.service';
 export class HardDeleteMentorshipProcessUseCase {
   constructor(private readonly mentorshipService: MentorshipService) {}
 
-  async execute(dto: HardDeleteMentorshipProcessDto): Promise<void> {
+  async execute(dto: HardDeleteMentorshipProcessDto, churchId: string): Promise<void> {
     if (dto.confirmString !== 'ELIMINAR PROCESO DEFINITIVAMENTE') {
       throw new BadRequestException(
         'El string de confirmación es incorrecto. La operación ha sido abortada.',
       );
     }
 
-    const process = await this.mentorshipService.findById(dto.processId);
+    const process = await this.mentorshipService.findById(dto.processId, churchId);
 
     if (!process) {
       throw new BadRequestException(
@@ -41,6 +41,6 @@ export class HardDeleteMentorshipProcessUseCase {
       );
     }
 
-    await this.mentorshipService.hardDelete(process.id);
+    await this.mentorshipService.hardDelete(process.id, churchId);
   }
 }

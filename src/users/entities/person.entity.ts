@@ -25,9 +25,6 @@ export class Person {
   lastName: string;
 
   @Column({ nullable: true })
-  fullName: string;
-
-  @Column({ nullable: true })
   email: string;
 
   @Column({ nullable: true })

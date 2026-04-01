@@ -21,7 +21,11 @@ export class AgendaController {
   constructor(private readonly agendaService: AgendaService) {}
 
   @Get()
-  async getMyAgenda(@Request() req, @Query('historical') historical?: string) {
+  async getMyAgenda(
+    @Request() req,
+    @Query('historical') historical?: string,
+    @Query('limit') limit?: string,
+  ) {
     const userId = req.user.userId;
     const personId = req.user.personId;
     const memberId = req.user.memberId;
@@ -32,6 +36,7 @@ export class AgendaController {
       memberId,
       churchId,
       historical === 'true',
+      limit ? parseInt(limit, 10) : undefined,
     );
   }
 

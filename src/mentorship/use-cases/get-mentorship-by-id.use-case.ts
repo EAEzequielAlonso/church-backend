@@ -13,7 +13,7 @@ export class GetMentorshipByIdUseCase {
     userChurchPersonId?: string,
     userPermissions?: any[],
   ): Promise<MentorshipResponseDto> {
-    const process = await this.mentorshipService.findById(id);
+    const process = await this.mentorshipService.findById(id, churchId);
 
     if (!process || process.churchId !== churchId) {
       throw new NotFoundException(

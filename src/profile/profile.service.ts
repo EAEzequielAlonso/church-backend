@@ -71,9 +71,7 @@ export class ProfileService {
       }
     });
 
-    if (dto.firstName || dto.lastName) {
-        person.fullName = `${person.firstName || ''} ${person.lastName || ''}`.trim();
-    }
+    // fullName removed
 
     await this.personRepository.save(person);
     return this.getProfile(userId); 

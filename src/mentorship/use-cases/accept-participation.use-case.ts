@@ -13,9 +13,9 @@ export class AcceptParticipationUseCase {
     private readonly mentorshipPolicy: MentorshipPolicy,
   ) {}
 
-  async execute(participantId: string, executorChurchPersonId: string) {
+  async execute(participantId: string, executorChurchPersonId: string, churchId: string) {
     const participant = await this.participantRepository.findOne({
-      where: { id: participantId },
+      where: { id: participantId, process: { churchId } },
       relations: { process: true },
     });
 

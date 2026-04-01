@@ -51,7 +51,7 @@ export class CreateBudgetPeriodUseCase {
       // 3. Create
       const period = periodRepo.create({
         ...dto,
-        church: { id: churchId } as Church,
+        churchId: churchId,
       });
 
       return periodRepo.save(period);
