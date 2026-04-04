@@ -33,7 +33,7 @@ export class AddMinistryMemberUseCase {
 
         // Prevent duplicates efficiently
         const isMember = await this.memberRepo.count({
-            where: { ministryId, memberId }
+            where: { ministryId, memberId}
         });
 
         if (isMember > 0) {
@@ -50,7 +50,6 @@ export class AddMinistryMemberUseCase {
             ministryId,
             memberId,
             roleInMinistry: role,
-            status: 'active',
             joinedAt: new Date(),
         });
 

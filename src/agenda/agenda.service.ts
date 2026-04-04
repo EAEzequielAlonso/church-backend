@@ -165,11 +165,11 @@ export class AgendaService {
           id: a.id,
           title: `Servicio: ${a.role.name}`,
           description: `Asignación en ${a.ministry.name}`,
-          startDate: new Date(a.date + 'T00:00:00'),
-          endDate: new Date(a.date + 'T23:59:59'),
+          startDate: a.date,
+          endDate: a.date,
           location: 'Iglesia',
           type: 'MINISTRY', // mimic ministry event
-          isAllDay: true,
+          isAllDay: false,
           ministry: { id: a.ministry.id, name: a.ministry.name },
           smallGroup: null,
           isAssignment: true, // Flag mostly for frontend if needed

@@ -22,7 +22,7 @@ export class MentorshipVisibilityPolicy {
 
     const isSupervisor = user.permissions.includes(AppPermission.COUNSELING_VIEW_SUPERVISION);
     if (isSupervisor) {
-      return note.type === MentorshipNoteType.SHARED || note.type === MentorshipNoteType.SUPERVISION;
+      return note.type === MentorshipNoteType.SUPERVISION;
     }
 
     const isParticipant = note.process?.participants?.some(
@@ -78,20 +78,30 @@ export class MentorshipVisibilityPolicy {
   }
 
   // Utilidad para obtener los tipos de nota visibles para QueryBuilder
-  getVisibleNoteTypes(user: VisibilityUserContext, isManager: boolean, isParticipant: boolean): MentorshipNoteType[] {
-    if (isManager) {
+  // El rol dentro del proceso (MENTOR/PARTICIPANT) tiene PRIORIDAD sobre roles funcionales globales.
+  getVisibleNoteTypes(
+    user: VisibilityUserContext,
+    isManager: boolean,
+    isParticipant: boolean,
+    processRole?: MentorshipRole,
+  ): MentorshipNoteType[] {
+    // 1. Si es guiado (PARTICIPANT) en ESTE proceso → solo SHARED, sin importar roles globales
+    if (processRole === MentorshipRole.PARTICIPANT) {
+      return [MentorshipNoteType.SHARED];
+    }
+
+    // 2. Si es mentor en ESTE proceso O tiene rol global de gestión → todo
+    if (processRole === MentorshipRole.MENTOR || isManager) {
       return [MentorshipNoteType.INTERNAL, MentorshipNoteType.SHARED, MentorshipNoteType.SUPERVISION];
     }
     
-    const visible: MentorshipNoteType[] = [];
+    // 3. Usuario externo con permiso de supervisión → solo SUPERVISION
     const isSupervisor = user.permissions.includes(AppPermission.COUNSELING_VIEW_SUPERVISION);
-    
     if (isSupervisor) {
-      visible.push(MentorshipNoteType.SHARED, MentorshipNoteType.SUPERVISION);
-    } else if (isParticipant) {
-      visible.push(MentorshipNoteType.SHARED);
+      return [MentorshipNoteType.SUPERVISION];
     }
-    
-    return visible;
+
+    // 4. Sin acceso
+    return [];
   }
 }

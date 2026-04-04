@@ -3,6 +3,7 @@ import { MentorshipProcessParticipant } from '../entities/mentorship-process-par
 import {
   MentorshipRole,
   MentorshipStatus,
+  ParticipantStatus,
 } from '../enums/mentorship.enum';
 import { CreateMentorshipProcessDto } from '../dto/create-mentorship-process.dto';
 import { Injectable, ForbiddenException } from '@nestjs/common';
@@ -90,6 +91,9 @@ export class CreateMentorshipProcessUseCase {
         MentorshipRole.MENTOR,
         mentorInput.hasUserAccount,
       );
+      if (mentorParticipant.status === ParticipantStatus.AUTO_ACCEPTED || mentorParticipant.status === ParticipantStatus.ACCEPTED) {
+        mentorParticipant.joinedAt = new Date();
+      }
       process.participants.push(mentorParticipant);
     }
 
@@ -103,6 +107,9 @@ export class CreateMentorshipProcessUseCase {
         MentorshipRole.PARTICIPANT,
         participantInput.hasUserAccount,
       );
+      if (guidedParticipant.status === ParticipantStatus.AUTO_ACCEPTED || guidedParticipant.status === ParticipantStatus.ACCEPTED) {
+        guidedParticipant.joinedAt = new Date();
+      }
       process.participants.push(guidedParticipant);
     }
 

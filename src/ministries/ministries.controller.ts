@@ -56,6 +56,7 @@ import { CreateMinistryAssignmentsUseCase } from './use-cases/create-ministry-as
 import { DeleteMinistryAssignmentUseCase } from './use-cases/delete-ministry-assignment.use-case';
 
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
+import { UpdateServiceDutyUseCase } from './use-cases/update-service-duty.use-case';
 @Controller('ministries')
 @UseGuards(JwtAuthGuard, SubscriptionGuard) // Removing MinistryRolesGuard since we enforce it via MinistryPolicy in UseCases now
 export class MinistriesController {
@@ -81,6 +82,7 @@ export class MinistriesController {
     private readonly getAllServiceDutiesUseCase: GetAllServiceDutiesUseCase,
     private readonly getServiceDutiesUseCase: GetServiceDutiesUseCase,
     private readonly createServiceDutyUseCase: CreateServiceDutyUseCase,
+    private readonly updateServiceDutyUseCase: UpdateServiceDutyUseCase,
     private readonly deleteServiceDutyUseCase: DeleteServiceDutyUseCase,
     private readonly getMinistryAssignmentsUseCase: GetMinistryAssignmentsUseCase,
     private readonly createMinistryAssignmentsUseCase: CreateMinistryAssignmentsUseCase,
@@ -376,6 +378,28 @@ export class MinistriesController {
   ) {
     return this.createServiceDutyUseCase.execute(
       id,
+      body.name,
+      body.behaviorType,
+      churchId,
+      req.user.personId,
+      req.user.systemRole,
+      req.user.functionalRole,
+    );
+  }
+  
+  @Patch(':id/duties/:dutyId')
+  @RequirePermissions(AppPermission.MINISTRY_MANAGE)
+  @RequireMinistryRole(MinistryRole.LEADER, MinistryRole.COORDINATOR)
+  updateServiceDuty(
+    @Param('id') id: string,
+    @Param('dutyId') dutyId: string,
+    @Request() req: any,
+    @CurrentChurch() churchId: string,
+    @Body() body: CreateServiceDutyDto,
+  ) {
+    return this.updateServiceDutyUseCase.execute(
+      id,
+      dutyId,
       body.name,
       body.behaviorType,
       churchId,

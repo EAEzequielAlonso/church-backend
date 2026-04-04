@@ -12,6 +12,7 @@ export enum MentorshipMode {
 export enum MentorshipStatus {
   ACTIVE = 'ACTIVE',
   PAUSED = 'PAUSED',
+  FINISHED = 'FINISHED',
   CLOSED = 'CLOSED',
 }
 

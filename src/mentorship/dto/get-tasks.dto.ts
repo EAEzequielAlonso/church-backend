@@ -3,7 +3,6 @@ import { MentorshipTaskStatus } from '../enums/mentorship.enum';
 
 export class GetTasksDto {
   @IsOptional()
-  @IsUUID()
   meetingId?: string;
 
   @IsOptional()
@@ -13,4 +12,7 @@ export class GetTasksDto {
   @IsOptional()
   @IsEnum(MentorshipTaskStatus)
   status?: MentorshipTaskStatus;
+
+  @IsOptional()
+  page?: number;
 }

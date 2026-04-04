@@ -5,6 +5,13 @@ export enum Currency {
   BRL = 'BRL',
   CLP = 'CLP',
   MXN = 'MXN',
+  COP = 'COP',
+  PEN = 'PEN',
+  UYU = 'UYU',
+  PYG = 'PYG',
+  BOB = 'BOB',
+  CRC = 'CRC',
+  DOP = 'DOP',
 }
 
 export enum AccountType {

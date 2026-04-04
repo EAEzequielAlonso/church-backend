@@ -25,6 +25,7 @@ import { MentorshipModule } from './mentorship/mentorship.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ProfileModule } from './profile/profile.module';
 import { AdminModule } from './admin/admin.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 import configuration from './config/configuration';
 
@@ -65,6 +66,7 @@ import configuration from './config/configuration';
     NotificationsModule,
     ProfileModule,
     AdminModule,
+    FeedbackModule,
   ],
 })
 export class AppModule {}

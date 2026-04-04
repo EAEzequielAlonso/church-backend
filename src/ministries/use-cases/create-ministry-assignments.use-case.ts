@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { MinistryRoleAssignment } from '../entities/ministry-role-assignment.entity';
 import { ServiceDuty } from '../entities/service-duty.entity';
 import { Ministry } from '../entities/ministry.entity';
@@ -31,16 +31,21 @@ export class CreateMinistryAssignmentsUseCase {
         const created: MinistryRoleAssignment[] = [];
 
         for (const dto of assignments) {
+            const dateStr = dto.date.toISOString().split('T')[0];
+            const start = new Date(dateStr + 'T00:00:00Z');
+            const end = new Date(dateStr + 'T23:59:59.999Z');
+
             const existing = await this.assignmentRepo.findOne({
                 where: {
                     ministryId,
                     roleId: dto.roleId,
-                    date: dto.date,
+                    date: Between(start, end),
                 },
             });
 
             if (existing) {
                 existing.personId = dto.personId;
+                existing.date = dto.date; // Update the exact time
                 existing.metadata = dto.metadata || null;
                 if (dto.serviceType) existing.serviceType = dto.serviceType;
                 created.push(await this.assignmentRepo.save(existing));

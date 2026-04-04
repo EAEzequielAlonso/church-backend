@@ -303,6 +303,12 @@ export class AuthService {
       relations: ['person'],
     });
 
+    // Sync avatar if missing on existing user
+    if (user && user.person && !user.person.avatarUrl && dto.picture) {
+      user.person.avatarUrl = dto.picture;
+      await this.personRepository.save(user.person);
+    }
+
     let potentialPersonMatch: Person | null = null;
     let isClaimProfileFlow = false;
 
@@ -316,6 +322,11 @@ export class AuthService {
       if (existingPerson && !existingPerson.user) {
         // Person exists without user — check if has memberships (auto-link)
         if (existingPerson.memberships?.length > 0) {
+          // Sync avatar if missing on auto-link
+          if (!existingPerson.avatarUrl && dto.picture) {
+            existingPerson.avatarUrl = dto.picture;
+            await this.personRepository.save(existingPerson);
+          }
           // Direct auto-link: create user linked to this person
           const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
           user = this.userRepository.create({
@@ -518,6 +529,7 @@ export class AuthService {
     userId: string,
     personIdToClaim: string | null,
     createNew: boolean,
+    avatarUrl?: string,
   ) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -533,6 +545,12 @@ export class AuthService {
         lastName: '',
       });
       const savedPerson = await this.personRepository.save(person);
+      
+      if (!savedPerson.avatarUrl && avatarUrl) {
+        savedPerson.avatarUrl = avatarUrl;
+        await this.personRepository.save(savedPerson);
+      }
+
       user.person = savedPerson;
       await this.userRepository.save(user);
       return this.generateTokenForUser(user);
@@ -545,6 +563,11 @@ export class AuthService {
       });
       if (!person) throw new NotFoundException('Person not found');
       if (person.user) throw new BadRequestException('Person already claimed');
+
+      if (!person.avatarUrl && avatarUrl) {
+        person.avatarUrl = avatarUrl;
+        await this.personRepository.save(person);
+      }
 
       user.person = person;
       await this.userRepository.save(user);

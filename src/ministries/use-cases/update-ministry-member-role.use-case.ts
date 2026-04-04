@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MinistryMember } from '../entities/ministry-member.entity';
@@ -26,12 +26,16 @@ export class UpdateMinistryMemberRoleUseCase {
         await this.ministryPolicy.assertIsLeader(ministryId, requestPersonId, churchId, systemRole, functionalRole);
 
         const membership = await this.memberRepo.findOne({
-            where: { memberId: memberMinistryId, ministryId },
+            where: { id: memberMinistryId, ministryId },
             relations: ['member', 'member.person'],
         });
 
         if (!membership) {
             throw new NotFoundException('Miembro no encontrado en este ministerio');
+        }
+
+        if (membership.roleInMinistry === MinistryRole.LEADER) {
+            throw new BadRequestException('No puedes cambiar el rol del líder del ministerio desde aquí. Debes designar un nuevo líder desde la configuración del ministerio.');
         }
 
         membership.roleInMinistry = newRole;

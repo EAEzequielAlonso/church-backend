@@ -5,7 +5,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { MentorshipService } from '../services/mentorship.service';
 import { MentorshipPolicy } from '../policies/mentorship.policy';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { MentorshipRole } from '../enums/mentorship.enum';
+import { MentorshipRole, ParticipantStatus, MentorshipMode } from '../enums/mentorship.enum';
+import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class AddParticipantToProcessUseCase {
@@ -24,6 +25,10 @@ export class AddParticipantToProcessUseCase {
 
     this.mentorshipPolicy.assertActive(process.status);
 
+    if (process.mode === MentorshipMode.INFORMAL) {
+      throw new BadRequestException('Las invitaciones solo están disponibles en procesos formales.');
+    }
+
     const mentorsCount = process.participants?.filter((p) => p.role === MentorshipRole.MENTOR).length || 0;
     const menteesCount = process.participants?.filter((p) => p.role === MentorshipRole.PARTICIPANT).length || 0;
 
@@ -37,6 +42,10 @@ export class AddParticipantToProcessUseCase {
       dto.role,
       dto.hasUserAccount,
     );
+
+    if (participant.status === ParticipantStatus.AUTO_ACCEPTED || participant.status === ParticipantStatus.ACCEPTED) {
+      participant.joinedAt = new Date();
+    }
 
     if (!process.participants) {
       process.participants = [];

@@ -12,7 +12,6 @@ import { Church } from '../churches/entities/church.entity';
 import { ChurchPerson } from '../members/entities/church-person.entity';
 import { Group } from '../groups/entities/group.entity';
 import { GroupParticipant } from '../groups/entities/group-participant.entity';
-import { GroupMeeting } from '../groups/entities/group-meeting.entity';
 import {
   GroupType,
   GroupRole,
@@ -146,6 +145,26 @@ export class SeedService {
 
     await this.userRepository.save(user);
     this.logger.log(`✅ ADMIN_APP (${email}) created successfully`);
+  }
+
+  /**
+   * Bootstrap essential system data if enabled via environment variables.
+   * Only runs if BOOTSTRAP_ADMIN_ENABLED is true.
+   */
+  async bootstrapEssentialFromEnv() {
+    const enabled = process.env.BOOTSTRAP_ADMIN_ENABLED === 'true';
+    if (!enabled) {
+      this.logger.log('Essential data bootstrap is disabled (BOOTSTRAP_ADMIN_ENABLED !== true)');
+      return;
+    }
+
+    this.logger.log('🌱 Starting automatic bootstrap of essential data...');
+    try {
+      await this.seedEssentialData();
+      this.logger.log('✅ Essential data bootstrap successful');
+    } catch (error) {
+      this.logger.error(`❌ Error during essential data bootstrap: ${error.message}`);
+    }
   }
 
   /**
@@ -802,7 +821,6 @@ export class SeedService {
                       ministry: savedMinistry,
                       member: leaderMember,
                       roleInMinistry: MinistryRole.LEADER,
-                      status: 'active',
                       joinedAt: new Date(),
                     });
                     await queryRunner.manager.save(membership);
@@ -845,7 +863,6 @@ export class SeedService {
                   ministry: savedMinistry,
                   member: member,
                   roleInMinistry: MinistryRole.TEAM_MEMBER,
-                  status: 'active',
                   joinedAt: faker.date.past(), // Random past date
                 });
                 await queryRunner.manager.save(membership);

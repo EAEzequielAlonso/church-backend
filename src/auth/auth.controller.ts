@@ -77,12 +77,13 @@ export class AuthController {
   @Post('claim-profile')
   claimProfile(
     @Request() req,
-    @Body() body: { personId?: string; createNew: boolean },
+    @Body() body: { personId?: string; createNew: boolean; avatarUrl?: string },
   ) {
     return this.authService.claimProfile(
       req.user.userId,
       body.personId,
       body.createNew,
+      body.avatarUrl,
     );
   }
 

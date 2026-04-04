@@ -42,9 +42,9 @@ export class CreateOrUpdateMeetingNoteUseCase {
             });
         }
 
-        note.summary = data.content;
-        note.decisions = data.summary;
-        note.nextSteps = data.attendanceInfo;
+        note.summary = data.summary;
+        note.decisions = data.decisions;
+        note.nextSteps = data.nextSteps;
 
         return this.noteRepo.save(note);
     }

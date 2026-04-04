@@ -40,6 +40,7 @@ import { GetAllServiceDutiesUseCase } from './use-cases/get-all-service-duties.u
 import { GetServiceDutiesUseCase } from './use-cases/get-service-duties.use-case';
 import { CreateServiceDutyUseCase } from './use-cases/create-service-duty.use-case';
 import { DeleteServiceDutyUseCase } from './use-cases/delete-service-duty.use-case';
+import { UpdateServiceDutyUseCase } from './use-cases/update-service-duty.use-case';
 import { GetMinistryAssignmentsUseCase } from './use-cases/get-ministry-assignments.use-case';
 import { CreateMinistryAssignmentsUseCase } from './use-cases/create-ministry-assignments.use-case';
 import { DeleteMinistryAssignmentUseCase } from './use-cases/delete-ministry-assignment.use-case';
@@ -69,6 +70,7 @@ const useCases = [
   GetAllServiceDutiesUseCase,
   GetServiceDutiesUseCase,
   CreateServiceDutyUseCase,
+  UpdateServiceDutyUseCase,
   DeleteServiceDutyUseCase,
   GetMinistryAssignmentsUseCase,
   CreateMinistryAssignmentsUseCase,

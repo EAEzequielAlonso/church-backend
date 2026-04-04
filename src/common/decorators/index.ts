@@ -10,7 +10,7 @@ export const CurrentChurch = createParamDecorator(
     const user = request.user;
 
     if (!user || !user.churchId) {
-      throw new UnauthorizedException('No church context found in token');
+      throw new UnauthorizedException('No se encontró el contexto de la iglesia en el token');
     }
 
     return user.churchId;

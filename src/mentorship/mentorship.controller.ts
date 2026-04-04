@@ -28,6 +28,8 @@ import {
   UpdateNoteDto,
 } from './dto/mentorship-content.dto';
 import { HardDeleteMentorshipProcessDto } from './dto/hard-delete-mentorship.dto';
+import { UpdateMentorshipProcessDto } from './dto/update-mentorship-process.dto';
+import { AddParticipantToProcessDto } from './dto/mentorship-mutation.dto';
 
 // Use Cases
 import { CreateMentorshipProcessUseCase } from './use-cases/create-mentorship-process.use-case';
@@ -51,6 +53,8 @@ import { SubmitTaskUseCase } from './use-cases/submit-task.use-case';
 import { ReviewTaskUseCase } from './use-cases/review-task.use-case';
 import { UpdateTaskUseCase } from './use-cases/update-task.use-case';
 import { DeleteTaskUseCase } from './use-cases/delete-task.use-case';
+import { UpdateMentorshipProcessUseCase } from './use-cases/update-mentorship-process.use-case';
+import { AddParticipantToProcessUseCase } from './use-cases/add-participant.use-case';
 import { GetMentorshipsDto } from './dto/get-mentorships.dto';
 import { GetNotesDto } from './dto/get-notes.dto';
 import { GetTasksDto } from './dto/get-tasks.dto';
@@ -83,6 +87,8 @@ export class MentorshipController {
     private readonly reviewTaskUseCase: ReviewTaskUseCase,
     private readonly updateTaskUseCase: UpdateTaskUseCase,
     private readonly deleteTaskUseCase: DeleteTaskUseCase,
+    private readonly updateMentorshipUseCase: UpdateMentorshipProcessUseCase,
+    private readonly addParticipantUseCase: AddParticipantToProcessUseCase,
   ) {}
 
   @Post()
@@ -444,5 +450,37 @@ export class MentorshipController {
     }, churchId);
 
     return { message: 'El proceso ha sido eliminado permanentemente.' };
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Actualizar información general y estado del proceso' })
+  async updateProcess(
+    @Param('id') id: string,
+    @Body() dto: UpdateMentorshipProcessDto,
+    @Request() req: any,
+    @CurrentChurch() churchId: string,
+  ): Promise<MentorshipResponseDto> {
+    const result = await this.updateMentorshipUseCase.execute(
+      id,
+      dto,
+      churchId,
+      req.user?.memberId,
+      req.user?.roles || [],
+    );
+    return MentorshipResponseDto.fromEntity(result);
+  }
+
+  @Post(':id/participants')
+  @ApiOperation({ summary: 'Invitar/Añadir un nuevo integrante al proceso' })
+  async addParticipant(
+    @Param('id') id: string,
+    @Body() dto: Omit<AddParticipantToProcessDto, 'processId'>,
+    @CurrentChurch() churchId: string,
+  ): Promise<MentorshipResponseDto> {
+    const result = await this.addParticipantUseCase.execute(
+      { ...dto, processId: id },
+      churchId,
+    );
+    return MentorshipResponseDto.fromEntity(result);
   }
 }

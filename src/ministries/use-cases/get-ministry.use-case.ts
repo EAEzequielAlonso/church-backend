@@ -31,6 +31,8 @@ export class GetMinistryUseCase {
 
         if (!ministry) throw new NotFoundException('Ministerio no encontrado');
 
+        // Real deletion and UNIQUE constraint ensure only correct members are returned.
+
         const events = await this.eventRepo.find({
             where: { ownerId: id },
         });

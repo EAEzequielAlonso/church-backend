@@ -41,8 +41,8 @@ export class MinistryRoleAssignment {
   @Column()
   personId: string;
 
-  @Column({ type: 'date' })
-  date: string; // YYYY-MM-DD
+  @Column({ type: 'timestamptz' })
+  date: Date;
 
   @Column({ nullable: true })
   serviceType: string; // Optional: "SUNDAY_MORNING", "YOUTH", etc.

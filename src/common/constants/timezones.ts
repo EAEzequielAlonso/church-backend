@@ -1,0 +1,15 @@
+export const ALLOWED_TIMEZONES = [
+  'America/Argentina/Buenos_Aires',
+  'America/Santiago',
+  'America/Sao_Paulo',
+  'America/Mexico_City',
+  'America/New_York',
+  'Europe/Madrid',
+  'America/Bogota',
+  'America/Lima',
+  'America/Montevideo',
+  'America/Asuncion',
+  'America/La_Paz',
+  'America/Costa_Rica',
+  'America/Santo_Domingo',
+];

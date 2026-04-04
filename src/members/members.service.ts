@@ -160,13 +160,25 @@ export class MembersService {
       query.andWhere(':role = ANY(member.functionalRoles)', { role });
     }
 
+    query.addOrderBy(
+      `CASE 
+        WHEN member.ecclesiasticalRole = 'PASTOR' THEN 1 
+        WHEN member.ecclesiasticalRole = 'BISHOP' THEN 2 
+        WHEN member.ecclesiasticalRole = 'ELDER' THEN 3 
+        WHEN member.ecclesiasticalRole = 'DEACON' THEN 4 
+        ELSE 5 
+      END`,
+      'ASC'
+    ).addOrderBy('person.lastName', 'ASC')
+     .addOrderBy('person.firstName', 'ASC');
+
     return query.getMany();
   }
 
   async findOne(id: string, churchId: string) {
     const member = await this.memberRepository.findOne({
       where: { id, churchId },
-      relations: ['person', 'person.user'],
+      relations: ['person', 'person.user', 'church'],
     });
     if (!member) throw new NotFoundException('Member not found');
     return member;

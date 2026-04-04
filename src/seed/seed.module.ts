@@ -58,5 +58,6 @@ export class SeedModule implements OnModuleInit {
     // Only bootstrap the super admin if enabled via ENV.
     // Full seeding (essential/test) is now manual via Swagger.
     await this.seedService.bootstrapAdminFromEnv();
+    await this.seedService.bootstrapEssentialFromEnv();
   }
 }

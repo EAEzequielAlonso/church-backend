@@ -2,7 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     IsArray,
-    IsDateString,
+    IsDate,
+    IsISO8601,
     IsNotEmpty,
     IsOptional,
     IsString,
@@ -21,9 +22,10 @@ export class MinistryAssignmentDto {
     personId: string;
 
     @ApiProperty()
-    @IsDateString()
+    @Type(() => Date)
+    @IsDate()
     @IsNotEmpty()
-    date: string;
+    date: Date;
 
     @ApiPropertyOptional()
     @IsString()

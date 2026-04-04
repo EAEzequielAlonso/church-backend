@@ -14,11 +14,16 @@ export class CreateMinistryDto {
 
   @ApiProperty({ example: 'uuid-leader' })
   @IsString()
-  @IsOptional()
-  leaderId?: string;
+  @IsNotEmpty()
+  leaderId: string;
 
   @ApiProperty({ example: '#3b82f6' })
   @IsString()
   @IsOptional()
   color?: string;
+
+  @ApiProperty({ example: 'active' })
+  @IsString()
+  @IsOptional()
+  status?: 'active' | 'inactive';
 }

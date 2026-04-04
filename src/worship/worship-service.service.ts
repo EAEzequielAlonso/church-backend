@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Repository } from 'typeorm';
+import { Between, MoreThan, Repository } from 'typeorm';
 import { WorshipService } from './entities/worship-service.entity';
 import { ServiceSection } from './entities/service-section.entity';
 import { ServiceTemplate } from './entities/service-template.entity';
@@ -102,9 +102,45 @@ export class WorshipServiceService {
     return { success: true };
   }
 
-  // Also need to handle updates to sections if they exist in the controller,
-  // but user only mentioned add/delete/reorder usually.
-  // If updateTemplateSection exists, touch there too. Be safe.
+  async updateTemplate(id: string, churchId: string, data: any) {
+    const template = await this.templateRepo.findOne({ where: { id, churchId } });
+    if (!template) throw new NotFoundException('Plantilla no encontrada');
+
+    Object.assign(template, data);
+    return this.templateRepo.save(template);
+  }
+
+  async updateTemplateSection(templateId: string, sectionId: string, churchId: string, data: any) {
+    // First verify the template belongs to the church
+    const template = await this.templateRepo.findOne({ where: { id: templateId, churchId } });
+    if (!template) throw new NotFoundException(`Plantilla no encontrada (${templateId})`);
+
+    const section = await this.templateSectionRepo.findOne({
+      where: { id: sectionId, templateId: templateId },
+      relations: ['requiredRoles'],
+    });
+    if (!section) throw new NotFoundException(`Sección no encontrada (${sectionId})`);
+
+    // Update basic fields
+    if (data.title !== undefined) section.title = data.title;
+    if (data.type !== undefined) section.type = data.type;
+    if (data.defaultDuration !== undefined) {
+      section.defaultDuration = section.type === 'GLOBAL' ? 0 : data.defaultDuration;
+    }
+    if (data.ministryId !== undefined) section.ministryId = data.ministryId;
+
+    // Update roles if provided
+    if (data.requiredRoleIds && Array.isArray(data.requiredRoleIds)) {
+      section.requiredRoles = data.requiredRoleIds.map((id: string) => ({ id }));
+    }
+
+    const savedSection = await this.templateSectionRepo.save(section);
+
+    // Touch template to update updatedAt
+    await this.templateRepo.update(templateId, { updatedAt: new Date() });
+
+    return savedSection;
+  }
 
   // --- SERVICES & HYDRATION ---
 
@@ -168,9 +204,12 @@ export class WorshipServiceService {
         ? service.date.toISOString().split('T')[0]
         : new Date(service.date).toISOString().split('T')[0];
 
+    const start = new Date(dateStr + 'T00:00:00Z');
+    const end = new Date(dateStr + 'T23:59:59Z');
+
     // Fetch all assignments for this date from Ministries
     const assignments = await this.assignmentRepo.find({
-      where: { date: dateStr },
+      where: { date: Between(start, end) },
       relations: ['role', 'person', 'ministry'],
     });
 
@@ -334,6 +373,17 @@ export class WorshipServiceService {
     if (!service) throw new NotFoundException('Culto no encontrado');
 
     service.status = ServiceStatus.CONFIRMED;
+    return this.serviceRepo.save(service);
+  }
+
+  async updateService(id: string, churchId: string, data: any) {
+    const service = await this.serviceRepo.findOne({ where: { id, churchId } });
+    if (!service) throw new NotFoundException('Culto no encontrado');
+
+    if (data.date) service.date = new Date(data.date);
+    if (data.topic !== undefined) service.topic = data.topic;
+    if (data.status !== undefined) service.status = data.status;
+
     return this.serviceRepo.save(service);
   }
 }

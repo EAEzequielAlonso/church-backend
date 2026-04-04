@@ -60,7 +60,7 @@ export class ProfileService {
     // Update Person fields explicitly as requested
     const person = user.person;
     const editableFields = [
-      'firstName', 'lastName', 'phoneNumber', 'birthDate', 
+      'firstName', 'lastName', 'phoneNumber', 'documentId', 'birthDate', 
       'maritalStatus', 'addressLine1', 'addressLine2', 
       'city', 'state', 'postalCode', 'avatarUrl'
     ];

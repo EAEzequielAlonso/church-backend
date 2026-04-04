@@ -45,6 +45,7 @@ import { SubmitTaskUseCase } from './use-cases/submit-task.use-case';
 import { ReviewTaskUseCase } from './use-cases/review-task.use-case';
 import { UpdateTaskUseCase } from './use-cases/update-task.use-case';
 import { DeleteTaskUseCase } from './use-cases/delete-task.use-case';
+import { UpdateMentorshipProcessUseCase } from './use-cases/update-mentorship-process.use-case';
 import { AgendaModule } from '../agenda/agenda.module';
 
 @Module({
@@ -71,6 +72,7 @@ import { AgendaModule } from '../agenda/agenda.module';
     AddParticipantToProcessUseCase,
     ApproveParticipantUseCase,
     ChangeMentorshipStatusUseCase,
+    UpdateMentorshipProcessUseCase,
     AddMeetingUseCase,
     UpdateMeetingUseCase,
     DeleteMeetingUseCase,
@@ -97,6 +99,7 @@ import { AgendaModule } from '../agenda/agenda.module';
     AddParticipantToProcessUseCase,
     ApproveParticipantUseCase,
     ChangeMentorshipStatusUseCase,
+    UpdateMentorshipProcessUseCase,
     AddMeetingUseCase,
     UpdateMeetingUseCase,
     DeleteMeetingUseCase,

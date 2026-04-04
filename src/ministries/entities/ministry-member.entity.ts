@@ -9,8 +9,10 @@ import {
 import { Ministry } from './ministry.entity';
 import { ChurchPerson } from '../../members/entities/church-person.entity';
 import { MinistryRole } from '../../common/enums';
+import { Unique } from 'typeorm';
 
 @Entity('ministry_members')
+@Unique(['ministryId', 'memberId'])
 export class MinistryMember {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -35,8 +37,7 @@ export class MinistryMember {
   })
   roleInMinistry: MinistryRole;
 
-  @Column({ default: 'active' })
-  status: 'active' | 'inactive';
+
 
   @CreateDateColumn()
   joinedAt: Date;

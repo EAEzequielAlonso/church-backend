@@ -1,7 +1,7 @@
 import {
   IsString,
   IsNotEmpty,
-  IsDateString,
+  IsDate,
   IsOptional,
   IsUUID,
   IsArray,
@@ -18,9 +18,10 @@ export class CreateMinistryAssignmentDto {
   @IsNotEmpty()
   personId: string;
 
-  @IsDateString()
+  @Type(() => Date)
+  @IsDate()
   @IsNotEmpty()
-  date: string; // YYYY-MM-DD
+  date: Date;
 
   @IsString()
   @IsOptional()

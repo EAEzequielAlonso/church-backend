@@ -1,12 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateOrUpdateMeetingNoteDto {
-    @ApiPropertyOptional()
-    @IsString()
-    @IsOptional()
-    content?: string;
-
     @ApiPropertyOptional()
     @IsString()
     @IsOptional()
@@ -15,5 +10,10 @@ export class CreateOrUpdateMeetingNoteDto {
     @ApiPropertyOptional()
     @IsString()
     @IsOptional()
-    attendanceInfo?: string;
+    decisions?: string;
+
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    nextSteps?: string;
 }

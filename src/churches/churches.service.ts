@@ -5,14 +5,10 @@ import { Church } from './entities/church.entity';
 import { ChurchPerson } from '../members/entities/church-person.entity';
 import { User } from '../users/entities/user.entity';
 import { Person } from '../users/entities/person.entity';
+import { Currency } from '../treasury/enums/treasury.enums';
+import { EcclesiasticalRole, FunctionalRole, PlanType, SubscriptionStatus } from 'src/common/enums';
+import { MembershipStatus } from 'src/members/enums/membership-status.enum';
 import { CreateChurchDto } from './dto/create-church.dto';
-import {
-  PlanType,
-  SubscriptionStatus,
-  EcclesiasticalRole,
-  FunctionalRole,
-} from '../common/enums';
-import { MembershipStatus } from '../members/enums/membership-status.enum';
 
 @Injectable()
 export class ChurchesService {
@@ -32,7 +28,7 @@ export class ChurchesService {
     const existing = await this.churchRepository.findOne({ where: { slug } });
     if (existing) {
       console.log('Slug taken:', slug);
-      throw new BadRequestException('Church identifier (slug) is taken');
+      throw new BadRequestException('El identificador de la iglesia (slug) ya está en uso. Por favor elige otro.');
     }
 
     // 2. Create Church
@@ -42,7 +38,12 @@ export class ChurchesService {
       slug,
       address: dto.address,
       city: dto.city,
+      state: dto.state,
       country: dto.country,
+      timezone: dto.timezone ?? 'America/Argentina/Buenos_Aires',
+      baseCurrency: dto.baseCurrency ?? Currency.ARS,
+      logoUrl: dto.logoUrl,
+      coverUrl: dto.coverUrl,
       plan: PlanType.TRIAL,
       subscriptionStatus: SubscriptionStatus.TRIAL,
       trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),

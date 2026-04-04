@@ -43,7 +43,6 @@ export class CreateMinistryUseCase {
                 ministry,
                 member: ministryData.leader,
                 roleInMinistry: MinistryRole.LEADER,
-                status: 'active',
                 joinedAt: new Date(),
             });
             await this.memberRepo.save(member);
