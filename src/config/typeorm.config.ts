@@ -8,4 +8,4 @@ export const AppDataSource = new DataSource({
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   // TypeORM CLI specific overwrites if needed
   dropSchema: false,
-});
+}); // mas comentarios para git
