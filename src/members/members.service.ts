@@ -155,7 +155,7 @@ export class MembersService {
     if (status) {
       query.andWhere('member.membershipStatus = :status', { status });
     }
-    
+
     if (role) {
       query.andWhere(':role = ANY(member.functionalRoles)', { role });
     }
@@ -170,7 +170,7 @@ export class MembersService {
       END`,
       'ASC'
     ).addOrderBy('person.lastName', 'ASC')
-     .addOrderBy('person.firstName', 'ASC');
+      .addOrderBy('person.firstName', 'ASC');
 
     return query.getMany();
   }
@@ -310,10 +310,10 @@ export class MembersService {
     if (existingMember) {
       // If already a member, return fresh token so frontend can update immediately
       const tokenData = await this.authService.generateTokenForUser(user);
-      return { 
-        status: 'ALREADY_MEMBER', 
+      return {
+        status: 'ALREADY_MEMBER',
         message: 'Ya eres miembro de esta iglesia. Tu sesión se actualizará automáticamente.',
-        ...tokenData 
+        ...tokenData
       };
     }
 

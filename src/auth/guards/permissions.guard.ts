@@ -25,18 +25,14 @@ export class PermissionsGuard implements CanActivate {
       AppPermission[]
     >(PERMISSIONS_KEY, [context.getHandler(), context.getClass()]);
 
-    if (!requiredPermissions) {
-      return true;
-    }
-
     const { user } = context.switchToHttp().getRequest();
 
     if (!user) {
       return false;
     }
 
-    // 1. Super Admin Bypass
-    if (user.systemRole === SystemRole.ADMIN_APP) {
+    // 1. Super Admin Bypass (but still populate context if possible)
+    if (user.systemRole === SystemRole.ADMIN_APP && !requiredPermissions) {
       return true;
     }
 
@@ -74,6 +70,10 @@ export class PermissionsGuard implements CanActivate {
       user.membership = null;
       user.memberId = null;
       user.permissions = [];
+    }
+
+    if (!requiredPermissions) {
+      return true;
     }
 
     // 3. Church Association Check

@@ -42,6 +42,10 @@ export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
     AppPermission.COUNSELING_VIEW_SUPERVISION,
     AppPermission.COUNSELING_CREATE,
     AppPermission.COUNSELING_UPDATE,
+    AppPermission.MEMBER_VIEW,
+    AppPermission.MEMBER_CREATE,
+    AppPermission.MEMBER_UPDATE,
+    AppPermission.MEMBER_DELETE,
   ],
   [FunctionalRole.COUNSELOR]: [
     AppPermission.COUNSELING_VIEW_OWN,

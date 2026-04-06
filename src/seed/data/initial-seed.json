@@ -4,32 +4,32 @@
             "name": "Iglesia Bautista Misionera en Santa Teresita",
             "slug": "IBM-Santa-Teresita",
             "adminEmail": "nadiaayaelen@gmail.com",
-            "adminName": "Ezequiel Alonso",
+            "adminName": "Matias Albasini",
             "members": [
                 {
                     "email": "pastor1@phyessoft.com",
-                    "name": "Matias Albasini",
+                    "name": "Santiago Chica",
                     "ecclesiasticalRole": "PASTOR",
                     "status": "MEMBER",
                     "isCounselor": true
                 },
                 {
                     "email": "elder1@phyessoft.com",
-                    "name": "Carlos Rodriguez",
-                    "ecclesiasticalRole": "ELDER",
+                    "name": "Nahuel Catrufo",
+                    "ecclesiasticalRole": "DEACON",
                     "status": "MEMBER",
                     "isCounselor": true
                 },
                 {
                     "email": "deacon1@phyessoft.com",
-                    "name": "Marta Gomez",
+                    "name": "Ezequiel Alonso",
                     "ecclesiasticalRole": "DEACON",
                     "status": "MEMBER"
                 },
                 {
                     "email": "leader1@phyessoft.com",
                     "name": "Sofia Lopez",
-                    "ecclesiasticalRole": "NONE",
+                    "ecclesiasticalRole": "ELDER",
                     "functionalRoles": [
                         "MINISTRY_LEADER",
                         "MEMBER"

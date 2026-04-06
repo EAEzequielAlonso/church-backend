@@ -34,7 +34,7 @@ import {
 @UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
 @Controller('members')
 export class MembersController {
-  constructor(private readonly membersService: MembersService) {}
+  constructor(private readonly membersService: MembersService) { }
 
   @Post()
   @RequirePermissions(AppPermission.MEMBER_CREATE)
@@ -56,14 +56,12 @@ export class MembersController {
   }
 
   @Get('search')
-  @RequirePermissions(AppPermission.MEMBER_VIEW)
   @ApiOperation({ summary: 'Search members' })
   search(@CurrentChurch() churchId: string, @Query('q') query: string) {
     return this.membersService.search(churchId, query);
   }
 
   @Get()
-  @RequirePermissions(AppPermission.MEMBER_VIEW)
   @ApiOperation({ summary: 'List all members' })
   @ApiQuery({ name: 'status', enum: MembershipStatus, required: false })
   @ApiQuery({ name: 'role', enum: FunctionalRole, required: false })
@@ -83,14 +81,14 @@ export class MembersController {
   }
 
   @Get(':id')
-  @RequirePermissions(AppPermission.MEMBER_VIEW)
+  @RequirePermissions(AppPermission.MEMBER_UPDATE)
   @ApiOperation({ summary: 'Get a member' })
   findOne(@Param('id') id: string, @CurrentChurch() churchId: string) {
     return this.membersService.findOne(id, churchId);
   }
 
   @Get(':id/details')
-  @RequirePermissions(AppPermission.MEMBER_VIEW)
+  @RequirePermissions(AppPermission.MEMBER_UPDATE)
   @ApiOperation({ summary: 'Get member detailed info' })
   getMemberDetails(@Param('id') id: string, @CurrentChurch() churchId: string) {
     return this.membersService.getMemberDetails(id, churchId);

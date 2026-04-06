@@ -167,6 +167,7 @@ export class AuthService {
 
       if (!person) {
         person = this.personRepository.create({
+          email: dto.email,
           firstName: dto.firstName || 'Usuario',
           lastName: dto.lastName || '',
         });
@@ -231,6 +232,12 @@ export class AuthService {
     let membership: ChurchPerson | null = null;
 
     if (user.person) {
+      // AUTO-HEAL: Sync email to Person if missing (fix for old manual registrations)
+      if (!user.person.email && user.email) {
+        user.person.email = user.email;
+        await this.personRepository.save(user.person);
+      }
+      
       // Find church membership
       if (dto.churchSlug) {
         const church = await this.churchRepository.findOne({

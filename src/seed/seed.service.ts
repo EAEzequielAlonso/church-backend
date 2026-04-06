@@ -449,13 +449,13 @@ export class SeedService {
           });
 
           if (member) {
-            const shouldUpdate = !member.ecclesiasticalRole;
+            const shouldUpdate = !member.ecclesiasticalRole || member.ecclesiasticalRole === EcclesiasticalRole.NONE;
 
-            if (shouldUpdate) {
-              member.ecclesiasticalRole = EcclesiasticalRole.NONE;
-              member.functionalRoles = [FunctionalRole.MEMBER];
+            if (shouldUpdate && mData.ecclesiasticalRole) {
+              member.ecclesiasticalRole = mData.ecclesiasticalRole as EcclesiasticalRole;
+              member.functionalRoles = mData.functionalRoles as FunctionalRole[] || [FunctionalRole.MEMBER];
               await queryRunner.manager.save(member);
-              this.logger.log(`Updated roles for member: ${mData.email}`);
+              this.logger.log(`Updated roles for member from JSON: ${mData.email}`);
             }
           } else {
             member = this.memberRepository.create({
@@ -463,8 +463,8 @@ export class SeedService {
               churchId: savedChurch.id,
               membershipStatus:
                 (mData.status as MembershipStatus) || MembershipStatus.MEMBER,
-              ecclesiasticalRole: EcclesiasticalRole.NONE,
-              functionalRoles: [FunctionalRole.MEMBER],
+              ecclesiasticalRole: (mData.ecclesiasticalRole as EcclesiasticalRole) || EcclesiasticalRole.NONE,
+              functionalRoles: (mData.functionalRoles as FunctionalRole[]) || [FunctionalRole.MEMBER],
               joinedAt: faker.date.past(),
             });
             member = await queryRunner.manager.save(member);

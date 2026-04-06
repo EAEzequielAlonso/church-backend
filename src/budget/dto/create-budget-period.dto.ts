@@ -10,7 +10,7 @@ import { Type } from 'class-transformer';
 import { BudgetPeriodType } from '../entities/budget-period.entity';
 import { Currency } from '../../treasury/enums/treasury.enums';
 
-export class CreateBudgetPeriodDto {
+export class CreateBudgetPeriodDto { 
   @IsString({ message: 'El nombre debe ser una cadena de texto' })
   @IsNotEmpty({ message: 'El nombre es requerido' })
   name: string;
