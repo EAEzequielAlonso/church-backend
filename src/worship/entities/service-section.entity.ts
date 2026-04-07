@@ -9,8 +9,8 @@ import {
 } from 'typeorm';
 import { WorshipService } from './worship-service.entity';
 import { ServiceDuty } from '../../ministries/entities/service-duty.entity';
-import { Person } from '../../users/entities/person.entity';
 import { Ministry } from '../../ministries/entities/ministry.entity';
+import { SectionType } from '../enums/section-type.enum';
 
 @Entity('service_sections')
 export class ServiceSection {
@@ -26,8 +26,8 @@ export class ServiceSection {
   @Column({ nullable: true })
   duration: number; // minutes
 
-  @Column({ nullable: true })
-  type: string; // "GLOBAL", "PREACHING", etc. - Critical for Timeline filtering
+  @Column({ type: 'varchar'})
+  type: SectionType;
 
   @Column({ nullable: true })
   startTime: string; // HH:mm (calculated or fixed)
@@ -47,14 +47,8 @@ export class ServiceSection {
   @JoinColumn({ name: 'serviceId' })
   service: WorshipService;
 
-  // Required roles snapshot (copied from template or added manually)
-  @ManyToMany(() => ServiceDuty)
-  @JoinTable({ name: 'section_required_roles' })
-  requiredRoles: ServiceDuty[];
 
   // Manual Overrides: Map RoleID -> PersonID
-  // Storing as JSON for flexibility.
-  // Format: { "role-uuid": "person-uuid", "role-uuid-2": "person-uuid-2" }
   @Column({ type: 'simple-json', nullable: true })
   overrides: Record<string, string>;
 

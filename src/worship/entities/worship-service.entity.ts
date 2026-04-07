@@ -57,6 +57,9 @@ export class WorshipService {
   })
   sections: ServiceSection[];
 
+  @Column({ nullable: true })
+  calendarEventId: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

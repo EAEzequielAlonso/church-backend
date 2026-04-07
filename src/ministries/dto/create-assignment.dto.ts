@@ -18,10 +18,9 @@ export class CreateMinistryAssignmentDto {
   @IsNotEmpty()
   personId: string;
 
-  @Type(() => Date)
-  @IsDate()
+  @IsString()
   @IsNotEmpty()
-  date: Date;
+  serviceId: string;
 
   @IsString()
   @IsOptional()

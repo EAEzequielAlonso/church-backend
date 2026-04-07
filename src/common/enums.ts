@@ -193,6 +193,7 @@ export enum CalendarEventType {
   FOLLOW_UP = 'FOLLOW_UP',
   COURSE = 'COURSE',
   ACTIVITY = 'ACTIVITY',
+  SERVICE = 'SERVICE', // Representa un Culto o Reunión principal
   OTHER = 'OTHER',
 }
 
@@ -223,4 +224,5 @@ export enum EventSourceType {
   MINISTRY_MEETING = 'MINISTRY_MEETING',
   GROUP_MEETING = 'GROUP_MEETING',
   MENTORSHIP_MEETING = 'MENTORSHIP_MEETING',
+  MEETING = 'MEETING', // Para los encuentros generales de la iglesia (ex Cultos)
 }

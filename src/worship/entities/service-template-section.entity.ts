@@ -10,6 +10,7 @@ import {
 import { ServiceTemplate } from './service-template.entity';
 import { ServiceDuty } from '../../ministries/entities/service-duty.entity';
 import { Ministry } from '../../ministries/entities/ministry.entity';
+import { SectionType } from '../enums/section-type.enum';
 
 @Entity('service_template_sections')
 export class ServiceTemplateSection {
@@ -25,8 +26,8 @@ export class ServiceTemplateSection {
   @Column({ nullable: true })
   defaultDuration: number; // minutes
 
-  @Column({ nullable: true })
-  type: string; // "WORSHIP", "PREACHING", "WELCOME", etc.
+  @Column({ type: 'varchar' })
+  type: SectionType;
 
   @Column()
   templateId: string;
@@ -37,16 +38,12 @@ export class ServiceTemplateSection {
   @JoinColumn({ name: 'templateId' })
   template: ServiceTemplate;
 
-  // Which roles are required for this section?
-  @ManyToMany(() => ServiceDuty)
-  @JoinTable({ name: 'template_section_required_roles' })
-  requiredRoles: ServiceDuty[];
 
-  // NEW: Assigned Ministry for this section (e.g. "Worship", "Audiovisual")
-  @Column({ nullable: true })
+  // Assigned Ministry for this section
+  @Column()
   ministryId: string;
 
-  @ManyToOne(() => Ministry, { nullable: true })
+  @ManyToOne(() => Ministry)
   @JoinColumn({ name: 'ministryId' })
   ministry: Ministry;
 }

@@ -22,15 +22,19 @@ export class MinistryAssignmentDto {
     personId: string;
 
     @ApiProperty()
-    @Type(() => Date)
-    @IsDate()
+    @IsString()
     @IsNotEmpty()
-    date: Date;
+    serviceId: string;
 
     @ApiPropertyOptional()
     @IsString()
     @IsOptional()
     serviceType?: string;
+
+    @ApiPropertyOptional()
+    @IsString()
+    @IsOptional()
+    sectionId?: string;
 
     @ApiPropertyOptional()
     @IsOptional()

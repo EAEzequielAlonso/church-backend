@@ -15,17 +15,18 @@ export class GetMinistryAssignmentsUseCase {
             .createQueryBuilder('assignment')
             .leftJoinAndSelect('assignment.role', 'role')
             .leftJoinAndSelect('assignment.person', 'person') // Generic User/Person
+            .leftJoinAndSelect('assignment.service', 'service')
             .where('assignment.ministryId = :ministryId', { ministryId });
 
         if (fromDate) {
-            query.andWhere('assignment.date >= :fromDate', { fromDate });
+            query.andWhere('service.date >= :fromDate', { fromDate });
         }
         if (toDate) {
-            query.andWhere('assignment.date <= :toDate', { toDate });
+            query.andWhere('service.date <= :toDate', { toDate });
         }
 
         return query
-            .orderBy('assignment.date', 'ASC')
+            .orderBy('service.date', 'ASC')
             .addOrderBy('role.name', 'ASC')
             .getMany();
     }

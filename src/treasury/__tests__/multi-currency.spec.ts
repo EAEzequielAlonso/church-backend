@@ -66,8 +66,7 @@ function makeAccount(id: string, currency: Currency, balance = 0): any {
         type: AccountType.ASSET,
         currency,
         balance,
-        churchId: 'church-1',
-        churchId: 'church-1',
+        churchId: 'church-1'
     };
 }
 

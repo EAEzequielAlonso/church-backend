@@ -1,12 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, MoreThan, Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { WorshipService } from './entities/worship-service.entity';
 import { ServiceSection } from './entities/service-section.entity';
 import { ServiceTemplate } from './entities/service-template.entity';
 import { ServiceTemplateSection } from './entities/service-template-section.entity';
 import { MinistryRoleAssignment } from '../ministries/entities/ministry-role-assignment.entity';
 import { ServiceStatus } from './entities/worship-service.entity';
+import { AgendaSyncService } from '../agenda/agenda-sync.service';
+import { EventSourceType, CalendarEventType } from '../common/enums';
+import { SectionType } from './enums/section-type.enum';
+import { CreateTemplateSectionDto } from './dto/create-template-section.dto';
+import { UpdateTemplateSectionDto } from './dto/update-template-section.dto';
 
 @Injectable()
 export class WorshipServiceService {
@@ -21,6 +26,7 @@ export class WorshipServiceService {
     private templateSectionRepo: Repository<ServiceTemplateSection>,
     @InjectRepository(MinistryRoleAssignment)
     private assignmentRepo: Repository<MinistryRoleAssignment>,
+    private readonly agendaSyncService: AgendaSyncService,
   ) { }
 
   // --- TEMPLATES ---
@@ -28,7 +34,7 @@ export class WorshipServiceService {
   async findAllTemplates(churchId: string) {
     return this.templateRepo.find({
       where: { churchId: churchId },
-      relations: ['sections', 'sections.requiredRoles'],
+      relations: ['sections', 'sections.ministry'],
     });
   }
 
@@ -44,7 +50,7 @@ export class WorshipServiceService {
   async findTemplate(id: string, churchId: string) {
     return this.templateRepo.findOne({
       where: { id, churchId },
-      relations: ['sections', 'sections.requiredRoles'],
+      relations: ['sections', 'sections.ministry'],
       order: { sections: { order: 'ASC' } },
     });
   }
@@ -55,7 +61,7 @@ export class WorshipServiceService {
     return this.templateRepo.remove(template);
   }
 
-  async addTemplateSection(templateId: string, churchId: string, data: any) {
+  async addTemplateSection(templateId: string, churchId: string, dto: CreateTemplateSectionDto) {
     const template = await this.templateRepo.findOne({
       where: { id: templateId, churchId },
     });
@@ -63,18 +69,12 @@ export class WorshipServiceService {
 
     const section = this.templateSectionRepo.create({
       template,
-      title: data.title,
-      defaultDuration: data.type === 'GLOBAL' ? 0 : data.defaultDuration || 15,
-      order: data.order || 0,
-      type: data.type,
-      ministryId: data.ministryId || undefined,
+      title: dto.title,
+      defaultDuration: dto.type === SectionType.GLOBAL_ACTIVITY ? 0 : dto.defaultDuration || 15,
+      order: dto.order || 0,
+      type: dto.type,
+      ministryId: dto.ministryId,
     });
-
-    if (data.requiredRoleIds && Array.isArray(data.requiredRoleIds)) {
-      section.requiredRoles = data.requiredRoleIds.map((id: string) => ({
-        id,
-      }));
-    }
 
     const savedSection = await this.templateSectionRepo.save(section);
 
@@ -110,29 +110,22 @@ export class WorshipServiceService {
     return this.templateRepo.save(template);
   }
 
-  async updateTemplateSection(templateId: string, sectionId: string, churchId: string, data: any) {
-    // First verify the template belongs to the church
+  async updateTemplateSection(templateId: string, sectionId: string, churchId: string, dto: UpdateTemplateSectionDto) {
     const template = await this.templateRepo.findOne({ where: { id: templateId, churchId } });
     if (!template) throw new NotFoundException(`Plantilla no encontrada (${templateId})`);
 
     const section = await this.templateSectionRepo.findOne({
       where: { id: sectionId, templateId: templateId },
-      relations: ['requiredRoles'],
     });
     if (!section) throw new NotFoundException(`Sección no encontrada (${sectionId})`);
 
     // Update basic fields
-    if (data.title !== undefined) section.title = data.title;
-    if (data.type !== undefined) section.type = data.type;
-    if (data.defaultDuration !== undefined) {
-      section.defaultDuration = section.type === 'GLOBAL' ? 0 : data.defaultDuration;
+    if (dto.title !== undefined) section.title = dto.title;
+    if (dto.type !== undefined) section.type = dto.type;
+    if (dto.defaultDuration !== undefined) {
+      section.defaultDuration = section.type === SectionType.GLOBAL_ACTIVITY ? 0 : dto.defaultDuration;
     }
-    if (data.ministryId !== undefined) section.ministryId = data.ministryId;
-
-    // Update roles if provided
-    if (data.requiredRoleIds && Array.isArray(data.requiredRoleIds)) {
-      section.requiredRoles = data.requiredRoleIds.map((id: string) => ({ id }));
-    }
+    if (dto.ministryId !== undefined) section.ministryId = dto.ministryId;
 
     const savedSection = await this.templateSectionRepo.save(section);
 
@@ -168,8 +161,6 @@ export class WorshipServiceService {
       where: { id, churchId },
       relations: [
         'sections',
-        'sections.requiredRoles',
-        'sections.requiredRoles.ministry',
         'sections.ministry',
         'template',
       ],
@@ -198,54 +189,29 @@ export class WorshipServiceService {
       }
     }
 
-    // HYDRATION: Fetch assignments for this date
-    const dateStr =
-      service.date instanceof Date
-        ? service.date.toISOString().split('T')[0]
-        : new Date(service.date).toISOString().split('T')[0];
-
-    const start = new Date(dateStr + 'T00:00:00Z');
-    const end = new Date(dateStr + 'T23:59:59Z');
-
-    // Fetch all assignments for this date from Ministries
+    // HYDRATION: Fetch assignments for this service
     const assignments = await this.assignmentRepo.find({
-      where: { date: Between(start, end) },
-      relations: ['role', 'person', 'ministry'],
+      where: { serviceId: service.id },
+      relations: ['role', 'person', 'ministry', 'section'],
     });
 
     // Attach assignments to sections dynamically
     const richSections = service.sections.map((section) => {
-      const filledRoles = section.requiredRoles.map((role) => {
-        // 1. Check Override
-        const overridePersonId = section.overrides
-          ? section.overrides[role.id]
-          : null;
-        let assignedPerson = null;
-        let status = 'UNASSIGNED'; // UNASSIGNED, ASSIGNED, OVERRIDE
-        let metadata = null;
+      // Find assignments for this specific section
+      const sectionAssignments = assignments.filter((a) => a.sectionId === section.id);
 
-        if (overridePersonId) {
-          status = 'OVERRIDE';
-          // We would fetch the Person details for the override ID here if we want full details
-          // For now, let's assume frontend fetches or we add a quick lookup
-          assignedPerson = { id: overridePersonId, name: 'Override Person' }; // TODO: Fetch info
-        } else {
-          // 2. Check Ministry Assignment
-          const assignment = assignments.find((a) => a.role.id === role.id);
-          if (assignment) {
-            status = 'ASSIGNED';
-            assignedPerson = assignment.person;
-            metadata = assignment.metadata; // Hydrate metadata
-          }
-        }
-
+      const filledRoles = sectionAssignments.map((assignment) => {
         return {
-          role,
-          status,
-          assignedPerson,
-          metadata,
+          id: assignment.id,
+          role: assignment.role,
+          status: 'ASSIGNED',
+          assignedPerson: assignment.person,
+          metadata: assignment.metadata,
         };
       });
+
+      // Also consider Global Assignments (without sectionId) if needed? 
+      // For now, only section-specific as requested.
 
       return {
         ...section,
@@ -269,7 +235,7 @@ export class WorshipServiceService {
     // 1. Fetch full template with sections
     const template = await this.templateRepo.findOne({
       where: { id: service.template.id },
-      relations: ['sections', 'sections.requiredRoles', 'sections.ministry'],
+      relations: ['sections', 'sections.ministry'],
     });
 
     if (!template) return service; // Should not happen
@@ -283,13 +249,12 @@ export class WorshipServiceService {
     // 3. Re-create sections
     const newSections = template.sections.map((ts) => {
       return this.sectionRepo.create({
-        service: service, // Link to the service entity
+        service: service,
         title: ts.title,
         order: ts.order,
-        duration: ts.type === 'GLOBAL' ? 0 : ts.defaultDuration,
+        duration: ts.type === SectionType.GLOBAL_ACTIVITY ? 0 : ts.defaultDuration,
         type: ts.type,
         ministry: ts.ministry,
-        requiredRoles: ts.requiredRoles,
       });
     });
 
@@ -305,9 +270,9 @@ export class WorshipServiceService {
       where: { id: service.id, churchId: service.churchId },
       relations: [
         'sections',
-        'sections.requiredRoles',
-        'sections.requiredRoles.ministry',
         'sections.ministry',
+        'sections.ministry.serviceDuties',
+        'sections.ministry.serviceDuties.ministry',
         'template',
       ],
       order: { sections: { order: 'ASC' } },
@@ -317,6 +282,9 @@ export class WorshipServiceService {
   async deleteService(id: string, churchId: string) {
     const service = await this.serviceRepo.findOne({ where: { id, churchId } });
     if (!service) throw new NotFoundException('Culto no encontrado');
+    
+    await this.agendaSyncService.deleteProjection(EventSourceType.MEETING, service.id);
+
     return this.serviceRepo.remove(service);
   }
 
@@ -327,7 +295,7 @@ export class WorshipServiceService {
   ) {
     const template = await this.templateRepo.findOne({
       where: { id: templateId, churchId },
-      relations: ['sections', 'sections.requiredRoles', 'sections.ministry'],
+      relations: ['sections', 'sections.ministry'],
     });
     if (!template) throw new NotFoundException('Plantilla no encontrada');
 
@@ -347,14 +315,30 @@ export class WorshipServiceService {
         service: savedService,
         title: ts.title,
         order: ts.order,
-        duration: ts.type === 'GLOBAL' ? 0 : ts.defaultDuration,
-        type: ts.type, // Copy TYPE (Fixes Global bug)
-        ministry: ts.ministry, // Copy Ministry
-        requiredRoles: ts.requiredRoles,
+        duration: ts.type === SectionType.GLOBAL_ACTIVITY ? 0 : ts.defaultDuration,
+        type: ts.type,
+        ministry: ts.ministry,
       });
     });
 
     await this.sectionRepo.save(sections);
+
+    const fakeEndDate = new Date(savedService.date.getTime() + 2 * 60 * 60 * 1000);
+    const projection = await this.agendaSyncService.createProjection({
+        title: savedService.topic || 'Reunión General',
+        description: template.description || 'Reunión planificada',
+        startDate: savedService.date,
+        endDate: fakeEndDate,
+        location: 'Templo Principal',
+        sourceType: EventSourceType.MEETING,
+        sourceId: savedService.id,
+        type: CalendarEventType.SERVICE,
+        attendees: [],
+    });
+
+    savedService.calendarEventId = projection.id;
+    await this.serviceRepo.save(savedService);
+
     return this.findOneService(savedService.id, churchId);
   }
 
@@ -384,6 +368,15 @@ export class WorshipServiceService {
     if (data.topic !== undefined) service.topic = data.topic;
     if (data.status !== undefined) service.status = data.status;
 
-    return this.serviceRepo.save(service);
+    const updatedService = await this.serviceRepo.save(service);
+
+    const fakeEndDate = new Date(updatedService.date.getTime() + 2 * 60 * 60 * 1000);
+    await this.agendaSyncService.updateProjection(EventSourceType.MEETING, updatedService.id, {
+        title: updatedService.topic || 'Reunión General',
+        startDate: updatedService.date,
+        endDate: fakeEndDate,
+    });
+
+    return updatedService;
   }
 }

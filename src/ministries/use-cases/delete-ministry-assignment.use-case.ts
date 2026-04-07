@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MinistryRoleAssignment } from '../entities/ministry-role-assignment.entity';
 import { MinistryPolicy } from '../policies/ministry.policy';
-import { SystemRole, FunctionalRole } from '../../common/enums';
+import { SystemRole, FunctionalRole, EventSourceType } from '../../common/enums';
+import { AgendaSyncService } from '../../agenda/agenda-sync.service';
 
 @Injectable()
 export class DeleteMinistryAssignmentUseCase {
@@ -11,6 +12,7 @@ export class DeleteMinistryAssignmentUseCase {
         @InjectRepository(MinistryRoleAssignment)
         private readonly assignmentRepo: Repository<MinistryRoleAssignment>,
         private readonly ministryPolicy: MinistryPolicy,
+        private readonly agendaSyncService: AgendaSyncService,
     ) { }
 
     async execute(
@@ -29,7 +31,25 @@ export class DeleteMinistryAssignmentUseCase {
         });
 
         if (!assignment) throw new NotFoundException('Asignación no encontrada');
+        const serviceId = assignment.serviceId;
 
-        return this.assignmentRepo.remove(assignment);
+        await this.assignmentRepo.remove(assignment);
+
+        if (serviceId) {
+            const allAssignmentsForService = await this.assignmentRepo.find({
+                where: { serviceId }
+            });
+
+            const uniquePersonIds = Array.from(new Set(allAssignmentsForService.map(a => a.personId)));
+            const attendees = uniquePersonIds.map(id => ({ id } as any)); 
+
+            await this.agendaSyncService.updateProjection(
+                EventSourceType.MEETING, 
+                serviceId, 
+                { attendees }
+            );
+        }
+
+        return assignment;
     }
 }

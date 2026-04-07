@@ -8,9 +8,11 @@ import { WorshipService } from './entities/worship-service.entity';
 import { ServiceSection } from './entities/service-section.entity';
 import { ServiceDuty } from '../ministries/entities/service-duty.entity';
 import { MinistryRoleAssignment } from '../ministries/entities/ministry-role-assignment.entity';
+import { AgendaModule } from '../agenda/agenda.module';
 
 @Module({
   imports: [
+    AgendaModule,
     TypeOrmModule.forFeature([
       ServiceTemplate,
       ServiceTemplateSection,

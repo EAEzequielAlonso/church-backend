@@ -10,6 +10,8 @@ import {
 import { Ministry } from './ministry.entity';
 import { ServiceDuty } from './service-duty.entity';
 import { Person } from '../../users/entities/person.entity';
+import { WorshipService } from '../../worship/entities/worship-service.entity';
+import { ServiceSection } from '../../worship/entities/service-section.entity';
 
 @Entity('ministry_role_assignments')
 export class MinistryRoleAssignment {
@@ -41,8 +43,19 @@ export class MinistryRoleAssignment {
   @Column()
   personId: string;
 
-  @Column({ type: 'timestamptz' })
-  date: Date;
+  @ManyToOne(() => WorshipService, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'serviceId' })
+  service: WorshipService;
+
+  @Column()
+  serviceId: string;
+
+  @ManyToOne(() => ServiceSection, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'sectionId' })
+  section: ServiceSection;
+
+  @Column({ nullable: true })
+  sectionId: string;
 
   @Column({ nullable: true })
   serviceType: string; // Optional: "SUNDAY_MORNING", "YOUTH", etc.

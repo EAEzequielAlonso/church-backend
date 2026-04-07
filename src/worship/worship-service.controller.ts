@@ -2,23 +2,20 @@ import {
   Controller,
   Get,
   Post,
-  Put,
   Patch,
   Delete,
   Body,
   Param,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { WorshipServiceService } from './worship-service.service';
-import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
-import { AppPermission } from '../auth/authorization/permissions.enum'; // Assuming generic or check
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { CurrentChurch } from '../common/decorators';
 import { FunctionalRole } from '../common/enums';
-
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
+import { CreateTemplateSectionDto } from './dto/create-template-section.dto';
+import { UpdateTemplateSectionDto } from './dto/update-template-section.dto';
 
 @Controller('worship-services')
 @UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
@@ -38,15 +35,25 @@ export class WorshipServiceController {
     return this.worshipService.createTemplate(churchId, body);
   }
 
+  @Post('templates/:id/sections')
+  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
+  addTemplateSection(
+    @CurrentChurch() churchId: string,
+    @Param('id') id: string,
+    @Body() dto: CreateTemplateSectionDto,
+  ) {
+    return this.worshipService.addTemplateSection(id, churchId, dto);
+  }
+
   @Patch('templates/:id/sections/:sectionId')
   @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
   updateTemplateSection(
     @CurrentChurch() churchId: string,
     @Param('id') id: string,
     @Param('sectionId') sectionId: string,
-    @Body() body: any,
+    @Body() dto: UpdateTemplateSectionDto,
   ) {
-    return this.worshipService.updateTemplateSection(id, sectionId, churchId, body);
+    return this.worshipService.updateTemplateSection(id, sectionId, churchId, dto);
   }
 
   @Delete('templates/:id/sections/:sectionId')
@@ -57,12 +64,6 @@ export class WorshipServiceController {
     @Param('sectionId') sectionId: string,
   ) {
     return this.worshipService.deleteTemplateSection(id, sectionId, churchId);
-  }
-
-  @Post('templates/:id/sections')
-  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
-  addTemplateSection(@CurrentChurch() churchId: string, @Param('id') id: string, @Body() body: any) {
-    return this.worshipService.addTemplateSection(id, churchId, body);
   }
 
   @Get('templates/:id')

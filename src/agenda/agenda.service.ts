@@ -17,7 +17,6 @@ import { Ministry } from '../ministries/entities/ministry.entity';
 import { Group } from '../groups/entities/group.entity';
 import { GroupParticipant } from '../groups/entities/group-participant.entity';
 import { GroupRole, GroupType } from '../groups/enums/group.enums';
-import { MinistryRoleAssignment } from '../ministries/entities/ministry-role-assignment.entity';
 import { CreateCalendarEventDto } from './dto/create-calendar-event.dto';
 
 @Injectable()
@@ -35,8 +34,6 @@ export class AgendaService {
     private readonly groupParticipantRepository: Repository<GroupParticipant>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
-    @InjectRepository(MinistryRoleAssignment)
-    private readonly assignmentRepository: Repository<MinistryRoleAssignment>,
   ) { }
 
   async getUpcomingActivities(
@@ -138,44 +135,6 @@ export class AgendaService {
 
       const events = await eventsQuery.getMany();
 
-      // 4. Get Ministry Assignments
-      // Query for assignments starting from queryDate
-      const queryDateStr = queryDate.toISOString().split('T')[0];
-      const assignments = await this.assignmentRepository
-        .createQueryBuilder('assignment')
-        .leftJoinAndSelect('assignment.role', 'role')
-        .leftJoinAndSelect('assignment.ministry', 'ministry')
-        .leftJoinAndSelect('assignment.person', 'person')
-        .where('person.id = :personId', { personId })
-        .andWhere('assignment.date >= :queryDateStr', { queryDateStr })
-        .orderBy('assignment.date', 'ASC')
-        .getMany();
-
-      // Transform assignments to Events
-      const assignmentEvents = assignments.map((a) => {
-        // Approximate start time or use value from service if linked
-        const eventDate = new Date(a.date);
-        // Adjust to noon to avoid timezone shift issues causing day change if using UTC
-        // Or just keep strictly string based on client
-        // For now, let's set it to 09:00 local representation
-        // But date is string YYYY-MM-DD.
-        // const dateObj = new Date(a.date + 'T09:00:00');
-
-        return {
-          id: a.id,
-          title: `Servicio: ${a.role.name}`,
-          description: `Asignación en ${a.ministry.name}`,
-          startDate: a.date,
-          endDate: a.date,
-          location: 'Iglesia',
-          type: 'MINISTRY', // mimic ministry event
-          isAllDay: false,
-          ministry: { id: a.ministry.id, name: a.ministry.name },
-          smallGroup: null,
-          isAssignment: true, // Flag mostly for frontend if needed
-        };
-      });
-
       // Merge events and sort
       const allEvents = [
         ...events.map((e) => ({
@@ -190,7 +149,6 @@ export class AgendaService {
           isAllDay: e.isAllDay,
           ownerId: e.ownerId,
         })),
-        ...assignmentEvents,
       ].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 
       // If limit is provided, we sort everything together and then slice.
