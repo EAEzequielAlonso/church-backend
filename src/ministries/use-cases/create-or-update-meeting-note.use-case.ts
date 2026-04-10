@@ -21,23 +21,40 @@ export class CreateOrUpdateMeetingNoteUseCase {
     async execute(
         meetingId: string,
         personId: string,
-        churchId: string, // Needed to ensure the user matches the tenant
-        ministryId: string, // Decoupled from service, passed from controller to authorize
+        churchId: string,
+        ministryId: string,
         data: CreateOrUpdateMeetingNoteDto,
         systemRole: SystemRole,
         functionalRole: FunctionalRole
     ): Promise<MeetingNote> {
-
-        // First ensure they are leader or coordinator of the Ministry that owns this event
+        // First ensure they are leader or coordinator
         await this.ministryPolicy.assertCanManage(ministryId, personId, churchId, systemRole, functionalRole);
 
+        // RESOLVE ID: Find the actual MinistryMeeting
+        // It could be that meetingId is the native ID or the calendarEventId
+        let meeting = await this.meetingRepo.findOne({
+            where: { id: meetingId, ministryId }
+        });
+
+        if (!meeting) {
+            meeting = await this.meetingRepo.findOne({
+                where: { calendarEventId: meetingId, ministryId }
+            });
+        }
+
+        if (!meeting) {
+            throw new NotFoundException('Ministry meeting not found');
+        }
+
+        const actualMeetingId = meeting.id;
+
         let note: MeetingNote | null = await this.noteRepo.findOne({
-            where: { meetingId },
+            where: { meetingId: actualMeetingId },
         });
 
         if (!note) {
             note = this.noteRepo.create({
-                meetingId,
+                meetingId: actualMeetingId,
                 createdById: personId,
             });
         }

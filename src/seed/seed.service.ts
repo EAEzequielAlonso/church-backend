@@ -289,6 +289,7 @@ export class SeedService {
           password: hashedPassword,
           systemRole: SystemRole.ADMIN_APP,
           isOnboarded: true,
+          isEmailVerified: true,
           person: adminPerson,
         });
         await queryRunner.manager.save(globalAdminUser);
@@ -347,7 +348,7 @@ export class SeedService {
             password: hashedPassword,
             systemRole: SystemRole.USER,
             isOnboarded: true,
-            isEmailVerified: churchData.adminEmail === 'nadiaayaelen@gmail.com' ? true : false,
+            isEmailVerified: true,
             person: adminPerson,
           });
           await queryRunner.manager.save(adminUser);
@@ -433,7 +434,7 @@ export class SeedService {
               password: hashedPassword,
               systemRole: SystemRole.USER,
               isOnboarded: true,
-              isEmailVerified: mData.email === 'nadiaayaelen@gmail.com' ? true : false,
+              isEmailVerified: true,
               person: person,
             });
             user = await queryRunner.manager.save(user);
