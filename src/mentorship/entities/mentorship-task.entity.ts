@@ -41,7 +41,7 @@ export class MentorshipTask {
   assignedChurchPerson: ChurchPerson;
 
   @Column({ nullable: true })
-  assignedChurchPersonId: string;
+  assignedChurchPersonId: string | null;
 
   @Column({ type: 'boolean', default: false })
   isGroupTask: boolean;
@@ -54,7 +54,7 @@ export class MentorshipTask {
   meeting: MentorshipMeeting;
 
   @Column({ nullable: true })
-  meetingId: string;
+  meetingId: string | null;
 
   @Column({ type: 'varchar', length: 255 })
   title: string;

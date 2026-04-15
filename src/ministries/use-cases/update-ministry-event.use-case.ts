@@ -47,9 +47,8 @@ export class UpdateMinistryEventUseCase {
 
         if (data.startDate !== undefined) {
             const startDate = new Date(data.startDate);
-            meeting.date = startDate;
             updatePayload.startDate = startDate;
-            
+
             if (data.endDate !== undefined) {
                 updatePayload.endDate = new Date(data.endDate);
             } else {
@@ -59,10 +58,7 @@ export class UpdateMinistryEventUseCase {
             updatePayload.endDate = new Date(data.endDate);
         }
 
-        if (data.location !== undefined) {
-            meeting.location = data.location;
-            updatePayload.location = data.location;
-        }
+        if (data.location !== undefined) updatePayload.location = data.location;
 
         const savedMeeting = await this.meetingRepo.save(meeting);
 

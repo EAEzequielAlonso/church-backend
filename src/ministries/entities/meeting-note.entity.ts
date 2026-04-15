@@ -15,7 +15,7 @@ export class MeetingNote {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => MinistryMeeting, { onDelete: 'CASCADE' })
+  @OneToOne(() => MinistryMeeting, (meeting) => meeting.meetingNote, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'meetingId' })
   meeting: MinistryMeeting;
 

@@ -164,6 +164,7 @@ export class MentorshipController {
       participantId,
       req.user?.memberId,
       churchId,
+      req.user?.personId,
     );
   }
 
@@ -178,6 +179,7 @@ export class MentorshipController {
       participantId,
       req.user?.memberId,
       churchId,
+      req.user?.personId,
     );
   }
 

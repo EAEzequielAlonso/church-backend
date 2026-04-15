@@ -1,20 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CalendarEvent } from '../../agenda/entities/calendar-event.entity';
-import { CalendarEventType } from 'src/common/enums';
+import { MinistryMeeting } from '../entities/ministry-meeting.entity';
 
 @Injectable()
 export class GetMinistryEventsUseCase {
     constructor(
-        @InjectRepository(CalendarEvent)
-        private readonly eventRepo: Repository<CalendarEvent>,
+        @InjectRepository(MinistryMeeting)
+        private readonly meetingRepo: Repository<MinistryMeeting>,
     ) { }
 
-    async execute(ministryId: string): Promise<CalendarEvent[]> {
-        return this.eventRepo.find({
-            where: { type: CalendarEventType.MINISTRY, ownerId: ministryId },
-            order: { startDate: 'ASC' },
+    async execute(ministryId: string): Promise<MinistryMeeting[]> {
+        return this.meetingRepo.find({
+            where: { ministryId },
+            relations: ['calendarEvent', 'meetingNote', 'meetingNote.createdBy'],
+            order: {
+                calendarEvent: {
+                    startDate: 'ASC',
+                },
+            },
         });
     }
 }

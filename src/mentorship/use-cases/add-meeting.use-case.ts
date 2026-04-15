@@ -34,13 +34,6 @@ export class AddMeetingUseCase {
     this.mentorshipPolicy.assertCanManage(executorChurchPersonId, executorRoles, process);
 
     const meeting = new MentorshipMeeting();
-    meeting.title = dto.title;
-    meeting.description = dto.description;
-    meeting.color = dto.color;
-    meeting.scheduledDate = dto.scheduledDate;
-    meeting.endDate = dto.endDate;
-    meeting.location = dto.location;
-    meeting.type = dto.type;
 
     if (!process.meetings) {
       process.meetings = [];
@@ -60,14 +53,15 @@ export class AddMeetingUseCase {
         ? CalendarEventType.DISCIPLESHIP 
         : CalendarEventType.COUNSELING;
 
-    const endDate = meeting.endDate || new Date(new Date(meeting.scheduledDate).getTime() + 60 * 60 * 1000);
+    const startDate = dto.scheduledDate;
+    const endDate = dto.endDate || new Date(new Date(startDate).getTime() + 60 * 60 * 1000);
 
     const projection = await this.agendaSyncService.createProjection({
-        title: meeting.title || `Encuentro: ${process.motive}`,
-        description: meeting.description,
-        startDate: meeting.scheduledDate,
+        title: dto.title || `Encuentro: ${process.motive}`,
+        description: dto.description,
+        startDate: startDate,
         endDate: endDate,
-        location: meeting.location,
+        location: dto.location,
         sourceType: EventSourceType.MENTORSHIP_MEETING,
         sourceId: savedMeeting.id,
         type: projectionEventType,
@@ -79,7 +73,7 @@ export class AddMeetingUseCase {
 
     this.eventEmitter.emit('MentorshipMeetingAddedEvent', {
       processId: savedProcess.id,
-      meetingTitle: meeting.title,
+      meetingTitle: dto.title,
     });
 
     return savedProcess;

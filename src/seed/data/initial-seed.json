@@ -315,6 +315,26 @@
                         "color": "#34d399"
                     },
                     {
+                        "name": "Donación Especial",
+                        "type": "income",
+                        "color": "#22c55e"
+                    },
+                    {
+                        "name": "Campaña Pro Templo",
+                        "type": "income",
+                        "color": "#16a34a"
+                    },
+                    {
+                        "name": "Venta de Librería",
+                        "type": "income",
+                        "color": "#84cc16"
+                    },
+                    {
+                        "name": "Inscripción a Evento",
+                        "type": "income",
+                        "color": "#65a30d"
+                    },
+                    {
                         "name": "Servicios (Luz/Agua)",
                         "type": "expense",
                         "color": "#f43f5e"
@@ -326,6 +346,31 @@
                     },
                     {
                         "name": "Ayuda Social",
+                        "type": "expense",
+                        "color": "#fb7185"
+                    },
+                    {
+                        "name": "Papelería y Oficina",
+                        "type": "expense",
+                        "color": "#e11d48"
+                    },
+                    {
+                        "name": "Limpieza",
+                        "type": "expense",
+                        "color": "#f97316"
+                    },
+                    {
+                        "name": "Transporte",
+                        "type": "expense",
+                        "color": "#ef4444"
+                    },
+                    {
+                        "name": "Sonido y Multimedia",
+                        "type": "expense",
+                        "color": "#dc2626"
+                    },
+                    {
+                        "name": "Refrigerios",
                         "type": "expense",
                         "color": "#fb7185"
                     }
@@ -412,6 +457,168 @@
                         "category": "Ofrenda Extraordinaria",
                         "dest": "Caja Efectivo ARS",
                         "date": "2026-03-05T10:00:00Z"
+                    },
+                    {
+                        "description": "Ofrenda Dominical Primer Domingo de Abril",
+                        "amount": 345000,
+                        "currency": "ARS",
+                        "type": "income",
+                        "category": "Ofrenda Dominical",
+                        "dest": "Caja Efectivo ARS",
+                        "date": "2026-04-05T13:00:00Z"
+                    },
+                    {
+                        "description": "Ofrenda en Dólares Reunión de Abril",
+                        "amount": 180,
+                        "currency": "USD",
+                        "type": "income",
+                        "category": "Ofrenda en Dolares",
+                        "dest": "Caja Efectivo USD",
+                        "date": "2026-04-05T13:15:00Z"
+                    },
+                    {
+                        "description": "Donación Familia Torres para Fondo General",
+                        "amount": 125000,
+                        "currency": "ARS",
+                        "type": "income",
+                        "category": "Donación Especial",
+                        "dest": "Caja Efectivo ARS",
+                        "date": "2026-04-07T16:30:00Z"
+                    },
+                    {
+                        "description": "Campaña Pro Templo Abril - Primera Etapa",
+                        "amount": 240000,
+                        "currency": "ARS",
+                        "type": "income",
+                        "category": "Campaña Pro Templo",
+                        "dest": "Fondo Pro Edificio",
+                        "date": "2026-04-08T18:00:00Z"
+                    },
+                    {
+                        "description": "Venta de Devocionales y Cuadernos",
+                        "amount": 42000,
+                        "currency": "ARS",
+                        "type": "income",
+                        "category": "Venta de Librería",
+                        "dest": "Personal Pay ARS",
+                        "date": "2026-04-10T19:20:00Z"
+                    },
+                    {
+                        "description": "Inscripciones Jornada de Matrimonios",
+                        "amount": 68000,
+                        "currency": "ARS",
+                        "type": "income",
+                        "category": "Inscripción a Evento",
+                        "dest": "Personal Pay ARS",
+                        "date": "2026-04-12T20:00:00Z"
+                    },
+                    {
+                        "description": "Pago Factura de Luz Abril",
+                        "amount": 61500,
+                        "currency": "ARS",
+                        "type": "expense",
+                        "source": "Caja Efectivo ARS",
+                        "category": "Servicios (Luz/Agua)",
+                        "date": "2026-04-09T11:00:00Z"
+                    },
+                    {
+                        "description": "Compra de insumos de limpieza",
+                        "amount": 28500,
+                        "currency": "ARS",
+                        "type": "expense",
+                        "source": "Caja Efectivo ARS",
+                        "category": "Limpieza",
+                        "date": "2026-04-11T15:30:00Z"
+                    },
+                    {
+                        "description": "Compra de resmas, tinta y carpetas",
+                        "amount": 19750,
+                        "currency": "ARS",
+                        "type": "expense",
+                        "source": "Personal Pay ARS",
+                        "category": "Papelería y Oficina",
+                        "date": "2026-04-13T14:10:00Z"
+                    },
+                    {
+                        "description": "Ayuda social familia de la congregación",
+                        "amount": 85000,
+                        "currency": "ARS",
+                        "type": "expense",
+                        "source": "Caja Efectivo ARS",
+                        "category": "Ayuda Social",
+                        "date": "2026-04-15T17:45:00Z"
+                    },
+                    {
+                        "description": "Reposición de cableado y adaptadores multimedia",
+                        "amount": 46700,
+                        "currency": "ARS",
+                        "type": "expense",
+                        "source": "Personal Pay ARS",
+                        "category": "Sonido y Multimedia",
+                        "date": "2026-04-17T12:40:00Z"
+                    },
+                    {
+                        "description": "Refrigerios para reunión de líderes",
+                        "amount": 22300,
+                        "currency": "ARS",
+                        "type": "expense",
+                        "source": "Caja Efectivo ARS",
+                        "category": "Refrigerios",
+                        "date": "2026-04-18T21:10:00Z"
+                    },
+                    {
+                        "description": "Transporte para visita solidaria",
+                        "amount": 18000,
+                        "currency": "ARS",
+                        "type": "expense",
+                        "source": "Caja Efectivo ARS",
+                        "category": "Transporte",
+                        "date": "2026-04-20T09:30:00Z"
+                    },
+                    {
+                        "description": "Ofrenda Dominical Tercer Domingo de Abril",
+                        "amount": 372000,
+                        "currency": "ARS",
+                        "type": "income",
+                        "category": "Ofrenda Dominical",
+                        "dest": "Caja Efectivo ARS",
+                        "date": "2026-04-19T13:00:00Z"
+                    },
+                    {
+                        "description": "Donación en USD para misiones",
+                        "amount": 95,
+                        "currency": "USD",
+                        "type": "income",
+                        "category": "Donación Especial",
+                        "dest": "Caja Efectivo USD",
+                        "date": "2026-04-22T18:25:00Z"
+                    },
+                    {
+                        "description": "Campaña Pro Templo Abril - Segunda Etapa",
+                        "amount": 315000,
+                        "currency": "ARS",
+                        "type": "income",
+                        "category": "Campaña Pro Templo",
+                        "dest": "Fondo Pro Edificio",
+                        "date": "2026-04-24T19:45:00Z"
+                    },
+                    {
+                        "description": "Mantenimiento de cerradura y portón principal",
+                        "amount": 54000,
+                        "currency": "ARS",
+                        "type": "expense",
+                        "source": "Caja Efectivo ARS",
+                        "category": "Mantenimiento",
+                        "date": "2026-04-25T10:15:00Z"
+                    },
+                    {
+                        "description": "Ofrenda de cierre de mes",
+                        "amount": 358000,
+                        "currency": "ARS",
+                        "type": "income",
+                        "category": "Ofrenda Dominical",
+                        "dest": "Caja Efectivo ARS",
+                        "date": "2026-04-26T13:10:00Z"
                     }
                 ]
             },

@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  OneToOne,
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
@@ -12,6 +13,7 @@ import {
 import { Church } from '../../churches/entities/church.entity';
 import { ServiceTemplate } from './service-template.entity';
 import { ServiceSection } from './service-section.entity';
+import { CalendarEvent } from '../../agenda/entities/calendar-event.entity';
 
 export enum ServiceStatus {
   DRAFT = 'DRAFT',
@@ -59,6 +61,10 @@ export class WorshipService {
 
   @Column({ nullable: true })
   calendarEventId: string;
+
+  @OneToOne(() => CalendarEvent, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'calendarEventId' })
+  calendarEvent: CalendarEvent;
 
   @CreateDateColumn()
   createdAt: Date;

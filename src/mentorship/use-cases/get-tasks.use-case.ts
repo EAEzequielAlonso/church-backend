@@ -46,6 +46,7 @@ export class GetTasksUseCase {
     // 2. Query con filtros
     const query = this.taskRepository.createQueryBuilder('task')
       .leftJoinAndSelect('task.meeting', 'meeting')
+      .leftJoinAndSelect('meeting.calendarEvent', 'calendarEvent')
       .where('task.processId = :processId', { processId });
 
     // Si es PARTICIPANT (guiado) en este proceso, solo ve sus tareas o grupales
@@ -87,8 +88,21 @@ export class GetTasksUseCase {
       .take(10)
       .getMany();
 
+    const normalizedData = data.map((task) => ({
+      ...task,
+      meeting: task.meeting
+        ? {
+            id: task.meeting.id,
+            title: task.meeting.calendarEvent?.title,
+            scheduledDate: task.meeting.calendarEvent?.startDate,
+            endDate: task.meeting.calendarEvent?.endDate,
+            location: task.meeting.calendarEvent?.location,
+          }
+        : null,
+    }));
+
     return {
-      data,
+      data: normalizedData,
       total,
       page: currentPage,
       lastPage

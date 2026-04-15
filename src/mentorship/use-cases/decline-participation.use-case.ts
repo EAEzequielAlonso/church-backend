@@ -11,16 +11,26 @@ export class DeclineParticipationUseCase {
     private readonly participantRepository: Repository<MentorshipProcessParticipant>,
   ) {}
 
-  async execute(participantId: string, executorChurchPersonId: string, churchId: string) {
+  async execute(
+    participantId: string,
+    executorChurchPersonId: string | null | undefined,
+    churchId: string,
+    executorPersonId?: string | null,
+  ) {
     const participant = await this.participantRepository.findOne({
       where: { id: participantId, process: { churchId } },
+      relations: { churchPerson: true },
     });
 
     if (!participant) {
       throw new NotFoundException(`La invitación con ID ${participantId} no existe.`);
     }
 
-    if (participant.churchPersonId !== executorChurchPersonId) {
+    const isInvitedMembership = participant.churchPersonId === executorChurchPersonId;
+    const isInvitedPerson =
+      !!executorPersonId && participant.churchPerson?.personId === executorPersonId;
+
+    if (!isInvitedMembership && !isInvitedPerson) {
       throw new ForbiddenException('Solo el usuario invitado puede rechazar esta participación.');
     }
 

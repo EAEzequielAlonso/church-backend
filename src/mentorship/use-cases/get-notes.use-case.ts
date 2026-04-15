@@ -51,6 +51,7 @@ export class GetNotesUseCase {
     // 2. Query con filtros
     const query = this.noteRepository.createQueryBuilder('note')
       .leftJoinAndSelect('note.meeting', 'meeting')
+      .leftJoinAndSelect('meeting.calendarEvent', 'calendarEvent')
       .where('note.processId = :processId', { processId })
       .andWhere('note.type IN (:...visibleTypes)', { visibleTypes });
 
@@ -86,8 +87,21 @@ export class GetNotesUseCase {
       .take(10)
       .getMany();
 
+    const normalizedData = data.map((note) => ({
+      ...note,
+      meeting: note.meeting
+        ? {
+            id: note.meeting.id,
+            title: note.meeting.calendarEvent?.title,
+            scheduledDate: note.meeting.calendarEvent?.startDate,
+            endDate: note.meeting.calendarEvent?.endDate,
+            location: note.meeting.calendarEvent?.location,
+          }
+        : null,
+    }));
+
     return {
-      data,
+      data: normalizedData,
       total,
       page: currentPage,
       lastPage

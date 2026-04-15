@@ -41,27 +41,17 @@ export class UpdateMeetingUseCase {
 
     const updatePayload: any = {};
 
-    if (dto.title !== undefined) meeting.title = dto.title;
-    if (dto.description !== undefined) {
-        meeting.description = dto.description;
-        updatePayload.description = dto.description;
-    }
+    if (dto.title !== undefined) updatePayload.title = dto.title;
+    if (dto.description !== undefined) updatePayload.description = dto.description;
     if (dto.scheduledDate !== undefined) {
-        meeting.scheduledDate = dto.scheduledDate;
         updatePayload.startDate = dto.scheduledDate;
     }
     if (dto.endDate !== undefined) {
-        meeting.endDate = dto.endDate;
         updatePayload.endDate = dto.endDate;
     } else if (dto.scheduledDate) {
         updatePayload.endDate = new Date(new Date(dto.scheduledDate).getTime() + 60 * 60 * 1000);
-        meeting.endDate = updatePayload.endDate;
     }
-    if (dto.location !== undefined) {
-        meeting.location = dto.location;
-        updatePayload.location = dto.location;
-    }
-    if (dto.type !== undefined) meeting.type = dto.type;
+    if (dto.location !== undefined) updatePayload.location = dto.location;
 
     if (dto.title !== undefined && process.motive) {
        updatePayload.title = dto.title || `Encuentro: ${process.motive}`;

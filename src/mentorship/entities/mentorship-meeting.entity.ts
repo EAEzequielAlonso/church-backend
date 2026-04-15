@@ -1,20 +1,22 @@
 import {
   Entity,
   PrimaryGeneratedColumn,
-  Column,
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
   OneToMany,
   Index,
   JoinColumn,
+  Column,
+  OneToOne,
 } from 'typeorm';
 import { MentorshipProcess } from './mentorship-process.entity';
 import { MentorshipNote } from './mentorship-note.entity';
 import { MentorshipTask } from './mentorship-task.entity';
+import { CalendarEvent } from '../../agenda/entities/calendar-event.entity';
 
 @Entity('mentorship_meetings')
-@Index(['processId', 'scheduledDate'])
+@Index(['processId'])
 export class MentorshipMeeting {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -29,29 +31,12 @@ export class MentorshipMeeting {
   @Column({ nullable: false })
   processId: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  title: string;
-
-  @Column({ type: 'text', nullable: true })
-  description: string;
-
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  color: string;
-
-  @Column({ type: 'timestamp', nullable: true })
-  scheduledDate: Date;
-
-  @Column({ type: 'timestamp', nullable: true })
-  endDate: Date;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  location: string;
-
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  type: string;
-
   @Column({ type: 'uuid', nullable: true })
   calendarEventId: string;
+
+  @OneToOne(() => CalendarEvent, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'calendarEventId' })
+  calendarEvent: CalendarEvent;
 
   @Column({ type: 'boolean', default: false })
   isCompleted: boolean;

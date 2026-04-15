@@ -49,8 +49,6 @@ export class CreateMinistryEventUseCase {
 
         let meeting = this.meetingRepo.create({
             ministryId: ministryId,
-            date: startDate,
-            location: data.location,
         });
 
         meeting = await this.meetingRepo.save(meeting);

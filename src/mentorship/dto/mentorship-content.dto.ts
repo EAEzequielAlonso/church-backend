@@ -24,15 +24,15 @@ export interface UpdateNoteDto {
   title?: string;
   content?: string;
   type?: MentorshipNoteType;
-  meetingId?: string;
+  meetingId?: string | null;
 }
 
 export interface AddTaskDto {
   processId: string;
   creatorChurchPersonId: string;
-  assignedChurchPersonId?: string;
+  assignedChurchPersonId?: string | null;
   isGroupTask: boolean;
-  meetingId?: string;
+  meetingId?: string | null;
   title: string;
   description?: string;
   mentorInstruction?: string;

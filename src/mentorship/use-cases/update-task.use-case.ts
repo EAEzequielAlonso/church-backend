@@ -35,6 +35,8 @@ export class UpdateTaskUseCase {
     if (dto.dueDate !== undefined) task.dueDate = dto.dueDate;
     if (dto.assignedChurchPersonId !== undefined) task.assignedChurchPersonId = dto.assignedChurchPersonId;
     if (dto.isGroupTask !== undefined) task.isGroupTask = dto.isGroupTask;
+    if (dto.isGroupTask) task.assignedChurchPersonId = null;
+    if (dto.meetingId !== undefined) task.meetingId = dto.meetingId;
 
     return await this.mentorshipService.saveTask(task);
   }

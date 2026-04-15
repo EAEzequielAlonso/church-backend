@@ -139,7 +139,7 @@ export class GroupsController {
   @ApiOperation({ summary: 'Register a new meeting/encounter for a group' })
   createMeeting(
     @Param('id') id: string,
-    @Body() body: { date: string; location?: string; notes?: string },
+    @Body() body: { title?: string; date: string; location?: string; notes?: string },
     @CurrentChurch() churchId: string,
   ) {
     return this.groupsService.createMeeting(id, churchId, body);
@@ -150,7 +150,7 @@ export class GroupsController {
   updateMeeting(
     @Param('id') id: string,
     @Param('meetingId') meetingId: string,
-    @Body() body: { date?: string; location?: string; notes?: string },
+    @Body() body: { title?: string; date?: string; location?: string; notes?: string },
     @CurrentChurch() churchId: string,
   ) {
     return this.groupsService.updateMeeting(id, meetingId, churchId, body);

@@ -1,19 +1,21 @@
 import {
   Entity,
   PrimaryGeneratedColumn,
-  Column,
   ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
   Index,
   JoinColumn,
+  Column,
+  OneToOne,
 } from 'typeorm';
 import { Group } from './group.entity';
 import { GroupAttendance } from './group-attendance.entity';
+import { CalendarEvent } from '../../agenda/entities/calendar-event.entity';
 
 @Entity('group_meetings')
-@Index(['groupId', 'date'])
+@Index(['groupId'])
 export class GroupMeeting {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -28,17 +30,12 @@ export class GroupMeeting {
   @Column({ nullable: false })
   groupId: string;
 
-  @Column({ type: 'date', nullable: false })
-  date: Date;
-
   @Column({ type: 'uuid', nullable: true })
   calendarEventId: string;
 
-  @Column({ nullable: true })
-  location: string;
-
-  @Column({ type: 'text', nullable: true })
-  notes: string;
+  @OneToOne(() => CalendarEvent, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'calendarEventId' })
+  calendarEvent: CalendarEvent;
 
   @OneToMany(() => GroupAttendance, (attendance) => attendance.meeting)
   attendances: GroupAttendance[];

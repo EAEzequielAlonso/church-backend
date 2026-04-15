@@ -77,6 +77,8 @@ export class GroupsService {
         'participants.churchPerson',
         'participants.churchPerson.person',
         'meetings',
+        'meetings.calendarEvent',
+        'meetings.attendances',
       ],
     });
     if (!group) throw new NotFoundException('Group not found');
@@ -84,21 +86,22 @@ export class GroupsService {
     // Attendance Calculation (Phase 4)
     // 1. Get total past meetings
     const now = new Date();
-    const totalMeetings = await this.meetingRepo.count({
-      where: {
-        groupId: id,
-        date: LessThanOrEqual(now)
-      }
-    });
+    const totalMeetings = await this.meetingRepo
+      .createQueryBuilder('meeting')
+      .innerJoin('meeting.calendarEvent', 'calendarEvent')
+      .where('meeting.groupId = :groupId', { groupId: id })
+      .andWhere('calendarEvent.startDate <= :now', { now })
+      .getCount();
 
     // 2. Get present counts for all participants in one go
     const attendanceRecords = await this.attendanceRepo
       .createQueryBuilder('attendance')
       .innerJoin('attendance.meeting', 'meeting')
+      .innerJoin('meeting.calendarEvent', 'calendarEvent')
       .select('attendance.churchPersonId', 'churchPersonId')
       .addSelect('COUNT(*)', 'presentCount')
       .where('meeting.groupId = :groupId', { groupId: id })
-      .andWhere('meeting.date <= :now', { now })
+      .andWhere('calendarEvent.startDate <= :now', { now })
       .andWhere('attendance.present = :present', { present: true })
       .groupBy('attendance.churchPersonId')
       .getRawMany();
@@ -121,6 +124,17 @@ export class GroupsService {
         }
       };
     });
+
+    (group as any).meetings = group.meetings.map((meeting) => ({
+      ...meeting,
+      date: meeting.calendarEvent?.startDate ?? null,
+      endDate: meeting.calendarEvent?.endDate ?? null,
+      location: meeting.calendarEvent?.location ?? null,
+      notes: meeting.calendarEvent?.description ?? null,
+      description: meeting.calendarEvent?.description ?? null,
+      title: meeting.calendarEvent?.title ?? null,
+      type: meeting.calendarEvent?.type ?? null,
+    }));
 
     return group;
   }
@@ -240,23 +254,18 @@ export class GroupsService {
   async createMeeting(
     groupId: string,
     churchId: string,
-    dto: { date: string; location?: string; notes?: string },
+    dto: { title?: string; date: string; location?: string; notes?: string },
   ) {
     const group = await this.findOne(groupId, churchId);
 
     const startDate = new Date(dto.date);
     const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // default 1h
 
-    let meeting = this.meetingRepo.create({
-      groupId,
-      date: startDate,
-      location: dto.location,
-      notes: dto.notes,
-    });
+    let meeting = this.meetingRepo.create({ groupId });
     meeting = await this.meetingRepo.save(meeting);
 
     const projection = await this.agendaSyncService.createProjection({
-      title: `Encuentro: ${group.name}`,
+      title: dto.title?.trim() || `Encuentro: ${group.name}`,
       description: dto.notes,
       startDate: startDate,
       endDate: endDate,
@@ -275,7 +284,7 @@ export class GroupsService {
     groupId: string,
     meetingId: string,
     churchId: string,
-    dto: { date?: string; location?: string; notes?: string },
+    dto: { title?: string; date?: string; location?: string; notes?: string },
   ) {
     const group = await this.findOne(groupId, churchId);
 
@@ -286,18 +295,19 @@ export class GroupsService {
       type: this.getCalendarEventType(group.type),
     };
 
+    if (dto.title !== undefined) {
+      updatePayload.title = dto.title.trim() || `Encuentro: ${group.name}`;
+    }
+
     if (dto.date) {
       const startDate = new Date(dto.date);
-      meeting.date = startDate;
       updatePayload.startDate = startDate;
       updatePayload.endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
     }
     if (dto.location !== undefined) {
-      meeting.location = dto.location;
       updatePayload.location = dto.location;
     }
     if (dto.notes !== undefined) {
-      meeting.notes = dto.notes;
       updatePayload.description = dto.notes;
     }
 

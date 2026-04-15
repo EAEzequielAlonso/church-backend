@@ -12,6 +12,7 @@ import { ChurchPerson } from '../../members/entities/church-person.entity';
 import { MinistryTask } from './ministry-task.entity';
 import { ServiceDuty } from './service-duty.entity';
 import { MinistryRoleAssignment } from './ministry-role-assignment.entity';
+import { MinistryMeeting } from './ministry-meeting.entity';
 
 @Entity('ministries')
 export class Ministry {
@@ -48,6 +49,9 @@ export class Ministry {
 
   @OneToMany(() => MinistryTask, (task) => task.ministry)
   tasks: MinistryTask[];
+
+  @OneToMany(() => MinistryMeeting, (meeting) => meeting.ministry)
+  meetings: MinistryMeeting[];
 
   @OneToMany(() => ServiceDuty, (duty) => duty.ministry)
   serviceDuties: ServiceDuty[];

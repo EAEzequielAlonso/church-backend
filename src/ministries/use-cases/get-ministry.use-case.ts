@@ -2,15 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Ministry } from '../entities/ministry.entity';
-import { CalendarEvent } from '../../agenda/entities/calendar-event.entity';
 
 @Injectable()
 export class GetMinistryUseCase {
     constructor(
         @InjectRepository(Ministry)
         private readonly ministryRepo: Repository<Ministry>,
-        @InjectRepository(CalendarEvent)
-        private readonly eventRepo: Repository<CalendarEvent>,
     ) { }
 
     async execute(id: string, churchId: string): Promise<any> {
@@ -25,21 +22,15 @@ export class GetMinistryUseCase {
                 'tasks',
                 'tasks.assignedTo',
                 'tasks.assignedTo.person',
-                'serviceDuties'
+                'serviceDuties',
+                'meetings',
+                'meetings.calendarEvent',
+                'meetings.meetingNote',
+                'meetings.meetingNote.createdBy',
             ],
         });
 
         if (!ministry) throw new NotFoundException('Ministerio no encontrado');
-
-        // Real deletion and UNIQUE constraint ensure only correct members are returned.
-
-        const events = await this.eventRepo.find({
-            where: { ownerId: id },
-        });
-
-        return {
-            ...ministry,
-            calendarEvents: events,
-        };
+        return ministry;
     }
 }

@@ -39,12 +39,14 @@ export class UpdateNoteUseCase {
       throw new ForbiddenException('No tienes permisos para editar esta nota.');
     }
 
-    if (dto.meetingId) {
+    if (dto.meetingId !== undefined && dto.meetingId !== null) {
       const meeting = await this.mentorshipService.findMeetingById(dto.meetingId, executor.churchId);
       if (!meeting || meeting.processId !== process.id) {
         throw new BadRequestException('El encuentro especificado no pertenece a este proceso de mentoría.');
       }
       note.meetingId = dto.meetingId;
+    } else if (dto.meetingId === null) {
+      note.meetingId = null;
     }
 
     if (dto.title !== undefined) note.title = dto.title;

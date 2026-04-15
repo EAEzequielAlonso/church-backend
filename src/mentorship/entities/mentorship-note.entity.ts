@@ -44,7 +44,7 @@ export class MentorshipNote {
   meeting: MentorshipMeeting;
 
   @Column({ nullable: true })
-  meetingId: string;
+  meetingId: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   title: string;

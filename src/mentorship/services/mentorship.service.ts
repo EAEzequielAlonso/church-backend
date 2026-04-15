@@ -62,9 +62,19 @@ export class MentorshipService {
             person: true,
           },
         },
-        meetings: true,
-        notes: true,
-        tasks: true,
+        meetings: {
+          calendarEvent: true,
+        },
+        notes: {
+          meeting: {
+            calendarEvent: true,
+          },
+        },
+        tasks: {
+          meeting: {
+            calendarEvent: true,
+          },
+        },
       },
     });
   }

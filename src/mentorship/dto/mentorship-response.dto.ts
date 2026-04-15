@@ -223,12 +223,12 @@ export class MentorshipResponseDto {
 
     dto.meetings = (entity.meetings || []).map((m) => ({
       id: m.id,
-      title: m.title,
-      description: m.description,
-      color: m.color,
-      scheduledDate: m.scheduledDate,
-      endDate: m.endDate,
-      location: m.location,
+      title: m.calendarEvent?.title,
+      description: m.calendarEvent?.description,
+      color: m.calendarEvent?.color,
+      scheduledDate: m.calendarEvent?.startDate,
+      endDate: m.calendarEvent?.endDate,
+      location: m.calendarEvent?.location,
       isCompleted: m.isCompleted,
     }));
 
