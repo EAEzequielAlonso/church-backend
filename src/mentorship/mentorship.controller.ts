@@ -51,6 +51,7 @@ import { DeleteNoteUseCase } from './use-cases/delete-note.use-case';
 import { StartTaskUseCase } from './use-cases/start-task.use-case';
 import { SubmitTaskUseCase } from './use-cases/submit-task.use-case';
 import { ReviewTaskUseCase } from './use-cases/review-task.use-case';
+import { SaveTaskProgressUseCase } from './use-cases/save-task-progress.use-case';
 import { UpdateTaskUseCase } from './use-cases/update-task.use-case';
 import { DeleteTaskUseCase } from './use-cases/delete-task.use-case';
 import { UpdateMentorshipProcessUseCase } from './use-cases/update-mentorship-process.use-case';
@@ -85,6 +86,7 @@ export class MentorshipController {
     private readonly startTaskUseCase: StartTaskUseCase,
     private readonly submitTaskUseCase: SubmitTaskUseCase,
     private readonly reviewTaskUseCase: ReviewTaskUseCase,
+    private readonly saveTaskProgressUseCase: SaveTaskProgressUseCase,
     private readonly updateTaskUseCase: UpdateTaskUseCase,
     private readonly deleteTaskUseCase: DeleteTaskUseCase,
     private readonly updateMentorshipUseCase: UpdateMentorshipProcessUseCase,
@@ -369,6 +371,26 @@ export class MentorshipController {
     @Request() req: any,
   ): Promise<any> {
     const result = await this.submitTaskUseCase.execute(
+      taskId,
+      {
+        userId: req.user?.memberId,
+        churchId: req.user?.churchId,
+        roles: req.user?.roles || [],
+        permissions: req.user?.permissions || [],
+      },
+      dto,
+    );
+    return result;
+  }
+
+  @Post('tasks/:id/save-progress')
+  @ApiOperation({ summary: 'Guardar progreso de una tarea sin enviarla' })
+  async saveTaskProgress(
+    @Param('id') taskId: string,
+    @Body() dto: { menteeResponse: string },
+    @Request() req: any,
+  ): Promise<any> {
+    const result = await this.saveTaskProgressUseCase.execute(
       taskId,
       {
         userId: req.user?.memberId,

@@ -43,6 +43,7 @@ import { DeleteNoteUseCase } from './use-cases/delete-note.use-case';
 import { StartTaskUseCase } from './use-cases/start-task.use-case';
 import { SubmitTaskUseCase } from './use-cases/submit-task.use-case';
 import { ReviewTaskUseCase } from './use-cases/review-task.use-case';
+import { SaveTaskProgressUseCase } from './use-cases/save-task-progress.use-case';
 import { UpdateTaskUseCase } from './use-cases/update-task.use-case';
 import { DeleteTaskUseCase } from './use-cases/delete-task.use-case';
 import { UpdateMentorshipProcessUseCase } from './use-cases/update-mentorship-process.use-case';
@@ -91,6 +92,7 @@ import { AgendaModule } from '../agenda/agenda.module';
     StartTaskUseCase,
     SubmitTaskUseCase,
     ReviewTaskUseCase,
+    SaveTaskProgressUseCase,
     UpdateTaskUseCase,
     DeleteTaskUseCase,
   ],
@@ -118,6 +120,7 @@ import { AgendaModule } from '../agenda/agenda.module';
     StartTaskUseCase,
     SubmitTaskUseCase,
     ReviewTaskUseCase,
+    SaveTaskProgressUseCase,
     UpdateTaskUseCase,
     DeleteTaskUseCase,
     MentorshipVisibilityPolicy,

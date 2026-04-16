@@ -71,6 +71,12 @@ export class MentorshipVisibilityPolicy {
     return this.canViewTask(user, task) && task.status === MentorshipTaskStatus.IN_PROGRESS;
   }
 
+  canSaveTaskProgress(user: VisibilityUserContext, task: MentorshipTask): boolean {
+    // El guiado puede guardar progreso si puede ver la tarea y está en un estado editable (Asignada o En Progreso)
+    return this.canViewTask(user, task) && 
+           (task.status === MentorshipTaskStatus.ASSIGNED || task.status === MentorshipTaskStatus.IN_PROGRESS);
+  }
+
   canReviewTask(user: VisibilityUserContext, task: MentorshipTask): boolean {
     // Solo mentores pueden revisar
     return this.mentorshipPolicy.canManageProcess(user.userId, user.roles, task.process) && 
