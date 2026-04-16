@@ -5,6 +5,10 @@ export class UpdateChurchProfileDto {
   @IsOptional()
   name?: string;
 
+  @IsString()
+  @IsOptional()
+  accountDonation?: string;
+
   @IsUrl()
   @IsOptional()
   logoUrl?: string;

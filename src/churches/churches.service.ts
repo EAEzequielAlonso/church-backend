@@ -43,6 +43,7 @@ export class ChurchesService {
       country: dto.country,
       timezone: dto.timezone ?? 'America/Argentina/Buenos_Aires',
       baseCurrency: dto.baseCurrency ?? Currency.ARS,
+      accountDonation: dto.accountDonation,
       logoUrl: dto.logoUrl,
       coverUrl: dto.coverUrl,
       plan: PlanType.TRIAL,
@@ -174,6 +175,7 @@ export class ChurchesService {
     if (dto.website !== undefined) church.website = dto.website;
     if (dto.instagram !== undefined) church.instagram = dto.instagram;
     if (dto.facebook !== undefined) church.facebook = dto.facebook;
+    if (dto.accountDonation !== undefined) church.accountDonation = dto.accountDonation;
 
     return this.churchRepository.save(church);
   }

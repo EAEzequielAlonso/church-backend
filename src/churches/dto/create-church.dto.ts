@@ -17,6 +17,10 @@ export class CreateChurchDto {
 
   @IsString()
   @IsOptional()
+  accountDonation?: string;
+
+  @IsString()
+  @IsOptional()
   city?: string;
 
   @IsString()

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChurchPerson } from '../members/entities/church-person.entity';
+import { Church } from '../churches/entities/church.entity';
 import { Group } from '../groups/entities/group.entity';
 import { MembershipStatus } from '../members/enums/membership-status.enum';
 import {
@@ -21,6 +22,8 @@ export class DashboardService {
   constructor(
     @InjectRepository(ChurchPerson)
     private memberRepository: Repository<ChurchPerson>,
+    @InjectRepository(Church)
+    private churchRepo: Repository<Church>,
     @InjectRepository(Group) private groupRepository: Repository<Group>,
     @InjectRepository(WorshipService)
     private worshipRepo: Repository<WorshipService>,
@@ -62,7 +65,12 @@ export class DashboardService {
       where: { churchId: churchId },
     });
 
+    const church = await this.churchRepo.findOne({ where: { id: churchId }, select: ['accountDonation'] });
+
     return {
+      church: {
+        accountDonation: church?.accountDonation || null,
+      },
       members: {
         total,
         visitors,

@@ -20,6 +20,9 @@ export class Church {
   @Column({ type: 'enum', enum: Currency, default: Currency.ARS })
   baseCurrency: Currency;
 
+  @Column({ nullable: true })
+  accountDonation: string;
+
   @Column({ unique: true, nullable: true })
   slug: string;
 
