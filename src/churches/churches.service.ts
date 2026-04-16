@@ -12,13 +12,14 @@ import { CreateChurchDto } from './dto/create-church.dto';
 
 @Injectable()
 export class ChurchesService {
+
   constructor(
     @InjectRepository(Church) private churchRepository: Repository<Church>,
     @InjectRepository(ChurchPerson)
     private memberRepository: Repository<ChurchPerson>,
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(Person) private personRepository: Repository<Person>,
-  ) {}
+  ) { }
 
   async create(userId: string, dto: CreateChurchDto) {
     console.log('ChurchesService.create called');
@@ -130,11 +131,25 @@ export class ChurchesService {
 
   async search(query: string) {
     if (!query) return [];
+
+    const normalizedQuery = query
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // elimina acentos
+      .replace(/[^a-z0-9]/g, ''); // elimina TODO excepto letras y números
+
     return this.churchRepository
       .createQueryBuilder('church')
       .where(
-        'LOWER(church.name) LIKE :query OR LOWER(church.address) LIKE :query OR LOWER(church.city) LIKE :query OR LOWER(church.slug) LIKE :query',
-        { query: `%${query.toLowerCase()}%` },
+        `
+        REGEXP_REPLACE(LOWER(unaccent(church.name)), '[^a-z0-9]', '', 'g') LIKE :query
+        OR REGEXP_REPLACE(LOWER(unaccent(church.city)), '[^a-z0-9]', '', 'g') LIKE :query
+        OR REGEXP_REPLACE(LOWER(unaccent(church.address)), '[^a-z0-9]', '', 'g') LIKE :query
+        OR REGEXP_REPLACE(LOWER(unaccent(church.slug)), '[^a-z0-9]', '', 'g') LIKE :query
+        `,
+        {
+          query: `%${normalizedQuery}%`,
+        },
       )
       .take(10)
       .getMany();
@@ -147,7 +162,7 @@ export class ChurchesService {
 
   async updateActive(id: string, dto: any) {
     const church = await this.findOne(id);
-    
+
     // Explicitly update only allowed fields
     if (dto.name !== undefined) church.name = dto.name;
     if (dto.logoUrl !== undefined) church.logoUrl = dto.logoUrl;
