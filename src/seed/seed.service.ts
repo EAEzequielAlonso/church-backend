@@ -312,7 +312,7 @@ export class SeedService {
             slug: churchData.slug,
             plan: PlanType.TRIAL,
             subscriptionStatus: SubscriptionStatus.TRIAL,
-            trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 👈 FIX: Set 14 days trial
+            trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 👈 FIX: Set 30 days trial
             address: 'Calle Falsa 123',
             city: 'Buenos Aires',
             country: 'Argentina',

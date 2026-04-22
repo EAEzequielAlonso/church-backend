@@ -48,7 +48,7 @@ export class ChurchesService {
       coverUrl: dto.coverUrl,
       plan: PlanType.TRIAL,
       subscriptionStatus: SubscriptionStatus.TRIAL,
-      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     });
     const savedChurch = await this.churchRepository.save(church);
     console.log('Church saved:', savedChurch.id);
