@@ -10,6 +10,16 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
+  @Get('overview')
+  @ApiOperation({ summary: 'Get optimized dashboard overview' })
+  async getOverview(@Request() req) {
+    return this.dashboardService.getOverview({
+      churchId: req.user?.churchId || req.query.churchId,
+      personId: req.user?.personId,
+      memberId: req.user?.memberId,
+    });
+  }
+
   @Get('stats')
   @ApiOperation({ summary: 'Get dashboard statistics' })
   async getStats(@Request() req) {
@@ -69,6 +79,7 @@ export class DashboardController {
     return this.dashboardService.getActiveMentorships(
       churchId || req.query.churchId,
       req.user?.personId,
+      req.user?.memberId,
     );
   }
 }
