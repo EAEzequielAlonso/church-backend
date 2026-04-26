@@ -22,4 +22,17 @@ export class GetMinistriesUseCase {
             order: { name: 'ASC' },
         });
     }
+
+    async executeMine(churchId: string, memberId: string): Promise<Ministry[]> {
+        return this.ministryRepo.find({
+            where: { churchId, members: { memberId } },
+            relations: [
+                'leader',
+                'leader.person',
+                'members',
+                'members.member.person',
+            ],
+            order: { name: 'ASC' },
+        });
+    }
 }

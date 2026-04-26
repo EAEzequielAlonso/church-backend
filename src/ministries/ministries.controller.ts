@@ -95,6 +95,12 @@ export class MinistriesController {
     return this.getMinistriesUseCase.execute(churchId);
   }
 
+  @Get('mine')
+  @RequirePermissions(AppPermission.MINISTRY_VIEW)
+  findMine(@CurrentChurch() churchId: string, @Request() req: any) {
+    return this.getMinistriesUseCase.executeMine(churchId, req.user.memberId);
+  }
+
   @Post()
   @RequirePermissions(AppPermission.MINISTRY_MANAGE)
   create(@CurrentChurch() churchId: string, @Body() body: CreateMinistryDto) {

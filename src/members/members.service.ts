@@ -175,6 +175,28 @@ export class MembersService {
     return query.getMany();
   }
 
+  async getUnassignedFollowUps(churchId: string) {
+    // Unassigned follow-ups are visitors/prospects who do NOT have an active FOLLOW_UP mentorship process.
+    return this.memberRepository
+      .createQueryBuilder('member')
+      .leftJoinAndSelect('member.person', 'person')
+      .leftJoinAndSelect('person.user', 'user')
+      .leftJoin('member.church', 'church')
+      .where('church.id = :churchId', { churchId })
+      .andWhere('member.membershipStatus IN (:...statuses)', { statuses: [MembershipStatus.VISITOR, MembershipStatus.PROSPECT] })
+      .andWhere((qb) => {
+        const subQuery = qb.subQuery()
+          .select('mpp.churchPersonId')
+          .from('mentorship_process_participants', 'mpp')
+          .innerJoin('mpp.process', 'mp', 'mp.status = :activeStatus AND mp.type = :followUpType')
+          .getQuery();
+        return `member.id NOT IN ${subQuery}`;
+      })
+      .setParameter('activeStatus', 'ACTIVE') // Using literal string since MentorshipStatus enum might not be imported here
+      .setParameter('followUpType', 'FOLLOW_UP')
+      .getMany();
+  }
+
   async findOne(id: string, churchId: string) {
     const member = await this.memberRepository.findOne({
       where: { id, churchId },

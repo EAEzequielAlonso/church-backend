@@ -73,6 +73,13 @@ export class MembersController {
     return this.membersService.findAll(churchId, status, role);
   }
 
+  @Get('follow-ups/unassigned')
+  @RequirePermissions(AppPermission.MEMBER_VIEW)
+  @ApiOperation({ summary: 'Get unassigned follow-ups' })
+  getUnassignedFollowUps(@CurrentChurch() churchId: string) {
+    return this.membersService.getUnassignedFollowUps(churchId);
+  }
+
   @Get('pending')
   @RequirePermissions(AppPermission.MEMBER_UPDATE)
   @ApiOperation({ summary: 'Get pending join requests' })
