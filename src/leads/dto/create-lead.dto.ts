@@ -14,30 +14,10 @@ export class CreateLeadDto {
   @MaxLength(120)
   name: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(150)
-  church: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  role?: string;
-
   @IsEmail()
   @IsNotEmpty()
   @MaxLength(150)
   email: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  country: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  state?: string;
 
   @IsString()
   @IsOptional()
@@ -47,9 +27,4 @@ export class CreateLeadDto {
   @IsEnum(LeadSource)
   @IsNotEmpty()
   source: LeadSource;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(1000)
-  message?: string;
 }

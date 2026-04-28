@@ -12,7 +12,7 @@ import { User } from './user.entity';
 import { ChurchPerson } from '../../members/entities/church-person.entity';
 
 
-import { MaritalStatus, Sex } from 'src/common/enums';
+import { MaritalStatus, Sex } from '../../common/enums';
 @Entity('persons')
 export class Person {
   @PrimaryGeneratedColumn('uuid')

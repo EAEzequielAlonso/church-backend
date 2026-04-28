@@ -31,19 +31,7 @@ export class Lead {
   name: string;
 
   @Column({ length: 150 })
-  church: string;
-
-  @Column({ length: 100, nullable: true })
-  role: string;
-
-  @Column({ length: 150 })
   email: string;
-
-  @Column({ length: 100 })
-  country: string;
-
-  @Column({ length: 100, nullable: true })
-  state: string;
 
   @Column({ length: 30, nullable: true })
   phone: string;
@@ -54,9 +42,6 @@ export class Lead {
     default: LeadSource.OTHER,
   })
   source: LeadSource;
-
-  @Column({ type: 'text', nullable: true })
-  message: string;
 
   @Column({
     type: 'enum',
