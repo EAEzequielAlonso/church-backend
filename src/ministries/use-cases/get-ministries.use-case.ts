@@ -29,8 +29,7 @@ export class GetMinistriesUseCase {
             relations: [
                 'leader',
                 'leader.person',
-                'members',
-                'members.member.person',
+                'tasks',
             ],
             order: { name: 'ASC' },
         });

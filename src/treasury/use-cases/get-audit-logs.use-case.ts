@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TreasuryAuditLog } from '../entities/treasury-audit-log.entity';
@@ -18,6 +18,8 @@ export interface GetAuditLogsFilterDto {
 
 @Injectable()
 export class GetAuditLogsUseCase {
+  private readonly logger = new Logger(GetAuditLogsUseCase.name);
+
   constructor(
     @InjectRepository(TreasuryAuditLog)
     private readonly auditRepo: Repository<TreasuryAuditLog>,
@@ -87,7 +89,7 @@ export class GetAuditLogsUseCase {
 
             entityIds = Array.from(collectedIds);
         } catch (error) {
-            console.error('Error fetching transaction chain history:', error);
+            this.logger.error('Error fetching transaction chain history', error);
             // Fallback to single ID if chain search fails
             entityIds = [entityId];
         }
@@ -130,4 +132,3 @@ export class GetAuditLogsUseCase {
     };
   }
 }
-

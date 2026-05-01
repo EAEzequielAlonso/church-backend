@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as PDFDocument from 'pdfkit';
@@ -9,6 +9,8 @@ import { es } from 'date-fns/locale';
 
 @Injectable()
 export class ExportBudgetToPdfUseCase {
+  private readonly logger = new Logger(ExportBudgetToPdfUseCase.name);
+
   constructor(
     @InjectRepository(Church)
     private readonly churchRepository: Repository<Church>,
@@ -62,8 +64,8 @@ export class ExportBudgetToPdfUseCase {
         const buffer = Buffer.from(arrayBuffer);
         doc.image(buffer, 50, 45, { width: 50 });
         textX = 110;
-      } catch (e) {
-        console.warn('Could not load church logo for PDF', e);
+      } catch (error) {
+        this.logger.warn(`Could not load church logo for PDF: ${error}`);
       }
     }
 

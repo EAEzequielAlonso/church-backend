@@ -29,6 +29,8 @@ import { FeedbackModule } from './feedback/feedback.module';
 import { LeadsModule } from './leads/leads.module';
 
 import configuration from './config/configuration';
+import { MemoryMonitorService } from './common/memory-monitor.service';
+import { runtimeFlags } from './common/runtime-flags';
 
 @Module({
   imports: [
@@ -36,7 +38,7 @@ import configuration from './config/configuration';
       isGlobal: true,
       load: [configuration],
     }),
-    ScheduleModule.forRoot(),
+    ...(runtimeFlags.schedulesEnabled ? [ScheduleModule.forRoot()] : []),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -51,7 +53,7 @@ import configuration from './config/configuration';
     UsersModule,
     ChurchesModule,
     MinistriesModule,
-    SeedModule,
+    ...(runtimeFlags.seedModuleEnabled ? [SeedModule] : []),
     DashboardModule,
     SubscriptionsModule,
     AgendaModule,
@@ -70,5 +72,6 @@ import configuration from './config/configuration';
     FeedbackModule,
     LeadsModule,
   ],
+  providers: [MemoryMonitorService],
 })
 export class AppModule {}

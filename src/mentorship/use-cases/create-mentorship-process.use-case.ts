@@ -10,14 +10,12 @@ import { Injectable, ForbiddenException } from '@nestjs/common';
 import { FunctionalRole } from '../../common/enums';
 import { MentorshipService } from '../services/mentorship.service';
 import { MentorshipPolicy } from '../policies/mentorship.policy';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class CreateMentorshipProcessUseCase {
   constructor(
     private readonly mentorshipService: MentorshipService,
     private readonly mentorshipPolicy: MentorshipPolicy,
-    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -117,12 +115,6 @@ export class CreateMentorshipProcessUseCase {
     const savedProcess = await this.mentorshipService.save(process);
 
     // 6. Disparar Eventos Estándar de NestJS
-    this.eventEmitter.emit('MentorshipProcessCreatedEvent', {
-      processId: savedProcess.id,
-      churchId: savedProcess.churchId,
-      type: savedProcess.type,
-    });
-
     return savedProcess;
   }
 }

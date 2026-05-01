@@ -342,8 +342,8 @@ export class SubscriptionsService {
       });
       await this.payRep.save(logPayment);
       
-      console.log('[MP] Payment validated:', paymentId);
-      console.log('[MP] Subscription activated:', churchId);
+      this.logger.log(`[MP] Payment validated: ${paymentId}`);
+      this.logger.log(`[MP] Subscription activated: ${churchId}`);
 
       return { success: true, planName: plan.name };
     } catch (error) {

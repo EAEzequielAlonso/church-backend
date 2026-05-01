@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 
 // Entidades (TypeORM Configuration)
 import { MentorshipProcess } from './entities/mentorship-process.entity';
@@ -61,7 +60,6 @@ import { AgendaModule } from '../agenda/agenda.module';
       ChurchPerson,
       Person,
     ]),
-    EventEmitterModule.forRoot(),
     AgendaModule,
   ],
   controllers: [MentorshipController],

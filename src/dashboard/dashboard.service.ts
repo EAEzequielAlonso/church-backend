@@ -9,14 +9,14 @@ import {
   ServiceStatus,
 } from '../worship/entities/worship-service.entity';
 import { CalendarEvent } from '../agenda/entities/calendar-event.entity';
-import { Repository, MoreThan, In } from 'typeorm';
+import { Repository, MoreThan, In, MoreThanOrEqual } from 'typeorm';
 import { MinistryMember } from '../ministries/entities/ministry-member.entity';
 import { GroupParticipant } from '../groups/entities/group-participant.entity';
 import { MentorshipProcess } from '../mentorship/entities/mentorship-process.entity';
-import {
-  MentorshipStatus,
-} from '../mentorship/enums/mentorship.enum';
+import { MentorshipStatus, } from '../mentorship/enums/mentorship.enum';
 import { MentorshipProcessParticipant } from '../mentorship/entities/mentorship-process-participant.entity';
+import { startOfDay } from 'date-fns';
+import { AgendaService } from '../agenda/agenda.service';
 
 interface DashboardOverviewParams {
   churchId: string;
@@ -42,6 +42,7 @@ export class DashboardService {
     private groupParticipantRepo: Repository<GroupParticipant>,
     @InjectRepository(MentorshipProcess)
     private mentorshipProcessRepo: Repository<MentorshipProcess>,
+    private agendaService: AgendaService,
   ) { }
 
   async getStats(churchId: string) {
@@ -106,7 +107,7 @@ export class DashboardService {
 
     const [stats, upcomingActivities, mentorships] = await Promise.all([
       this.getStats(churchId),
-      this.getAgendaSummary(churchId, personId, resolvedMemberId),
+      this.getUpcomingEvents(churchId, personId),
       resolvedMemberId
         ? this.getActiveMentorships(churchId, personId, resolvedMemberId)
         : Promise.resolve([]),
@@ -202,75 +203,79 @@ export class DashboardService {
   }
 
   async getUpcomingEvents(churchId: string, personId: string) {
-    // 1. Get Confirmed Worship Services (Future)
-    const services = await this.worshipRepo.find({
+    // 1. Get user's member context for agenda queries
+    const memberId = await this.resolveMemberId(churchId, personId);
+
+    // 2. Fetch agenda using the same logic as "Mi Agenda"
+    const agenda = await this.agendaService.getUpcomingActivities(
+      personId,
+      memberId,
+      churchId,
+      false,
+      10, // Fetch more to allow merging with worship services
+    );
+
+    // 3. Map agenda items to unified format
+    const events = agenda.events.map((e) => {
+      let link = '/agenda';
+      if (e.type === 'SMALL_GROUP' && e.ownerId) {
+        link = `/groups/${e.ownerId}`;
+      } else if (e.type === 'MINISTRY' && e.ownerId) {
+        link = `/ministries/${e.ownerId}`;
+      }
+      return {
+        id: e.id,
+        type: e.type,
+        title: e.title,
+        date: e.startDate,
+        location: e.location,
+        link,
+      };
+    });
+
+    const sessions = agenda.sessions.map((s) => ({
+      id: s.id,
+      type: 'COUNSELING', // Or SESSION
+      title: s.motive || 'Sesión de Acompañamiento',
+      date: s.date,
+      location: s.location || 'Online / Iglesia',
+      link: `/mentorship/process/${s.processId}`,
+    }));
+
+    const tasks = agenda.tasks.map((t) => ({
+      id: t.id,
+      type: 'OTHER', 
+      title: `Tarea: ${t.title}`,
+      date: t.date,
+      location: 'Pendiente',
+      link: t.processId ? `/mentorship/process/${t.processId}` : '/agenda',
+    }));
+
+    // 4. Get Worship Services
+    const worshipServices = await this.worshipRepo.find({
       where: {
-        churchId: churchId,
+        churchId,
         status: ServiceStatus.CONFIRMED,
-        date: MoreThan(new Date()),
+        date: MoreThanOrEqual(startOfDay(new Date())),
       },
       take: 3,
       order: { date: 'ASC' },
     });
 
-    // 2. Resolve user's ministries and groups
-    const myMinistries = await this.ministryMemberRepo.find({
-      where: { member: { personId, churchId } },
-      relations: ['ministry'],
-    });
-    const myGroups = await this.groupParticipantRepo.find({
-      where: { churchPerson: { personId, churchId } },
-      relations: ['group'],
-    });
+    const mappedWorship = worshipServices.map((s) => ({
+      id: s.id,
+      type: 'WORSHIP',
+      title: s.topic || 'Culto General',
+      date: s.date,
+      location: 'Auditorio',
+      link: `/worship/${s.id}`,
+    }));
 
-    const ownerIds = [
-      churchId,
-      personId,
-      ...myMinistries.map((m) => m.ministry.id),
-      ...myGroups.map((g) => g.group.id),
-    ];
-
-    // 3. Get Calendar Events (Future) relevant to the user
-    const events = await this.eventRepo.find({
-      where: {
-        ownerId: In(ownerIds),
-        startDate: MoreThan(new Date()),
-      },
-      take: 10,
-      order: { startDate: 'ASC' },
-    });
-
-    const combined = [
-      ...services.map((s) => ({
-        id: s.id,
-        type: 'WORSHIP',
-        title: s.topic || 'Culto General',
-        date: s.date,
-        location: 'Auditorio',
-        link: `/worship/${s.id}`,
-      })),
-      ...events.map((event) => {
-        let link = '/agenda';
-        if (event.type === 'SMALL_GROUP' && event.ownerId) {
-          link = `/groups/${event.ownerId}`;
-        } else if (event.type === 'MINISTRY' && event.ownerId) {
-          link = `/ministries/${event.ownerId}`;
-        }
-
-        return {
-          id: event.id,
-          type: event.type,
-          title: event.title,
-          date: event.startDate,
-          location: event.location,
-          link,
-        };
-      }),
-    ];
-
-    combined.sort(
+    // 5. Combine and sort
+    const combined = [...mappedWorship, ...events, ...sessions, ...tasks].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
+
     return combined.slice(0, 3);
   }
 

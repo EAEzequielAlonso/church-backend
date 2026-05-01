@@ -23,8 +23,6 @@ export class ChurchesController {
   @UseGuards(JwtAuthGuard)
   @Post()
   create(@Request() req, @Body() dto: CreateChurchDto) {
-    console.log('Create Church Request Body:', JSON.stringify(dto, null, 2));
-    console.log('User:', req.user);
     return this.churchesService.create(req.user.userId, dto);
   }
 

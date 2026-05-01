@@ -2,6 +2,7 @@ import {
   Injectable,
   ForbiddenException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual, In, Brackets } from 'typeorm';
@@ -21,6 +22,8 @@ import { CreateCalendarEventDto } from './dto/create-calendar-event.dto';
 
 @Injectable()
 export class AgendaService {
+  private readonly logger = new Logger(AgendaService.name);
+
   constructor(
     @InjectRepository(CalendarEvent)
     private readonly eventRepository: Repository<CalendarEvent>,
@@ -200,7 +203,7 @@ export class AgendaService {
         events: finalEvents,
       };
     } catch (error) {
-      console.error('Error in AgendaService:', error);
+      this.logger.error('Error in AgendaService', error);
       throw error;
     }
   }

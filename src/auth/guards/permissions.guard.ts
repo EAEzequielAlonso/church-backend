@@ -3,6 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { DataSource } from 'typeorm';
@@ -15,6 +16,8 @@ import { getPermissionsForRoles } from '../authorization/role-permissions.config
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
+  private readonly logger = new Logger(PermissionsGuard.name);
+
   constructor(
     private reflector: Reflector,
     private readonly dataSource: DataSource,
@@ -42,7 +45,7 @@ export class PermissionsGuard implements CanActivate {
     const isPublicRoute = handlerName.toLowerCase().includes('auth') || className.toLowerCase().includes('auth');
 
     if (!isPublicRoute && !user.isEmailVerified && user.provider === 'local') {
-      console.warn(`[PermissionsGuard] DENIED. User ${user.email} email not verified.`);
+      this.logger.warn(`DENIED. User ${user.email} email not verified.`);
       throw new ForbiddenException('Email no verificado');
     }
 
@@ -78,7 +81,7 @@ export class PermissionsGuard implements CanActivate {
 
     // 3. Church Association Check
     if (!user.churchId && requiredPermissions.length > 0) {
-      console.warn(`[PermissionsGuard] DENIED. User ${user.email} has no church context.`);
+      this.logger.warn(`DENIED. User ${user.email} has no church context.`);
       throw new ForbiddenException('Debes pertenecer a una iglesia para realizar esta acción.');
     }
 
@@ -99,7 +102,7 @@ export class PermissionsGuard implements CanActivate {
     );
 
     if (!hasPermission) {
-      console.warn(`[PermissionsGuard] DENIED. Missing permissions for ${user.email}.`);
+      this.logger.warn(`DENIED. Missing permissions for ${user.email}.`);
       throw new ForbiddenException('Insufficient permissions');
     }
 

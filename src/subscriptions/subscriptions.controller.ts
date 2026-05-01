@@ -7,6 +7,7 @@ import {
   Request,
   BadRequestException,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -16,6 +17,8 @@ import { CurrentChurch } from 'src/common/decorators';
 
 @Controller('subscriptions')
 export class SubscriptionsController {
+  private readonly logger = new Logger(SubscriptionsController.name);
+
   constructor(private readonly subService: SubscriptionsService) {}
 
   @Get('plans')
@@ -77,11 +80,11 @@ export class SubscriptionsController {
 
   @Post('webhook')
   async handleWebhook(@Body() body: any) {
-    console.log('Webhook received:', JSON.stringify(body));
+    this.logger.debug(`Webhook received: ${JSON.stringify(body)}`);
     try {
       return await this.subService.handleWebhook(body);
     } catch (error) {
-      console.error('Error handling webhook: ', error);
+      this.logger.error('Error handling webhook', error);
       return { status: 'error', message: error.message };
     }
   }

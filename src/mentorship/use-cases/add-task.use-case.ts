@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MentorshipService } from '../services/mentorship.service';
 import { MentorshipPolicy } from '../policies/mentorship.policy';
 import { MentorshipProcess } from '../entities/mentorship-process.entity';
@@ -13,7 +12,6 @@ export class AddTaskUseCase {
     private readonly mentorshipService: MentorshipService,
     private readonly mentorshipPolicy: MentorshipPolicy,
     private readonly visibilityPolicy: MentorshipVisibilityPolicy,
-    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(
@@ -54,11 +52,6 @@ export class AddTaskUseCase {
     process.tasks.push(task);
 
     const savedProcess = await this.mentorshipService.save(process);
-
-    this.eventEmitter.emit('MentorshipTaskAddedEvent', {
-      processId: savedProcess.id,
-      taskId: task.id,
-    });
 
     return savedProcess;
   }

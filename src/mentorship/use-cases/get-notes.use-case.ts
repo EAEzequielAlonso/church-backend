@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { validate as isUUID } from 'uuid';
@@ -7,9 +6,6 @@ import { MentorshipNote } from '../entities/mentorship-note.entity';
 import { MentorshipService } from '../services/mentorship.service';
 import { MentorshipPolicy } from '../policies/mentorship.policy';
 import { GetNotesDto } from '../dto/get-notes.dto';
-import { MentorshipNoteType, MentorshipRole } from '../enums/mentorship.enum';
-import { AppPermission } from '../../auth/authorization/permissions.enum';
-
 import { MentorshipVisibilityPolicy } from '../policies/mentorship.visibility-policy';
 
 @Injectable()

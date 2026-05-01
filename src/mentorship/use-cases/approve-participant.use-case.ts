@@ -3,7 +3,6 @@ import { ApproveParticipantDto } from '../dto/mentorship-mutation.dto';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { MentorshipService } from '../services/mentorship.service';
 import { MentorshipPolicy } from '../policies/mentorship.policy';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MentorshipMode, ParticipantStatus } from '../enums/mentorship.enum';
 
 @Injectable()
@@ -11,7 +10,6 @@ export class ApproveParticipantUseCase {
   constructor(
     private readonly mentorshipService: MentorshipService,
     private readonly mentorshipPolicy: MentorshipPolicy,
-    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(dto: ApproveParticipantDto, churchId: string): Promise<MentorshipProcess> {
@@ -39,11 +37,6 @@ export class ApproveParticipantUseCase {
     participant.status = ParticipantStatus.ACCEPTED;
 
     const savedProcess = await this.mentorshipService.save(process);
-
-    this.eventEmitter.emit('MentorshipParticipantApprovedEvent', {
-      processId: savedProcess.id,
-      churchPersonId: participant.churchPersonId,
-    });
 
     return savedProcess;
   }

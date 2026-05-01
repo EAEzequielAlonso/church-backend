@@ -9,6 +9,7 @@ import { Church } from '../churches/entities/church.entity';
 import { ChurchPerson } from '../members/entities/church-person.entity';
 
 import { SubscriptionCronService } from './subscription-cron.service';
+import { runtimeFlags } from '../common/runtime-flags';
 
 @Global()
 @Module({
@@ -22,7 +23,10 @@ import { SubscriptionCronService } from './subscription-cron.service';
     ]),
   ],
   controllers: [SubscriptionsController],
-  providers: [SubscriptionsService, SubscriptionCronService],
+  providers: [
+    SubscriptionsService,
+    ...(runtimeFlags.schedulesEnabled ? [SubscriptionCronService] : []),
+  ],
   exports: [SubscriptionsService],
 })
 export class SubscriptionsModule {}

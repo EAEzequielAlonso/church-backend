@@ -12,9 +12,10 @@ export class DashboardController {
 
   @Get('overview')
   @ApiOperation({ summary: 'Get optimized dashboard overview' })
-  async getOverview(@Request() req) {
+  async getOverview(@Request() req, @Query('churchId') churchId: string) {
+    const userChurchId = churchId || req.user?.churchId;
     return this.dashboardService.getOverview({
-      churchId: req.user?.churchId || req.query.churchId,
+      churchId: userChurchId,
       personId: req.user?.personId,
       memberId: req.user?.memberId,
     });

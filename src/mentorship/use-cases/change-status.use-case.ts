@@ -3,7 +3,6 @@ import { ChangeMentorshipStatusDto } from '../dto/mentorship-mutation.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { MentorshipService } from '../services/mentorship.service';
 import { MentorshipPolicy } from '../policies/mentorship.policy';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MentorshipStatus } from '../enums/mentorship.enum';
 
 @Injectable()
@@ -11,7 +10,6 @@ export class ChangeMentorshipStatusUseCase {
   constructor(
     private readonly mentorshipService: MentorshipService,
     private readonly mentorshipPolicy: MentorshipPolicy,
-    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(dto: ChangeMentorshipStatusDto, churchId: string): Promise<MentorshipProcess> {
@@ -31,11 +29,6 @@ export class ChangeMentorshipStatusUseCase {
     }
 
     const savedProcess = await this.mentorshipService.save(process);
-
-    this.eventEmitter.emit('MentorshipStatusChangedEvent', {
-      processId: savedProcess.id,
-      newStatus: process.status,
-    });
 
     return savedProcess;
   }

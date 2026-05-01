@@ -11,6 +11,7 @@ import { CalendarEvent } from '../agenda/entities/calendar-event.entity';
 import { MentorshipProcess } from '../mentorship/entities/mentorship-process.entity';
 import { MinistryMember } from '../ministries/entities/ministry-member.entity';
 import { GroupParticipant } from '../groups/entities/group-participant.entity';
+import { AgendaModule } from '../agenda/agenda.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { GroupParticipant } from '../groups/entities/group-participant.entity';
       GroupParticipant,
       Church,
     ]),
+    AgendaModule,
   ],
   controllers: [DashboardController],
   providers: [DashboardService],

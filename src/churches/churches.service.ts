@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Church } from './entities/church.entity';
@@ -12,6 +12,7 @@ import { CreateChurchDto } from './dto/create-church.dto';
 
 @Injectable()
 export class ChurchesService {
+  private readonly logger = new Logger(ChurchesService.name);
 
   constructor(
     @InjectRepository(Church) private churchRepository: Repository<Church>,
@@ -22,18 +23,14 @@ export class ChurchesService {
   ) { }
 
   async create(userId: string, dto: CreateChurchDto) {
-    console.log('ChurchesService.create called');
     // 1. Check slug uniqueness
     const slug = dto.slug || this.generateSlug(dto.name);
-    console.log('Checking slug:', slug);
     const existing = await this.churchRepository.findOne({ where: { slug } });
     if (existing) {
-      console.log('Slug taken:', slug);
       throw new BadRequestException('El identificador de la iglesia (slug) ya está en uso. Por favor elige otro.');
     }
 
     // 2. Create Church
-    console.log('Creating church entity...');
     const church = this.churchRepository.create({
       name: dto.name,
       slug,
@@ -51,34 +48,29 @@ export class ChurchesService {
       trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     });
     const savedChurch = await this.churchRepository.save(church);
-    console.log('Church saved:', savedChurch.id);
 
     // 3. Find User & Person
-    console.log('Finding user:', userId);
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['person'],
     });
     if (!user) {
-      console.log('User not found');
       throw new BadRequestException('User not found');
     }
 
     let person = user.person;
     // Robustness: If person missing (should not happen in normal flow but keeps occurring in dev/sync issues), create it.
     if (!person) {
-      console.log('Person missing, attempting creation or link...');
+      this.logger.warn(`Person relation missing for user ${user.id}; repairing link.`);
       // Check if person exists by email to avoid duplication if relation was somehow broken or not linked
       const existingPerson = await this.personRepository.findOne({
         where: { email: user.email },
       });
       if (existingPerson) {
-        console.log('Person found by email, linking...');
         person = existingPerson;
         user.person = person;
         await this.userRepository.save(user);
       } else {
-        console.log('Creating new person...');
         person = this.personRepository.create({
           email: user.email,
           firstName: user.email.split('@')[0], // Fallback name
@@ -89,10 +81,8 @@ export class ChurchesService {
         await this.userRepository.save(user);
       }
     }
-    console.log('Person ready:', person.id);
 
     // 4. Create Admin Membership
-    console.log('Creating membership...');
 
     const member = this.memberRepository.create({
       person: user.person,
@@ -107,12 +97,10 @@ export class ChurchesService {
       membershipStatus: MembershipStatus.MEMBER,
     });
     await this.memberRepository.save(member);
-    console.log('Membership saved');
 
     // 5. Update User Onboarding Status
     user.isOnboarded = true;
     await this.userRepository.save(user);
-    console.log('User onboarding updated');
 
     return savedChurch;
   }

@@ -4,7 +4,6 @@ import { AddMeetingDto } from '../dto/mentorship-content.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { MentorshipService } from '../services/mentorship.service';
 import { MentorshipPolicy } from '../policies/mentorship.policy';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AgendaSyncService } from '../../agenda/agenda-sync.service';
 import { EventSourceType, CalendarEventType } from '../../common/enums';
 import { MentorshipType } from '../enums/mentorship.enum';
@@ -14,7 +13,6 @@ export class AddMeetingUseCase {
   constructor(
     private readonly mentorshipService: MentorshipService,
     private readonly mentorshipPolicy: MentorshipPolicy,
-    private readonly eventEmitter: EventEmitter2,
     private readonly agendaSyncService: AgendaSyncService,
   ) {}
 
@@ -70,11 +68,6 @@ export class AddMeetingUseCase {
 
     savedMeeting.calendarEventId = projection.id;
     await this.mentorshipService.save(savedProcess); // second save to persist calendarEventId
-
-    this.eventEmitter.emit('MentorshipMeetingAddedEvent', {
-      processId: savedProcess.id,
-      meetingTitle: dto.title,
-    });
 
     return savedProcess;
   }

@@ -4,7 +4,6 @@ import { AddParticipantToProcessDto } from '../dto/mentorship-mutation.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { MentorshipService } from '../services/mentorship.service';
 import { MentorshipPolicy } from '../policies/mentorship.policy';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MentorshipRole, ParticipantStatus, MentorshipMode } from '../enums/mentorship.enum';
 import { BadRequestException } from '@nestjs/common';
 
@@ -13,7 +12,6 @@ export class AddParticipantToProcessUseCase {
   constructor(
     private readonly mentorshipService: MentorshipService,
     private readonly mentorshipPolicy: MentorshipPolicy,
-    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(dto: AddParticipantToProcessDto, churchId: string): Promise<MentorshipProcess> {
@@ -53,12 +51,6 @@ export class AddParticipantToProcessUseCase {
     process.participants.push(participant);
 
     const savedProcess = await this.mentorshipService.save(process);
-
-    this.eventEmitter.emit('MentorshipParticipantAddedEvent', {
-      processId: savedProcess.id,
-      churchPersonId: participant.churchPersonId,
-      role: participant.role,
-    });
 
     return savedProcess;
   }
