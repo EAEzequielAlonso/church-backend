@@ -49,6 +49,8 @@ export const ROLE_PERMISSIONS: Record<string, AppPermission[]> = {
     AppPermission.ROLE_MANAGE,
     AppPermission.AGENDA_CREATE_CHURCH,
     AppPermission.AGENDA_CREATE_MINISTRY,
+    AppPermission.RESOURCE_VIEW,
+    AppPermission.RESOURCE_MANAGE,
   ],
 
   [EcclesiasticalRole.ELDER]: [
@@ -66,6 +68,7 @@ export const ROLE_PERMISSIONS: Record<string, AppPermission[]> = {
     AppPermission.PRAYER_VIEW_ALL,
     AppPermission.PRAYER_CREATE,
     AppPermission.FINANCE_VIEW,
+    AppPermission.RESOURCE_VIEW,
   ],
 
   [EcclesiasticalRole.DEACON]: [
@@ -90,6 +93,7 @@ export const ROLE_PERMISSIONS: Record<string, AppPermission[]> = {
     AppPermission.GROUP_VIEW,
     AppPermission.MINISTRY_VIEW,
     AppPermission.LIBRARY_VIEW, // Let members view catalog
+    AppPermission.RESOURCE_VIEW,
   ],
 
   [FunctionalRole.AUDITOR]: [

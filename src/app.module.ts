@@ -17,6 +17,7 @@ import { AgendaModule } from './agenda/agenda.module';
 import { FamiliesModule } from './families/families.module';
 import { LibraryModule } from './library/library.module';
 import { PrayersModule } from './prayers/prayers.module';
+import { ResourcesModule } from './resources/resources.module';
 
 import { InventoryModule } from './inventory/inventory.module';
 import { DonationsModule } from './donations/donations.module';
@@ -60,6 +61,7 @@ import { runtimeFlags } from './common/runtime-flags';
     FamiliesModule,
     LibraryModule,
     PrayersModule,
+    ResourcesModule,
 
     InventoryModule,
     DonationsModule,

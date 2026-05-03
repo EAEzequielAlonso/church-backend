@@ -76,5 +76,10 @@ export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
     AppPermission.LIBRARY_VIEW,
     AppPermission.PRAYER_CREATE,
     AppPermission.PRAYER_VIEW_ALL,
+    AppPermission.RESOURCE_VIEW,
+  ],
+  [FunctionalRole.RESOURCE_MANAGER]: [
+    AppPermission.RESOURCE_VIEW,
+    AppPermission.RESOURCE_MANAGE,
   ],
 };
