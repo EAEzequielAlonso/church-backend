@@ -35,7 +35,7 @@ export const SectionTypeMeta: Record<SectionType, { label: string; description: 
   },
   [SectionType.TIMED_ACTIVITY]: {
     label: 'Tarea Cronometrada',
-    description: 'Actividad con duración definida (bienvenida, ofrenda, etc.)',
+    description: 'Actividad con tiempo (bienvenida, ofrenda, etc.)',
   },
   [SectionType.GLOBAL_ACTIVITY]: {
     label: 'Tarea Global',
