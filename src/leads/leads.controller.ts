@@ -15,8 +15,10 @@ import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadStatusDto } from './dto/update-lead-status.dto';
 import { QueryLeadsDto } from './dto/query-leads.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard, Roles } from '../auth/guards/roles.guard';
-import { SystemRole } from '../common/enums';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { AppPermission } from '../auth/authorization/permissions.enum';
 
 @ApiTags('leads')
 @Controller('leads')
@@ -31,8 +33,8 @@ export class LeadsController {
 
   @Get()
   @ApiBearerAuth()
-  @Roles(SystemRole.ADMIN_APP)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RequirePermissions(AppPermission.ROLE_MANAGE)
+  @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
   @ApiOperation({ summary: 'List leads with pagination and filtering' })
   findAll(@Query() query: QueryLeadsDto) {
     return this.leadsService.findAll(query);
@@ -40,8 +42,8 @@ export class LeadsController {
 
   @Get(':id')
   @ApiBearerAuth()
-  @Roles(SystemRole.ADMIN_APP)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RequirePermissions(AppPermission.ROLE_MANAGE)
+  @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Get a single lead by ID' })
   findOne(@Param('id') id: string) {
     return this.leadsService.findOne(id);
@@ -49,8 +51,8 @@ export class LeadsController {
 
   @Patch(':id/status')
   @ApiBearerAuth()
-  @Roles(SystemRole.ADMIN_APP)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RequirePermissions(AppPermission.ROLE_MANAGE)
+  @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Update lead status' })
   updateStatus(
     @Param('id') id: string,
@@ -61,8 +63,8 @@ export class LeadsController {
 
   @Delete(':id')
   @ApiBearerAuth()
-  @Roles(SystemRole.ADMIN_APP)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RequirePermissions(AppPermission.ROLE_MANAGE)
+  @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Soft delete a lead' })
   remove(@Param('id') id: string) {
     return this.leadsService.remove(id);

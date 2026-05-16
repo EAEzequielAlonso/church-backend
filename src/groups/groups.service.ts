@@ -15,6 +15,7 @@ import { GroupRole, GroupType } from './enums/group.enums';
 import { AgendaSyncService } from '../agenda/agenda-sync.service';
 import { EventSourceType, CalendarEventType } from '../common/enums';
 import { RegisterAttendanceDto, BulkAddParticipantsDto } from './dto/groups.dto';
+import { StudyResource } from '../resources/entities/study-resource.entity';
 
 @Injectable()
 export class GroupsService {
@@ -26,6 +27,8 @@ export class GroupsService {
     private meetingRepo: Repository<GroupMeeting>,
     @InjectRepository(GroupAttendance)
     private attendanceRepo: Repository<GroupAttendance>,
+    @InjectRepository(StudyResource)
+    private studyResourceRepo: Repository<StudyResource>,
     private readonly agendaSyncService: AgendaSyncService,
   ) { }
 
@@ -76,6 +79,8 @@ export class GroupsService {
         'participants',
         'participants.churchPerson',
         'participants.churchPerson.person',
+        'resources',
+        'resources.libraryBook',
         'meetings',
         'meetings.calendarEvent',
         'meetings.attendances',
@@ -175,6 +180,10 @@ export class GroupsService {
     return this.participantRepo.save(participant);
   }
 
+  async joinAsCurrentMember(groupId: string, churchPersonId: string, churchId: string) {
+    return this.enrollParticipant(groupId, churchPersonId, churchId);
+  }
+
   async bulkAddParticipants(
     groupId: string,
     dto: BulkAddParticipantsDto,
@@ -228,6 +237,39 @@ export class GroupsService {
     }
 
     return this.participantRepo.remove(existing);
+  }
+
+  async leaveAsCurrentMember(groupId: string, churchPersonId: string, churchId: string) {
+    return this.removeParticipant(groupId, churchPersonId, churchId);
+  }
+
+  async updateMaterials(groupId: string, churchId: string, resourceIds: string[]) {
+    const group = await this.groupRepo.findOne({
+      where: { id: groupId, churchId },
+      relations: ['resources'],
+    });
+    if (!group) throw new NotFoundException('Group not found');
+
+    if (resourceIds.length === 0) {
+      group.resources = [];
+      group.hasStudyMaterial = false;
+      group.studyMaterial = null;
+      return this.groupRepo.save(group);
+    }
+
+    const resources = await this.studyResourceRepo.find({
+      where: { id: In(resourceIds), churchId },
+      relations: ['libraryBook'],
+    });
+
+    if (resources.length !== resourceIds.length) {
+      throw new ConflictException('Uno o mas recursos no existen o no pertenecen a esta iglesia');
+    }
+
+    group.resources = resources;
+    group.hasStudyMaterial = true;
+    group.studyMaterial = resources.map((resource) => resource.title).join(', ');
+    return this.groupRepo.save(group);
   }
 
   async updateParticipantRole(

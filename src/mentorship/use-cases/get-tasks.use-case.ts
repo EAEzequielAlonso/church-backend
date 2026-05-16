@@ -38,8 +38,9 @@ export class GetTasksUseCase {
     const processRole = process.participants?.find(p => p.churchPersonId === executor.userId)?.role;
     const isManager = this.mentorshipPolicy.canManageProcess(executor.userId, executor.roles, process);
     const isParticipant = !!processRole;
+    const isSupervisor = (executor.permissions || []).includes('COUNSELING_VIEW_SUPERVISION');
 
-    if (!isManager && !isParticipant) {
+    if (!isManager && !isParticipant && !isSupervisor) {
       throw new ForbiddenException('No tienes permiso para ver las tareas de este proceso.');
     }
 

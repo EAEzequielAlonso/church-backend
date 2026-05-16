@@ -1,8 +1,10 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard, Roles } from '../auth/guards/roles.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { AppPermission } from '../auth/authorization/permissions.enum';
 import { CurrentChurch } from '../common/decorators';
-import { FunctionalRole } from '../common/enums';
 import { TransactionType } from './enums/treasury.enums';
 
 import { GetSummaryUseCase } from './use-cases/get-summary.use-case';
@@ -14,7 +16,7 @@ import { GetTrendAnalysisUseCase } from './use-cases/get-trend-analysis.use-case
 
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('treasury/reports')
-@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
 export class ReportsController {
   constructor(
     private readonly getSummaryUseCase: GetSummaryUseCase,
@@ -26,11 +28,7 @@ export class ReportsController {
   ) {}
 
   @Get('summary')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
+  @RequirePermissions(AppPermission.FINANCE_VIEW)
   getSummary(
     @CurrentChurch() churchId: string,
     @Query('startDate') startDate: string,
@@ -40,11 +38,7 @@ export class ReportsController {
   }
 
   @Get('cashflow')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
+  @RequirePermissions(AppPermission.FINANCE_VIEW)
   getCashflow(
     @CurrentChurch() churchId: string,
     @Query('startDate') startDate: string,
@@ -54,11 +48,7 @@ export class ReportsController {
   }
 
   @Get('category-breakdown')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
+  @RequirePermissions(AppPermission.FINANCE_VIEW)
   getCategoryBreakdown(
     @CurrentChurch() churchId: string,
     @Query('startDate') startDate: string,
@@ -74,11 +64,7 @@ export class ReportsController {
   }
 
   @Get('ministry-breakdown')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
+  @RequirePermissions(AppPermission.FINANCE_VIEW)
   getMinistryBreakdown(
     @CurrentChurch() churchId: string,
     @Query('startDate') startDate: string,
@@ -92,21 +78,13 @@ export class ReportsController {
   }
 
   @Get('account-balances')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
+  @RequirePermissions(AppPermission.FINANCE_VIEW)
   getAccountBalances(@CurrentChurch() churchId: string) {
     return this.getAccountBalancesUseCase.execute(churchId);
   }
 
   @Get('trends')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
+  @RequirePermissions(AppPermission.FINANCE_VIEW)
   getTrends(
     @CurrentChurch() churchId: string,
     @Query('months') months: number,
@@ -114,3 +92,5 @@ export class ReportsController {
     return this.getTrendAnalysisUseCase.execute(churchId, months || 12);
   }
 }
+
+

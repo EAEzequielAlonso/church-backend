@@ -8,9 +8,8 @@ import { Repository, In } from 'typeorm';
 import { PrayerRequest } from './entities/prayer-request.entity';
 import { PrayerUpdate } from './entities/prayer-update.entity';
 import { ChurchPerson } from '../members/entities/church-person.entity';
-import { PrayerRequestStatus, PrayerRequestVisibility } from '../common/enums';
-import { AppPermission as PermEnum } from '../auth/authorization/permissions.enum';
-import { getPermissionsForRoles } from '../auth/authorization/role-permissions.config';
+import { PrayerRequestStatus, PrayerRequestVisibility, FunctionalRole } from '../common/enums';
+import { AppPermission } from '../auth/authorization/permissions.enum';
 
 @Injectable()
 export class PrayersService {
@@ -48,13 +47,12 @@ export class PrayersService {
   async findAll(
     churchId: string,
     viewerMemberId: string,
-    viewerRoles: string[],
+    permissions: AppPermission[],
     page: number = 1,
     limit: number = 10,
     statusFilter?: string,
   ) {
-    const permissions = getPermissionsForRoles(viewerRoles);
-    const canViewAll = permissions.includes(PermEnum.PRAYER_VIEW_ALL); // Equivalent to "Can Moderate" basically
+    const canViewAll = permissions.includes(AppPermission.PRAYER_VIEW_ALL); // Equivalent to "Can Moderate" basically
 
     // Query Logic
     const query = this.requestRepo
@@ -215,17 +213,16 @@ export class PrayersService {
     request.isHidden = isHidden;
     return this.requestRepo.save(request);
   }
-  async delete(requestId: string, churchId: string, memberId: string, userRoles: string[]) {
+  async delete(requestId: string, churchId: string, memberId: string, permissions: AppPermission[]) {
     const request = await this.requestRepo.findOne({
       where: { id: requestId, churchId },
       relations: ['member'],
     });
     if (!request) throw new NotFoundException('Petición no encontrada');
-
+  
     const isAuthor = request.member.id === memberId;
-    const permissions = getPermissionsForRoles(userRoles);
-    const canManage = permissions.includes(PermEnum.PRAYER_MANAGE);
-
+    const canManage = permissions.includes(AppPermission.PRAYER_MANAGE);
+  
     if (!isAuthor && !canManage) {
       throw new ForbiddenException(
         'No tienes permiso para eliminar esta petición',
@@ -242,3 +239,4 @@ export class PrayersService {
     return this.requestRepo.save(request);
   }
 }
+

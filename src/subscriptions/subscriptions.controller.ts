@@ -11,9 +11,12 @@ import {
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard, Roles } from '../auth/guards/roles.guard';
-import { FunctionalRole } from '../common/enums';
-import { CurrentChurch } from 'src/common/decorators';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { AppPermission } from '../auth/authorization/permissions.enum';
+import { CurrentChurch, CurrentUser } from '../common/decorators';
+import { SecurityContext } from '../auth/security-context.interface';
 
 @Controller('subscriptions')
 export class SubscriptionsController {
@@ -26,44 +29,43 @@ export class SubscriptionsController {
     return this.subService.findAllPlans();
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
+  @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
+  @RequirePermissions(AppPermission.CHURCH_VIEW)
   @Get('current')
-  async getCurrentSubscription(@Request() req) {
-    const churchId = req.user.churchId;
+  async getCurrentSubscription(@CurrentChurch() churchId: string) {
     if (!churchId)
       throw new BadRequestException('User not associated with a church');
     const sub = await this.subService.getCurrentSubscription(churchId);
     return sub || {};
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
+  @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
+  @RequirePermissions(AppPermission.CHURCH_VIEW)
   @Get('payments')
-  async getPayments(@Request() req) {
-    const churchId = req.user.churchId;
+  async getPayments(@CurrentChurch() churchId: string) {
     if (!churchId)
       throw new BadRequestException('User not associated with a church');
     return this.subService.getPayments(churchId);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
+  @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
+  @RequirePermissions(AppPermission.CHURCH_VIEW)
   @Get('usage')
-  async getUsage(@Request() req) {
-    const churchId = req.user.churchId;
+  async getUsage(@CurrentChurch() churchId: string) {
     if (!churchId)
       throw new BadRequestException('User not associated with a church');
     return this.subService.getSubscriptionUsage(churchId);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(FunctionalRole.ADMIN_CHURCH, FunctionalRole.AUDITOR)
+  @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
+  @RequirePermissions(AppPermission.CHURCH_VIEW)
   @Post(['subscribe', 'create-checkout'])
-  async createSubscriptionLink(@Request() req, @Body('planId') planId: string) {
-    // req.user from JWT strategy
-    const churchId = req.user.churchId;
-    const email = req.user.email;
+  async createSubscriptionLink(
+    @CurrentChurch() churchId: string,
+    @CurrentUser() securityContext: SecurityContext,
+    @Body('planId') planId: string,
+  ) {
+    const email = securityContext.email;
     if (!churchId)
       throw new BadRequestException(
         'User needs to be associated with a church',
@@ -71,6 +73,7 @@ export class SubscriptionsController {
 
     return this.subService.createSubscriptionLink(churchId, planId, email);
   }
+
 
   @Get('validate-payment')
   async validatePayment(@Query('payment_id') paymentId: string) {

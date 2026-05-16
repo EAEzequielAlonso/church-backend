@@ -12,7 +12,10 @@ import {
 import { AppPermission } from '../auth/authorization/permissions.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BulkCreateAssignmentsDto } from './dto/create-assignment.dto';
-import { CurrentChurch } from '../common/decorators';
+import { CurrentChurch, CurrentUser } from '../common/decorators';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { SecurityContext } from '../auth/security-context.interface';
 
 import { GetMinistryAssignmentsUseCase } from './use-cases/get-ministry-assignments.use-case';
 import { CreateMinistryAssignmentsUseCase } from './use-cases/create-ministry-assignments.use-case';
@@ -20,8 +23,14 @@ import { DeleteMinistryAssignmentUseCase } from './use-cases/delete-ministry-ass
 import { RequirePermissions } from 'src/auth/decorators/require-permissions.decorator';
 
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
+
 @Controller('ministries/:id/schedule')
-@UseGuards(JwtAuthGuard, SubscriptionGuard)
+@UseGuards(
+  JwtAuthGuard,
+  SecurityContextGuard,
+  PermissionsGuard,
+  SubscriptionGuard,
+)
 export class MinistriesScheduleController {
   constructor(
     private readonly getAssignmentsUseCase: GetMinistryAssignmentsUseCase,
@@ -43,7 +52,7 @@ export class MinistriesScheduleController {
   @RequirePermissions(AppPermission.MINISTRY_MANAGE)
   createAssignments(
     @Param('id') ministryId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Body() body: BulkCreateAssignmentsDto,
   ) {
@@ -51,9 +60,9 @@ export class MinistriesScheduleController {
       ministryId,
       body.assignments,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0], // Assuming the use case needs one or we pass the array if updated
     );
   }
 
@@ -62,16 +71,17 @@ export class MinistriesScheduleController {
   deleteAssignment(
     @Param('id') ministryId: string,
     @Param('assignmentId') assignmentId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ) {
     return this.deleteAssignmentUseCase.execute(
       ministryId,
       assignmentId,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 }
+

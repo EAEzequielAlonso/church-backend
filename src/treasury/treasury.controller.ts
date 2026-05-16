@@ -8,21 +8,24 @@ import {
   Patch,
   Param,
   Delete,
-  Req,
   UseInterceptors,
   ClassSerializerInterceptor,
+  Res,
+  Req,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard, Roles } from '../auth/guards/roles.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { AppPermission } from '../auth/authorization/permissions.enum';
 import { CurrentChurch, CurrentUser } from '../common/decorators';
-import { FunctionalRole } from '../common/enums';
+import { SecurityContext } from '../auth/security-context.interface';
 
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { CreateAccountDto, UpdateAccountDto } from './dto/account.dto';
 
 import { ReportsService } from './reports.service';
 import { Response, Request } from 'express';
-import { Res } from '@nestjs/common';
 
 // Use Cases — Transactions
 import { CreateTransactionUseCase } from './use-cases/create-transaction.use-case';
@@ -59,8 +62,9 @@ import { ClosedPeriod } from './entities/closed-period.entity';
 import { AuditEntityType, AuditAction } from './enums/treasury.enums';
 
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
+
 @Controller('treasury')
-@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
 @UseInterceptors(ClassSerializerInterceptor)
 export class TreasuryController {
   constructor(
@@ -99,29 +103,23 @@ export class TreasuryController {
   // ═══════════════════════════════════════════════════════════════════════════
 
   @Post('transactions')
-  @Roles(FunctionalRole.TREASURER)
   createTransaction(
     @Body() data: any,
     @CurrentChurch() churchId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() securityContext: SecurityContext,
     @Req() req: Request,
   ) {
     return this.createTransactionUseCase.execute({
       ...data,
       churchId,
-      userId: user.userId,
-      userRole: user.functionalRole,
-      userEmail: user.email,
-      ipAddress: req.ip || req.socket?.remoteAddress || null,
+      userId: securityContext.userId,
+      userRole: (securityContext.functionalRoles?.[0] ?? null),
+      userEmail: securityContext.email,
+      ipAddress: req.ip || (req as any).socket?.remoteAddress || null,
     });
   }
 
   @Get('transactions')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
   getTransactions(
     @CurrentChurch() churchId: string,
     @Query('startDate') startDate?: string,
@@ -155,31 +153,25 @@ export class TreasuryController {
   }
 
   @Patch('transactions/:id')
-  @Roles(FunctionalRole.TREASURER)
   updateTransaction(
     @Param('id') id: string,
     @Body() data: any,
     @CurrentChurch() churchId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() securityContext: SecurityContext,
     @Req() req: Request,
   ) {
     return this.updateTransactionUseCase.execute({
       id,
       churchId,
-      userId: user.userId,
-      userRole: user.functionalRole,
-      userEmail: user.email,
-      ipAddress: req.ip || req.socket?.remoteAddress || null,
+      userId: securityContext.userId,
+      userRole: (securityContext.functionalRoles?.[0] ?? null),
+      userEmail: securityContext.email,
+      ipAddress: req.ip || (req as any).socket?.remoteAddress || null,
       ...data,
     });
   }
 
   @Get('audit')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
   getAuditLogs(
     @CurrentChurch() churchId: string,
     @Query('startDate') startDate?: string,
@@ -208,25 +200,23 @@ export class TreasuryController {
   }
 
   @Delete('transactions/:id')
-  @Roles(FunctionalRole.TREASURER)
   deleteTransaction(
     @Param('id') id: string,
     @CurrentChurch() churchId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() securityContext: SecurityContext,
     @Req() req: Request,
   ) {
     return this.deleteTransactionUseCase.execute(
       id,
       churchId,
-      user.userId || user.id,
-      user.functionalRole,
-      user.email,
-      req.ip || req.socket?.remoteAddress || null,
+      securityContext.userId,
+      (securityContext.functionalRoles?.[0] ?? null),
+      securityContext.email,
+      req.ip || (req as any).socket?.remoteAddress || null,
     );
   }
 
   @Post('transactions/:id/correct')
-  @Roles(FunctionalRole.TREASURER)
   correctTransaction(
     @Param('id') id: string,
     @Body()
@@ -239,16 +229,16 @@ export class TreasuryController {
       newDescription?: string;
     },
     @CurrentChurch() churchId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() securityContext: SecurityContext,
     @Req() req: Request,
   ) {
     return this.correctTransactionUseCase.execute({
       transactionId: id,
       churchId,
-      userId: user.userId || user.id,
-      userRole: user.functionalRole,
-      userEmail: user.email,
-      ipAddress: req.ip || req.socket?.remoteAddress || null,
+      userId: securityContext.userId,
+      userRole: (securityContext.functionalRoles?.[0] ?? null),
+      userEmail: securityContext.email,
+      ipAddress: req.ip || (req as any).socket?.remoteAddress || null,
       ...data,
     });
   }
@@ -258,11 +248,6 @@ export class TreasuryController {
   // ═══════════════════════════════════════════════════════════════════════════
 
   @Get('reports/ppt')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
   async getPPTReport(@CurrentChurch() churchId: string, @Res() res: Response) {
     const { data: transactions } =
       await this.getTransactionsUseCase.execute(churchId);
@@ -289,68 +274,60 @@ export class TreasuryController {
   // ═══════════════════════════════════════════════════════════════════════════
 
   @Post('accounts')
-  @Roles(FunctionalRole.TREASURER)
   createAccount(
     @Body() dto: CreateAccountDto,
     @CurrentChurch() churchId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() securityContext: SecurityContext,
     @Req() req: Request,
   ) {
     return this.createAccountUseCase.execute(
       dto,
       churchId,
-      user.userId || user.id,
-      user.functionalRole,
-      user.email,
-      req.ip || req.socket?.remoteAddress || null,
+      securityContext.userId,
+      (securityContext.functionalRoles?.[0] ?? null),
+      securityContext.email,
+      req.ip || (req as any).socket?.remoteAddress || null,
     );
   }
 
   @Get('accounts')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
   getAccounts(@CurrentChurch() churchId: string) {
     return this.getAccountsUseCase.execute(churchId);
   }
 
   @Patch('accounts/:id')
-  @Roles(FunctionalRole.TREASURER)
   updateAccount(
     @Param('id') id: string,
     @Body() dto: UpdateAccountDto,
     @CurrentChurch() churchId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() securityContext: SecurityContext,
     @Req() req: Request,
   ) {
     return this.updateAccountUseCase.execute(
       id,
       churchId,
       dto,
-      user.userId || user.id,
-      user.functionalRole,
-      user.email,
-      req.ip || req.socket?.remoteAddress || null,
+      securityContext.userId,
+      (securityContext.functionalRoles?.[0] ?? null),
+      securityContext.email,
+      req.ip || (req as any).socket?.remoteAddress || null,
     );
   }
 
   @Delete('accounts/:id')
-  @Roles(FunctionalRole.TREASURER)
   deleteAccount(
     @Param('id') id: string,
     @CurrentChurch() churchId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() securityContext: SecurityContext,
     @Req() req: Request,
   ) {
     return this.deleteAccountUseCase.execute(
       id,
       churchId,
-      user.userId || user.id,
-      user.functionalRole,
-      user.email,
-      req.ip || req.socket?.remoteAddress || null,
+      securityContext.userId,
+      (securityContext.functionalRoles?.[0] ?? null),
+      securityContext.email,
+      req.ip || (req as any).socket?.remoteAddress || null,
     );
   }
 
@@ -359,7 +336,6 @@ export class TreasuryController {
   // ═══════════════════════════════════════════════════════════════════════════
 
   @Post('categories')
-  @Roles(FunctionalRole.TREASURER)
   createCategory(
     @Body() dto: CreateCategoryDto,
     @CurrentChurch() churchId: string,
@@ -368,11 +344,6 @@ export class TreasuryController {
   }
 
   @Get('categories')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
   getCategories(
     @CurrentChurch() churchId: string,
     @Query('type') type?: string,
@@ -381,7 +352,6 @@ export class TreasuryController {
   }
 
   @Patch('categories/:id')
-  @Roles(FunctionalRole.TREASURER)
   updateCategory(
     @Param('id') id: string,
     @Body() dto: UpdateCategoryDto,
@@ -391,7 +361,6 @@ export class TreasuryController {
   }
 
   @Delete('categories/:id')
-  @Roles(FunctionalRole.TREASURER)
   deleteCategory(@Param('id') id: string, @CurrentChurch() churchId: string) {
     return this.deleteCategoryUseCase.execute(id, churchId);
   }
@@ -401,11 +370,6 @@ export class TreasuryController {
   // ═══════════════════════════════════════════════════════════════════════════
 
   @Get('periods/status')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
   getPeriodStatus(
     @CurrentChurch() churchId: string,
     @Query('year') year: string,
@@ -419,36 +383,34 @@ export class TreasuryController {
   }
 
   @Post('periods/close')
-  @Roles(FunctionalRole.TREASURER)
   closePeriod(
     @Body() data: { year: number; month: number },
     @CurrentChurch() churchId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() securityContext: SecurityContext,
     @Req() req: Request,
   ) {
     return this.closePeriodUseCase.execute({
       churchId,
-      userId: user.userId || user.id,
-      userRole: user.functionalRole,
-      userEmail: user.email,
-      ipAddress: req.ip || req.socket?.remoteAddress || null,
+      userId: securityContext.userId,
+      userRole: (securityContext.functionalRoles?.[0] ?? null),
+      userEmail: securityContext.email,
+      ipAddress: req.ip || (req as any).socket?.remoteAddress || null,
       year: data.year,
       month: data.month,
     });
   }
 
   @Post('periods/:year/:month/reopen')
-  @Roles(FunctionalRole.ADMIN_CHURCH)
   reopenPeriod(
     @Param('year') year: string,
     @Param('month') month: string,
     @Body() data: { reason: string },
     @CurrentChurch() churchId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() securityContext: SecurityContext,
   ) {
     return this.reopenPeriodUseCase.execute({
       churchId,
-      userId: user.userId || user.id,
+      userId: securityContext.userId,
       year: parseInt(year, 10),
       month: parseInt(month, 10),
       reason: data.reason,
@@ -456,11 +418,6 @@ export class TreasuryController {
   }
 
   @Get('periods')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.ADMIN_CHURCH,
-    FunctionalRole.AUDITOR,
-  )
   getPeriods(@CurrentChurch() churchId: string) {
     return this.closedPeriodRepo.find({
       where: { churchId },
@@ -469,3 +426,5 @@ export class TreasuryController {
     });
   }
 }
+
+

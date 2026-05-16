@@ -56,6 +56,9 @@ export class MentorshipVisibilityPolicy {
     const isManager = this.mentorshipPolicy.canManageProcess(user.userId, user.roles, task.process);
     if (isManager) return true;
 
+    const isSupervisor = user.permissions.includes(AppPermission.COUNSELING_VIEW_SUPERVISION);
+    if (isSupervisor) return true;
+
     const isAssigned = task.assignedChurchPersonId === user.userId;
     const isParticipant = task.process?.participants?.some((p) => p.churchPersonId === user.userId);
     const isGroupTask = task.isGroupTask;

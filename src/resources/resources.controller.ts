@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseUUIDPipe } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 import { CurrentChurch } from '../common/decorators';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
@@ -31,7 +32,7 @@ import { UpdateResourceUseCase } from './use-cases/update-resource.use-case';
 import { DeleteResourceUseCase } from './use-cases/delete-resource.use-case';
 
 @Controller('study')
-@UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
 export class ResourcesController {
   constructor(
     private readonly getCollectionsUc: GetCollectionsUseCase,

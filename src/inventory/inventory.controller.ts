@@ -8,7 +8,6 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
   ParseUUIDPipe,
   ParseIntPipe,
   DefaultValuePipe,
@@ -19,7 +18,12 @@ import {
   RegisterMovementDto,
 } from './dto/inventory.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentChurch } from '../common/decorators';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { AppPermission } from '../auth/authorization/permissions.enum';
+import { CurrentChurch, CurrentUser } from '../common/decorators';
+import { SecurityContext } from '../auth/security-context.interface';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateInventoryItemUseCase } from './use-cases/create-inventory-item.use-case';
 import { FindInventoryItemsUseCase } from './use-cases/find-inventory-items.use-case';
@@ -34,7 +38,7 @@ import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @ApiTags('Inventory')
 @ApiBearerAuth()
 @Controller('inventory')
-@UseGuards(JwtAuthGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
 export class InventoryController {
   constructor(
     private readonly createItemUseCase: CreateInventoryItemUseCase,
@@ -50,6 +54,7 @@ export class InventoryController {
   // ─── READ (any authenticated user) ─────────────────────────────────────────
 
   @Get()
+  @RequirePermissions(AppPermission.INVENTORY_VIEW)
   findAll(
     @CurrentChurch() churchId: string,
     @Query('ministryId') ministryId?: string,
@@ -59,6 +64,7 @@ export class InventoryController {
   }
 
   @Get('movements')
+  @RequirePermissions(AppPermission.INVENTORY_VIEW)
   getMovements(
     @CurrentChurch() churchId: string,
     @Query('itemId') itemId?: string,
@@ -69,6 +75,7 @@ export class InventoryController {
   }
 
   @Get(':id')
+  @RequirePermissions(AppPermission.INVENTORY_VIEW)
   findOne(
     @CurrentChurch() churchId: string,
     @Param('id', ParseUUIDPipe) id: string,
@@ -79,67 +86,72 @@ export class InventoryController {
   // ─── WRITE (policy enforced inside use-case) ───────────────────────────────
 
   @Post()
+  @RequirePermissions(AppPermission.INVENTORY_MANAGE)
   create(
     @CurrentChurch() churchId: string,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
     @Body() dto: CreateInventoryItemDto,
   ) {
     return this.createItemUseCase.execute(
       churchId,
-      req.user.id,
-      req.user.roles ?? [],
+      securityContext.userId,
+      securityContext.functionalRoles ?? [],
       dto,
     );
   }
 
   @Patch(':id')
+  @RequirePermissions(AppPermission.INVENTORY_MANAGE)
   update(
     @CurrentChurch() churchId: string,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateInventoryItemDto,
   ) {
     return this.updateItemUseCase.execute(
       churchId,
       id,
-      req.user.roles ?? [],
+      securityContext.functionalRoles ?? [],
       dto,
     );
   }
 
   @Post('movement')
+  @RequirePermissions(AppPermission.INVENTORY_MANAGE)
   registerMovement(
     @CurrentChurch() churchId: string,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
     @Body() dto: RegisterMovementDto,
   ) {
     return this.registerMovementUseCase.execute(
       churchId,
-      req.user.id,
-      req.user.roles ?? [],
+      securityContext.userId,
+      securityContext.functionalRoles ?? [],
       dto,
     );
   }
 
   @Patch(':id/deactivate')
+  @RequirePermissions(AppPermission.INVENTORY_MANAGE)
   deactivate(
     @CurrentChurch() churchId: string,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.deactivateItemUseCase.execute(
       churchId,
       id,
-      req.user.roles ?? [],
+      securityContext.functionalRoles ?? [],
     );
   }
 
   @Delete(':id')
+  @RequirePermissions(AppPermission.INVENTORY_MANAGE)
   delete(
     @CurrentChurch() churchId: string,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.deleteItemUseCase.execute(churchId, id, req.user.roles ?? []);
+    return this.deleteItemUseCase.execute(churchId, id, securityContext.functionalRoles ?? []);
   }
 }

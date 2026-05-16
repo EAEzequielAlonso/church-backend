@@ -3,11 +3,13 @@ import {
   Patch,
   Get,
   Body,
-  Request,
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { CurrentUser } from '../common/decorators';
+import { SecurityContext } from '../auth/security-context.interface';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
@@ -17,17 +19,21 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SecurityContextGuard)
   @Get('profile')
   @ApiOperation({ summary: 'Get user profile' })
-  getProfile(@Request() req) {
-    return this.usersService.findOne(req.user.userId);
+  getProfile(@CurrentUser() securityContext: SecurityContext) {
+    return this.usersService.findOne(securityContext.userId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SecurityContextGuard)
   @Patch('profile')
   @ApiOperation({ summary: 'Update user profile' })
-  updateProfile(@Request() req, @Body() dto: UpdateProfileDto) {
-    return this.usersService.updateProfile(req.user.userId, dto);
+  updateProfile(
+    @CurrentUser() securityContext: SecurityContext,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.usersService.updateProfile(securityContext.userId, dto);
   }
 }
+

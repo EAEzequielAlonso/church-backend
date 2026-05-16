@@ -8,15 +8,16 @@ import {
   Delete,
   UseGuards,
   Query,
-  Request,
 } from '@nestjs/common';
 import { MembersService } from './members.service';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { AppPermission } from '../auth/authorization/permissions.enum';
-import { CurrentChurch } from '../common/decorators';
+import { CurrentChurch, CurrentUser } from '../common/decorators';
+import { SecurityContext } from '../auth/security-context.interface';
 import { MembershipStatus } from './enums/membership-status.enum';
 import { ApproveMemberDto } from './dto/approve-member.dto';
 import { FunctionalRole } from '../common/enums';
@@ -31,7 +32,7 @@ import {
 
 @ApiTags('Members')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
 @Controller('members')
 export class MembersController {
   constructor(private readonly membersService: MembersService) { }
@@ -48,9 +49,12 @@ export class MembersController {
 
   @Post('request-access')
   @ApiOperation({ summary: 'Request to join a church' })
-  requestAccess(@Body('churchId') churchId: string, @Request() req) {
+  requestAccess(
+    @Body('churchId') churchId: string,
+    @CurrentUser() securityContext: SecurityContext,
+  ) {
     return this.membersService.requestJoin(
-      req.user.userId,
+      securityContext.userId,
       churchId,
     );
   }
@@ -81,45 +85,45 @@ export class MembersController {
   }
 
   @Get('pending')
-  @RequirePermissions(AppPermission.MEMBER_UPDATE)
+  @RequirePermissions(AppPermission.MEMBERSHIP_REQUEST_VIEW)
   @ApiOperation({ summary: 'Get pending join requests' })
   getPendingRequests(@CurrentChurch() churchId: string) {
     return this.membersService.getPendingRequests(churchId);
   }
 
   @Get(':id')
-  @RequirePermissions(AppPermission.MEMBER_UPDATE)
+  @RequirePermissions(AppPermission.MEMBER_VIEW)
   @ApiOperation({ summary: 'Get a member' })
   findOne(@Param('id') id: string, @CurrentChurch() churchId: string) {
     return this.membersService.findOne(id, churchId);
   }
 
   @Get(':id/details')
-  @RequirePermissions(AppPermission.MEMBER_UPDATE)
+  @RequirePermissions(AppPermission.MEMBER_VIEW)
   @ApiOperation({ summary: 'Get member detailed info' })
   getMemberDetails(@Param('id') id: string, @CurrentChurch() churchId: string) {
     return this.membersService.getMemberDetails(id, churchId);
   }
 
   @Patch(':id')
-  @RequirePermissions(AppPermission.MEMBER_UPDATE)
+  @RequirePermissions(AppPermission.MEMBER_ECCLESIASTICAL_ROLE_MANAGE)
   @ApiOperation({ summary: 'Update a member' })
   update(
     @Param('id') id: string,
     @Body() updateData: any,
     @CurrentChurch() churchId: string,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
   ) {
     return this.membersService.update(
       id,
       updateData,
       churchId,
-      req.user?.memberId,
+      securityContext.churchPersonId,
     );
   }
 
   @Post(':id/approve')
-  @RequirePermissions(AppPermission.MEMBER_UPDATE)
+  @RequirePermissions(AppPermission.MEMBERSHIP_REQUEST_MANAGE)
   @ApiOperation({ summary: 'Approve a pending join request' })
   approve(
     @Param('id') joinRequestId: string,
@@ -130,14 +134,14 @@ export class MembersController {
   }
 
   @Post(':id/reject')
-  @RequirePermissions(AppPermission.MEMBER_UPDATE)
+  @RequirePermissions(AppPermission.MEMBERSHIP_REQUEST_MANAGE)
   @ApiOperation({ summary: 'Reject a pending join request' })
   reject(@Param('id') joinRequestId: string, @CurrentChurch() churchId: string) {
     return this.membersService.rejectMember(joinRequestId, churchId);
   }
 
   @Post(':id/invite')
-  @RequirePermissions(AppPermission.MEMBER_UPDATE)
+  @RequirePermissions(AppPermission.MEMBERSHIP_REQUEST_MANAGE)
   @ApiOperation({ summary: 'Send invitation link to a member' })
   invite(@Param('id') id: string, @CurrentChurch() churchId: string) {
     return this.membersService.inviteMember(id, churchId);

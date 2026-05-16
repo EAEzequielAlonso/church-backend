@@ -6,7 +6,6 @@ import { JwtPayload } from './interfaces';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
 import { Repository } from 'typeorm';
-import { getPermissionsForRoles } from './authorization/role-permissions.config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -41,3 +40,5 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     };
   }
 }
+
+

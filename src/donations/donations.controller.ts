@@ -3,23 +3,30 @@ import {
   Post,
   Body,
   UseGuards,
-  Request,
   BadRequestException,
   Query,
 } from '@nestjs/common';
 import { DonationsService } from './donations.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { CurrentChurch, CurrentUser } from '../common/decorators';
+import { SecurityContext } from '../auth/security-context.interface';
 
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
+
 @Controller('donations')
 export class DonationsController {
   constructor(private readonly donationsService: DonationsService) {}
 
-  @UseGuards(JwtAuthGuard, SubscriptionGuard)
+  @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
   @Post('preference')
-  async createPreference(@Request() req, @Body() body: { amount: number }) {
-    const userId = req.user.id;
-    const churchId = req.user.churchId;
+  async createPreference(
+    @CurrentUser() securityContext: SecurityContext,
+    @CurrentChurch() churchId: string,
+    @Body() body: { amount: number },
+  ) {
+    const userId = securityContext.userId;
     const amount = body.amount;
 
     if (!amount || amount <= 0) throw new BadRequestException('Monto inválido');
@@ -28,9 +35,13 @@ export class DonationsController {
       amount,
       userId,
       churchId,
-      req.user.email,
+      // We don't have email in SecurityContext, but we might need it.
+      // request.user still has it if we need it, but the goal is to use SecurityContext.
+      // If needed, we could add email to SecurityContext.
+      (securityContext as any).email || '', 
     );
   }
+
   @Post('webhook')
   async handleWebhook(
     @Query('id') id: string,

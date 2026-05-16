@@ -11,36 +11,33 @@ import {
 } from '@nestjs/common';
 import { PrayersService } from './prayers.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { AppPermission } from '../auth/authorization/permissions.enum';
 import { CurrentChurch, CurrentUser } from '../common/decorators';
 import { PrayerRequestVisibility } from '../common/enums';
+import { SecurityContext } from '../auth/security-context.interface';
 
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
+
 @Controller('prayers')
-@UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
 export class PrayersController {
   constructor(private readonly prayersService: PrayersService) {}
 
   @Get()
-  // No specific permission required to TRY to view, but service filters.
-  // However, usually we need at least some base permission or just being authenticated.
-  // Let's assume PRAYER_VIEW_ALL is for "Seeing EVERYTHING" (leaders),
-  // but regular users can see Public ones. So maybe just auth is enough?
-  // Let's enforce a basic check or just let service handle it.
-  // For now, let's require at least valid login.
   findAll(
     @CurrentChurch() churchId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: SecurityContext,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Query('status') status?: string,
   ) {
     return this.prayersService.findAll(
       churchId,
-      user.memberId,
-      user.roles,
+      user.churchPersonId,
+      user.permissions || [],
       page,
       limit,
       status,
@@ -51,7 +48,7 @@ export class PrayersController {
   @RequirePermissions(AppPermission.PRAYER_CREATE)
   create(
     @CurrentChurch() churchId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: SecurityContext,
     @Body()
     body: {
       motive: string;
@@ -61,7 +58,7 @@ export class PrayersController {
   ) {
     return this.prayersService.create(
       churchId,
-      user.memberId,
+      user.churchPersonId,
       body.motive,
       body.visibility,
       body.isAnonymous,
@@ -72,30 +69,30 @@ export class PrayersController {
   update(
     @CurrentChurch() churchId: string,
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: SecurityContext,
     @Body() body: { motive: string },
   ) {
-    return this.prayersService.update(id, churchId, user.memberId, body.motive);
+    return this.prayersService.update(id, churchId, user.churchPersonId, body.motive);
   }
 
   @Put(':id/answer')
   markAnswered(
     @CurrentChurch() churchId: string,
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: SecurityContext,
     @Body() body: { testimony?: string },
   ) {
-    return this.prayersService.markAnswered(id, churchId, user.memberId, body.testimony);
+    return this.prayersService.markAnswered(id, churchId, user.churchPersonId, body.testimony);
   }
 
   @Post(':id/updates')
   addUpdate(
     @CurrentChurch() churchId: string,
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: SecurityContext,
     @Body() body: { content: string },
   ) {
-    return this.prayersService.addUpdate(id, churchId, user.memberId, body.content);
+    return this.prayersService.addUpdate(id, churchId, user.churchPersonId, body.content);
   }
 
   // --- MODERATION ---
@@ -112,7 +109,8 @@ export class PrayersController {
   }
 
   @Delete(':id')
-  delete(@CurrentChurch() churchId: string, @Param('id') id: string, @CurrentUser() user: any) {
-    return this.prayersService.delete(id, churchId, user.memberId, user.roles);
+  delete(@CurrentChurch() churchId: string, @Param('id') id: string, @CurrentUser() user: SecurityContext) {
+    return this.prayersService.delete(id, churchId, user.churchPersonId, user.permissions || []);
   }
 }
+

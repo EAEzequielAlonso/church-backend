@@ -6,6 +6,7 @@ import { Group } from './entities/group.entity';
 import { GroupParticipant } from './entities/group-participant.entity';
 import { GroupMeeting } from './entities/group-meeting.entity';
 import { GroupAttendance } from './entities/group-attendance.entity';
+import { StudyResource } from '../resources/entities/study-resource.entity';
 import { AgendaModule } from '../agenda/agenda.module';
 
 @Module({
@@ -15,6 +16,7 @@ import { AgendaModule } from '../agenda/agenda.module';
       GroupParticipant,
       GroupMeeting,
       GroupAttendance,
+      StudyResource,
     ]),
     AgendaModule,
   ],

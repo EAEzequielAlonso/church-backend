@@ -6,13 +6,16 @@ import {
   UpdateDateColumn,
   ManyToOne,
   OneToMany,
+  ManyToMany,
   Index,
   JoinColumn,
+  JoinTable,
 } from 'typeorm';
 import { Church } from '../../churches/entities/church.entity';
 import { GroupType, GroupVisibility } from '../enums/group.enums';
 import { GroupParticipant } from './group-participant.entity';
 import { GroupMeeting } from './group-meeting.entity';
+import { StudyResource } from '../../resources/entities/study-resource.entity';
 
 @Entity('groups')
 @Index(['churchId', 'type'])
@@ -68,6 +71,14 @@ export class Group {
 
   @OneToMany(() => GroupMeeting, (meeting) => meeting.group)
   meetings: GroupMeeting[];
+
+  @ManyToMany(() => StudyResource, { eager: false })
+  @JoinTable({
+    name: 'group_study_resources',
+    joinColumn: { name: 'groupId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'resourceId', referencedColumnName: 'id' },
+  })
+  resources: StudyResource[];
 
   @CreateDateColumn()
   createdAt: Date;

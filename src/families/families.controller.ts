@@ -6,12 +6,17 @@ import {
   Patch,
   Param,
   Delete,
-  Request,
   UseGuards,
 } from '@nestjs/common';
 import { CreateFamilyDto } from './dto/create-family.dto';
 import { UpdateFamilyDto } from './dto/update-family.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { AppPermission } from '../auth/authorization/permissions.enum';
+import { CurrentChurch, CurrentUser } from '../common/decorators';
+import { SecurityContext } from '../auth/security-context.interface';
 
 // Use Cases
 import { CreateFamilyUseCase } from './use-cases/create-family.use-case';
@@ -24,7 +29,7 @@ import { RemoveFamilyMemberUseCase } from './use-cases/remove-family-member.use-
 
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @Controller('families')
-@UseGuards(JwtAuthGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
 export class FamiliesController {
   constructor(
     private readonly createFamilyUseCase: CreateFamilyUseCase,
@@ -37,47 +42,55 @@ export class FamiliesController {
   ) {}
 
   @Post()
-  create(@Body() createFamilyDto: CreateFamilyDto, @Request() req) {
-    return this.createFamilyUseCase.execute(createFamilyDto, req.user.churchId);
+  @RequirePermissions(AppPermission.FAMILY_CREATE)
+  create(@Body() createFamilyDto: CreateFamilyDto, @CurrentChurch() churchId: string) {
+    return this.createFamilyUseCase.execute(createFamilyDto, churchId);
   }
 
   @Get()
-  findAll(@Request() req) {
-    return this.listFamiliesUseCase.execute(req.user.churchId);
+  @RequirePermissions(AppPermission.FAMILY_VIEW)
+  findAll(@CurrentChurch() churchId: string) {
+    return this.listFamiliesUseCase.execute(churchId);
   }
 
   @Get('my-family')
-  findMyFamily(@Request() req) {
-    if (!req.user.memberId) return null;
-    return this.getFamilyUseCase.byMember(req.user.memberId);
+  @RequirePermissions(AppPermission.FAMILY_VIEW)
+  findMyFamily(@CurrentUser() securityContext: SecurityContext) {
+    if (!securityContext.churchPersonId) return null;
+    return this.getFamilyUseCase.byMember(securityContext.churchPersonId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Request() req) {
-    return this.getFamilyUseCase.byId(id, req.user.churchId);
+  @RequirePermissions(AppPermission.FAMILY_VIEW)
+  findOne(@Param('id') id: string, @CurrentChurch() churchId: string) {
+    return this.getFamilyUseCase.byId(id, churchId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFamilyDto: UpdateFamilyDto, @Request() req) {
-    return this.updateFamilyUseCase.execute(id, updateFamilyDto, req.user.churchId);
+  @RequirePermissions(AppPermission.FAMILY_UPDATE)
+  update(@Param('id') id: string, @Body() updateFamilyDto: UpdateFamilyDto, @CurrentChurch() churchId: string) {
+    return this.updateFamilyUseCase.execute(id, updateFamilyDto, churchId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Request() req) {
-    return this.deleteFamilyUseCase.execute(id, req.user.churchId);
+  @RequirePermissions(AppPermission.FAMILY_DELETE)
+  remove(@Param('id') id: string, @CurrentChurch() churchId: string) {
+    return this.deleteFamilyUseCase.execute(id, churchId);
   }
 
   @Post(':id/members')
+  @RequirePermissions(AppPermission.FAMILY_MANAGE_MEMBERS)
   addMember(
     @Param('id') id: string,
     @Body() body: { memberId: string; role: string },
-    @Request() req
+    @CurrentChurch() churchId: string
   ) {
-    return this.addFamilyMemberUseCase.execute(id, body.memberId, body.role, req.user.churchId);
+    return this.addFamilyMemberUseCase.execute(id, body.memberId, body.role, churchId);
   }
 
   @Delete(':id/members/:memberId')
-  removeMember(@Param('id') id: string, @Param('memberId') memberId: string, @Request() req) {
-    return this.removeFamilyMemberUseCase.execute(id, memberId, req.user.churchId);
+  @RequirePermissions(AppPermission.FAMILY_MANAGE_MEMBERS)
+  removeMember(@Param('id') id: string, @Param('memberId') memberId: string, @CurrentChurch() churchId: string) {
+    return this.removeFamilyMemberUseCase.execute(id, memberId, churchId);
   }
 }

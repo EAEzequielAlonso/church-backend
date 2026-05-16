@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThan, Repository } from 'typeorm';
 import { WorshipService } from './entities/worship-service.entity';
@@ -12,6 +12,7 @@ import { EventSourceType, CalendarEventType } from '../common/enums';
 import { SectionType } from './enums/section-type.enum';
 import { CreateTemplateSectionDto } from './dto/create-template-section.dto';
 import { UpdateTemplateSectionDto } from './dto/update-template-section.dto';
+import { AppPermission } from '../auth/authorization/permissions.enum';
 
 @Injectable()
 export class WorshipServiceService {
@@ -137,9 +138,12 @@ export class WorshipServiceService {
 
   // --- SERVICES & HYDRATION ---
 
-  async findAllServices(churchId: string) {
+  async findAllServices(churchId: string, userPermissions: AppPermission[]) {
+    const canManage = userPermissions.includes(AppPermission.WORSHIP_MANAGE);
     return this.serviceRepo.find({
-      where: { churchId: churchId },
+      where: canManage
+        ? { churchId: churchId }
+        : { churchId: churchId, status: ServiceStatus.CONFIRMED },
       order: { date: 'DESC' },
     });
   }
@@ -156,7 +160,7 @@ export class WorshipServiceService {
     });
   }
 
-  async findOneService(id: string, churchId: string) {
+  async findOneService(id: string, churchId: string, userPermissions?: AppPermission[]) {
     let service = await this.serviceRepo.findOne({
       where: { id, churchId },
       relations: [
@@ -170,6 +174,10 @@ export class WorshipServiceService {
     });
 
     if (!service) throw new NotFoundException('Culto no encontrado');
+    const canManage = (userPermissions ?? []).includes(AppPermission.WORSHIP_MANAGE);
+    if (!canManage && service.status !== ServiceStatus.CONFIRMED) {
+      throw new ForbiddenException('Insufficient permissions to view draft services');
+    }
 
     // FORCE SYNC IF DRAFT AND TEMPLATE CHANGED
     if (service.status !== ServiceStatus.CONFIRMED && service.template) {
@@ -339,7 +347,7 @@ export class WorshipServiceService {
     savedService.calendarEventId = projection.id;
     await this.serviceRepo.save(savedService);
 
-    return this.findOneService(savedService.id, churchId);
+    return this.findOneService(savedService.id, churchId, [AppPermission.WORSHIP_MANAGE]);
   }
 
   async updateSection(sectionId: string, churchId: string, data: any) {

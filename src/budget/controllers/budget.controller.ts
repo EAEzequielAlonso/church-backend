@@ -1,20 +1,14 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  UseGuards,
-  Query,
-  Request,
-  Patch,
-  Delete,
+  Controller, Get, Post, Body, Param, UseGuards, Query, Patch, Delete,
+  StreamableFile, Res,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RolesGuard, Roles } from '../../auth/guards/roles.guard';
-import { StreamableFile, Res } from '@nestjs/common';
+import { SecurityContextGuard } from '../../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { RequirePermissions } from '../../auth/decorators/require-permissions.decorator';
+import { AppPermission } from '../../auth/authorization/permissions.enum';
 import { Response } from 'express';
-import { FunctionalRole } from '../../common/enums';
+import { CurrentChurch } from '../../common/decorators';
 import { CreateBudgetPeriodUseCase } from '../use-cases/create-budget-period.use-case';
 import { GetBudgetPeriodsUseCase } from '../use-cases/get-budget-periods.use-case';
 import { CreateBudgetAllocationUseCase } from '../use-cases/create-budget-allocation.use-case';
@@ -28,10 +22,10 @@ import { CreateBudgetPeriodDto } from '../dto/create-budget-period.dto';
 import { CreateBudgetAllocationDto } from '../dto/create-budget-allocation.dto';
 import { ExportBudgetToPptUseCase } from '../use-cases/export-budget-to-ppt.use-case';
 import { ExportBudgetToPdfUseCase } from '../use-cases/export-budget-to-pdf.use-case';
-
 import { SubscriptionGuard } from '../../subscriptions/guards/subscription.guard';
+
 @Controller('budget')
-@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
 export class BudgetController {
   constructor(
     private readonly createBudgetPeriodUseCase: CreateBudgetPeriodUseCase,
@@ -47,138 +41,73 @@ export class BudgetController {
     private readonly exportBudgetToPdfUseCase: ExportBudgetToPdfUseCase,
   ) {}
 
-  // --- Periods ---
-
   @Post('periods')
-  @Roles(FunctionalRole.TREASURER)
-  async createPeriod(@Request() req, @Body() dto: CreateBudgetPeriodDto) {
-    return this.createBudgetPeriodUseCase.execute(dto, req.user.churchId);
+  @RequirePermissions(AppPermission.FINANCE_MANAGE)
+  async createPeriod(@CurrentChurch() churchId: string, @Body() dto: CreateBudgetPeriodDto) {
+    return this.createBudgetPeriodUseCase.execute(dto, churchId);
   }
 
   @Get('periods')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.AUDITOR,
-    FunctionalRole.ADMIN_CHURCH,
-  )
-  async getPeriods(@Request() req, @Query('year') year?: number) {
-    return this.getBudgetPeriodsUseCase.execute(req.user.churchId, year);
+  @RequirePermissions(AppPermission.FINANCE_VIEW)
+  async getPeriods(@CurrentChurch() churchId: string, @Query('year') year?: number) {
+    return this.getBudgetPeriodsUseCase.execute(churchId, year);
   }
 
   @Patch('periods/:id')
-  @Roles(FunctionalRole.TREASURER)
-  async updatePeriod(
-    @Request() req,
-    @Param('id') id: string,
-    @Body() dto: any,
-  ) {
-    return this.updateBudgetPeriodUseCase.execute(id, dto, req.user.churchId);
+  @RequirePermissions(AppPermission.FINANCE_MANAGE)
+  async updatePeriod(@CurrentChurch() churchId: string, @Param('id') id: string, @Body() dto: any) {
+    return this.updateBudgetPeriodUseCase.execute(id, dto, churchId);
   }
 
   @Delete('periods/:id')
-  @Roles(FunctionalRole.TREASURER)
-  async deletePeriod(@Request() req, @Param('id') id: string) {
-    return this.deleteBudgetPeriodUseCase.execute(id, req.user.churchId);
+  @RequirePermissions(AppPermission.FINANCE_MANAGE)
+  async deletePeriod(@CurrentChurch() churchId: string, @Param('id') id: string) {
+    return this.deleteBudgetPeriodUseCase.execute(id, churchId);
   }
 
   @Get('periods/:id/export-ppt')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.AUDITOR,
-    FunctionalRole.ADMIN_CHURCH,
-  )
-  async exportPpt(
-    @Request() req,
-    @Param('id') id: string,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const buffer = await this.exportBudgetToPptUseCase.execute(
-      req.user.churchId,
-      id,
-    );
-    res.set({
-      'Content-Type':
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'Content-Disposition': `attachment; filename="Presupuesto.pptx"`,
-    });
+  @RequirePermissions(AppPermission.FINANCE_VIEW)
+  async exportPpt(@CurrentChurch() churchId: string, @Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+    const buffer = await this.exportBudgetToPptUseCase.execute(churchId, id);
+    res.set({ 'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'Content-Disposition': 'attachment; filename="Presupuesto.pptx"' });
     return new StreamableFile(buffer);
   }
 
   @Get('periods/:id/export-pdf')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.AUDITOR,
-    FunctionalRole.ADMIN_CHURCH,
-  )
-  async exportPdf(
-    @Request() req,
-    @Param('id') id: string,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const buffer = await this.exportBudgetToPdfUseCase.execute(
-      req.user.churchId,
-      id,
-    );
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="Presupuesto.pdf"`,
-    });
+  @RequirePermissions(AppPermission.FINANCE_VIEW)
+  async exportPdf(@CurrentChurch() churchId: string, @Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+    const buffer = await this.exportBudgetToPdfUseCase.execute(churchId, id);
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="Presupuesto.pdf"' });
     return new StreamableFile(buffer);
   }
 
-  // --- Allocations ---
-
   @Post('allocations')
-  @Roles(FunctionalRole.TREASURER)
-  async createAllocation(
-    @Request() req,
-    @Body() dto: CreateBudgetAllocationDto,
-  ) {
-    return this.createBudgetAllocationUseCase.execute(dto, req.user.churchId);
+  @RequirePermissions(AppPermission.FINANCE_MANAGE)
+  async createAllocation(@CurrentChurch() churchId: string, @Body() dto: CreateBudgetAllocationDto) {
+    return this.createBudgetAllocationUseCase.execute(dto, churchId);
   }
 
   @Get('allocations')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.AUDITOR,
-    FunctionalRole.ADMIN_CHURCH,
-  )
-  async getAllocations(@Request() req, @Query('periodId') periodId: string) {
-    return this.getBudgetAllocationsUseCase.execute(
-      req.user.churchId,
-      periodId,
-    );
+  @RequirePermissions(AppPermission.FINANCE_VIEW)
+  async getAllocations(@CurrentChurch() churchId: string, @Query('periodId') periodId: string) {
+    return this.getBudgetAllocationsUseCase.execute(churchId, periodId);
   }
 
-  // --- Execution ---
-
   @Get('execution/:periodId')
-  @Roles(
-    FunctionalRole.TREASURER,
-    FunctionalRole.AUDITOR,
-    FunctionalRole.ADMIN_CHURCH,
-  )
-  async getExecution(@Request() req, @Param('periodId') periodId: string) {
-    return this.getBudgetExecutionUseCase.execute(req.user.churchId, periodId);
+  @RequirePermissions(AppPermission.FINANCE_VIEW)
+  async getExecution(@CurrentChurch() churchId: string, @Param('periodId') periodId: string) {
+    return this.getBudgetExecutionUseCase.execute(churchId, periodId);
   }
 
   @Patch('allocations/:id')
-  @Roles(FunctionalRole.TREASURER)
-  async updateAllocation(
-    @Request() req,
-    @Param('id') id: string,
-    @Body() dto: any,
-  ) {
-    return this.updateBudgetAllocationUseCase.execute(
-      id,
-      dto,
-      req.user.churchId,
-    );
+  @RequirePermissions(AppPermission.FINANCE_MANAGE)
+  async updateAllocation(@CurrentChurch() churchId: string, @Param('id') id: string, @Body() dto: any) {
+    return this.updateBudgetAllocationUseCase.execute(id, dto, churchId);
   }
 
   @Delete('allocations/:id')
-  @Roles(FunctionalRole.TREASURER)
-  async deleteAllocation(@Request() req, @Param('id') id: string) {
-    return this.deleteBudgetAllocationUseCase.execute(id, req.user.churchId);
+  @RequirePermissions(AppPermission.FINANCE_MANAGE)
+  async deleteAllocation(@CurrentChurch() churchId: string, @Param('id') id: string) {
+    return this.deleteBudgetAllocationUseCase.execute(id, churchId);
   }
 }

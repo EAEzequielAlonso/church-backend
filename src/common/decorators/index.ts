@@ -7,19 +7,19 @@ import {
 export const CurrentChurch = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    const user = request.user;
+    const securityContext = request.securityContext;
 
-    if (!user || !user.churchId) {
-      throw new UnauthorizedException('No se encontró el contexto de la iglesia en el token');
+    if (!securityContext || !securityContext.churchId) {
+      throw new UnauthorizedException('No se encontro el contexto de seguridad');
     }
 
-    return user.churchId;
+    return securityContext.churchId;
   },
 );
 
 export const CurrentUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    return request.user;
+    return request.securityContext;
   },
 );

@@ -10,12 +10,27 @@ export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
     AppPermission.MEMBER_UPDATE,
     AppPermission.MEMBER_DELETE,
     AppPermission.MEMBER_EXPORT,
+    AppPermission.MEMBER_ARCHIVE,
+    AppPermission.MEMBER_ECCLESIASTICAL_ROLE_MANAGE,
+    AppPermission.MEMBER_FUNCTIONAL_ROLE_MANAGE,
+    AppPermission.MEMBERSHIP_REQUEST_VIEW,
+    AppPermission.MEMBERSHIP_REQUEST_MANAGE,
     AppPermission.COUNSELING_VIEW_ALL,
     AppPermission.COUNSELING_CREATE,
     AppPermission.COUNSELING_UPDATE,
     AppPermission.COUNSELING_DELETE,
     AppPermission.GROUP_VIEW,
+    AppPermission.GROUP_CREATE,
+    AppPermission.GROUP_UPDATE,
+    AppPermission.GROUP_DELETE,
     AppPermission.GROUP_MANAGE_MEMBERS,
+    AppPermission.FAMILY_VIEW,
+    AppPermission.FAMILY_CREATE,
+    AppPermission.FAMILY_UPDATE,
+    AppPermission.FAMILY_DELETE,
+    AppPermission.FAMILY_MANAGE_MEMBERS,
+    AppPermission.INVENTORY_VIEW,
+    AppPermission.INVENTORY_MANAGE,
     AppPermission.FINANCE_VIEW,
     AppPermission.FINANCE_MANAGE,
     AppPermission.FINANCE_AUDIT,
@@ -26,10 +41,17 @@ export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
     AppPermission.PRAYER_VIEW_ALL,
     AppPermission.FOLLOWUP_VIEW_ALL,
     AppPermission.FOLLOWUP_MANAGE,
+    AppPermission.LIBRARY_VIEW,
+    AppPermission.WORSHIP_VIEW,
+    AppPermission.WORSHIP_TEMPLATE_MANAGE,
+    AppPermission.WORSHIP_MANAGE,
+    AppPermission.WORSHIP_PUBLISH,
+    AppPermission.WORSHIP_EXPORT,
   ],
   [FunctionalRole.TREASURER]: [
     AppPermission.FINANCE_VIEW,
     AppPermission.FINANCE_MANAGE,
+    AppPermission.LIBRARY_VIEW,
   ],
   [FunctionalRole.AUDITOR]: [
     AppPermission.FINANCE_VIEW,
@@ -46,11 +68,19 @@ export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
     AppPermission.MEMBER_CREATE,
     AppPermission.MEMBER_UPDATE,
     AppPermission.MEMBER_DELETE,
+    AppPermission.MEMBER_ARCHIVE,
+    AppPermission.MEMBER_ECCLESIASTICAL_ROLE_MANAGE,
+    AppPermission.MEMBER_FUNCTIONAL_ROLE_MANAGE,
+    AppPermission.MEMBERSHIP_REQUEST_VIEW,
+    AppPermission.MEMBERSHIP_REQUEST_MANAGE,
+    AppPermission.LIBRARY_VIEW,
+    AppPermission.WORSHIP_VIEW,
   ],
   [FunctionalRole.COUNSELOR]: [
     AppPermission.COUNSELING_VIEW_OWN,
     AppPermission.COUNSELING_CREATE,
     AppPermission.COUNSELING_UPDATE,
+    AppPermission.LIBRARY_VIEW,
   ],
   [FunctionalRole.MINISTRY_LEADER]: [
     AppPermission.GROUP_VIEW,
@@ -58,6 +88,11 @@ export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
     AppPermission.MEMBER_VIEW,
     AppPermission.MINISTRY_VIEW,
     AppPermission.MINISTRY_MANAGE,
+    AppPermission.GROUP_CREATE,
+    AppPermission.GROUP_UPDATE,
+    AppPermission.FAMILY_VIEW,
+    AppPermission.INVENTORY_VIEW,
+    AppPermission.LIBRARY_VIEW,
   ],
   [FunctionalRole.LIBRARIAN]: [
     AppPermission.LIBRARY_VIEW,
@@ -66,6 +101,7 @@ export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
   ],
   [FunctionalRole.DISCIPLER]: [
     AppPermission.MEMBER_VIEW,
+    AppPermission.LIBRARY_VIEW,
     AppPermission.GROUP_VIEW,
     AppPermission.COUNSELING_VIEW_OWN,
   ],
@@ -77,9 +113,35 @@ export const RolePermissions: Record<FunctionalRole, AppPermission[]> = {
     AppPermission.PRAYER_CREATE,
     AppPermission.PRAYER_VIEW_ALL,
     AppPermission.RESOURCE_VIEW,
+    AppPermission.FAMILY_VIEW,
+    AppPermission.INVENTORY_VIEW,
+    AppPermission.WORSHIP_VIEW,
+    AppPermission.MINISTRY_VIEW,
+  ],
+  [FunctionalRole.WORSHIP_MANAGER]: [
+    AppPermission.WORSHIP_VIEW,
+    AppPermission.WORSHIP_TEMPLATE_MANAGE,
+    AppPermission.WORSHIP_MANAGE,
+    AppPermission.WORSHIP_PUBLISH,
+    AppPermission.WORSHIP_EXPORT,
+    AppPermission.LIBRARY_VIEW,
   ],
   [FunctionalRole.RESOURCE_MANAGER]: [
     AppPermission.RESOURCE_VIEW,
     AppPermission.RESOURCE_MANAGE,
+    AppPermission.LIBRARY_VIEW,
   ],
 };
+
+export function getPermissionsForFunctionalRoles(
+  roles: FunctionalRole[],
+): AppPermission[] {
+  const permissions = new Set<AppPermission>();
+  for (const role of roles) {
+    const rolePermissions = RolePermissions[role] ?? [];
+    for (const permission of rolePermissions) {
+      permissions.add(permission);
+    }
+  }
+  return Array.from(permissions);
+}

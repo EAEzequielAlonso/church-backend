@@ -10,7 +10,11 @@ import {
   CalendarEventType,
   MinistryRole,
   EcclesiasticalRole,
+  FunctionalRole,
+  SystemRole,
 } from '../common/enums';
+import { AppPermission } from '../auth/authorization/permissions.enum';
+
 import { CalendarEvent } from './entities/calendar-event.entity';
 import { ChurchPerson } from '../members/entities/church-person.entity';
 import { Person } from '../users/entities/person.entity';
@@ -212,8 +216,8 @@ export class AgendaService {
     createDto: CreateCalendarEventDto,
     personId: string,
     churchId: string,
-    permissions: string[], // AppPermission[]
-    roles: string[],
+    permissions: AppPermission[],
+    roles: FunctionalRole[],
     memberId?: string,
   ) {
     const {
@@ -252,8 +256,8 @@ export class AgendaService {
     } else if (type === CalendarEventType.CHURCH) {
       // Check Capability
       if (
-        !permissions.includes('AGENDA_CREATE_CHURCH') &&
-        !roles.includes('ADMIN_CHURCH')
+        !permissions.includes(AppPermission.AGENDA_CREATE_CHURCH) &&
+        !roles.includes(FunctionalRole.ADMIN_CHURCH)
       ) {
         throw new ForbiddenException(
           'No tienes permiso para crear eventos de iglesia',
@@ -265,8 +269,8 @@ export class AgendaService {
 
       // Check Capability
       if (
-        !permissions.includes('AGENDA_CREATE_MINISTRY') &&
-        !roles.includes('ADMIN_CHURCH')
+        !permissions.includes(AppPermission.AGENDA_CREATE_MINISTRY) &&
+        !roles.includes(FunctionalRole.ADMIN_CHURCH)
       ) {
         throw new ForbiddenException(
           'No tienes permiso para gestionar eventos de ministerio',
@@ -284,9 +288,9 @@ export class AgendaService {
       // But let's verify specific ministry leadership for standard leaders.
 
       const hasGlobalOverride =
-        permissions.includes('AGENDA_CREATE_CHURCH') ||
-        roles.includes('ADMIN_CHURCH') ||
-        roles.includes('AUDITOR');
+        permissions.includes(AppPermission.AGENDA_CREATE_CHURCH) ||
+        roles.includes(FunctionalRole.ADMIN_CHURCH) ||
+        roles.includes(FunctionalRole.AUDITOR);
 
       if (!hasGlobalOverride) {
         // Check if leader of this specific ministry
@@ -325,9 +329,9 @@ export class AgendaService {
       let isModerator = false;
       // Global override? Maybe CHURCH_MANAGE
       const hasGlobalOverride =
-        permissions.includes('AGENDA_CREATE_CHURCH') ||
-        roles.includes('ADMIN_CHURCH') ||
-        roles.includes('AUDITOR');
+        permissions.includes(AppPermission.AGENDA_CREATE_CHURCH) ||
+        roles.includes(FunctionalRole.ADMIN_CHURCH) ||
+        roles.includes(FunctionalRole.AUDITOR);
 
       if (!hasGlobalOverride) {
         if (memberId) {
@@ -394,7 +398,7 @@ export class AgendaService {
     id: string,
     updateDto: any,
     personId: string,
-    roles: string[],
+    roles: FunctionalRole[],
   ) {
     const event = await this.eventRepository.findOne({
       where: { id },
@@ -404,7 +408,7 @@ export class AgendaService {
     if (!event) throw new NotFoundException('Evento no encontrado');
 
     // Basic permission check: Admin or Organizer
-    const isAdmin = roles.includes('ADMIN_CHURCH') || roles.includes('AUDITOR');
+    const isAdmin = roles.includes(FunctionalRole.ADMIN_CHURCH) || roles.includes(FunctionalRole.AUDITOR);
     const isOrganizer = event.organizer?.id === personId;
 
     // Moderator Check
@@ -442,7 +446,7 @@ export class AgendaService {
     return this.eventRepository.save(event);
   }
 
-  async deleteEvent(id: string, personId: string, roles: string[]) {
+  async deleteEvent(id: string, personId: string, roles: FunctionalRole[]) {
     const event = await this.eventRepository.findOne({
       where: { id },
       relations: ['organizer'],
@@ -450,7 +454,7 @@ export class AgendaService {
 
     if (!event) throw new NotFoundException('Evento no encontrado');
 
-    const isAdmin = roles.includes('ADMIN_CHURCH') || roles.includes('AUDITOR');
+    const isAdmin = roles.includes(FunctionalRole.ADMIN_CHURCH) || roles.includes(FunctionalRole.AUDITOR);
     const isOrganizer = event.organizer?.id === personId;
 
     let isModerator = false;

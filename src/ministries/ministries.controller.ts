@@ -18,7 +18,10 @@ import { RequireMinistryRole } from '../auth/decorators/require-ministry-role.de
 import { MinistryRolesGuard } from './guards/ministry-roles.guard';
 import { CurrentChurch, CurrentUser } from '../common/decorators';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { MinistryRole } from '../common/enums';
+import { SecurityContext } from '../auth/security-context.interface';
 import { CreateMinistryDto } from './dto/create-ministry.dto';
 import { UpdateMinistryDto } from './dto/update-ministry.dto';
 import { CreateMinistryEventDto } from './dto/create-ministry-event.dto';
@@ -58,7 +61,7 @@ import { DeleteMinistryAssignmentUseCase } from './use-cases/delete-ministry-ass
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 import { UpdateServiceDutyUseCase } from './use-cases/update-service-duty.use-case';
 @Controller('ministries')
-@UseGuards(JwtAuthGuard, SubscriptionGuard) // Removing MinistryRolesGuard since we enforce it via MinistryPolicy in UseCases now
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard) // Removing MinistryRolesGuard since we enforce it via MinistryPolicy in UseCases now
 export class MinistriesController {
   constructor(
     private readonly getMinistriesUseCase: GetMinistriesUseCase,
@@ -97,8 +100,8 @@ export class MinistriesController {
 
   @Get('mine')
   @RequirePermissions(AppPermission.MINISTRY_VIEW)
-  findMine(@CurrentChurch() churchId: string, @Request() req: any) {
-    return this.getMinistriesUseCase.executeMine(churchId, req.user.memberId);
+  findMine(@CurrentChurch() churchId: string, @CurrentUser() securityContext: SecurityContext) {
+    return this.getMinistriesUseCase.executeMine(churchId, securityContext.churchPersonId);
   }
 
   @Post()
@@ -118,7 +121,7 @@ export class MinistriesController {
   @RequireMinistryRole(MinistryRole.LEADER, MinistryRole.COORDINATOR)
   update(
     @Param('id') id: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Body() body: UpdateMinistryDto,
   ) {
@@ -126,9 +129,9 @@ export class MinistriesController {
       id,
       churchId,
       body,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -139,7 +142,7 @@ export class MinistriesController {
   @RequireMinistryRole(MinistryRole.LEADER)
   addMember(
     @Param('id') id: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Body() body: { memberId: string; role: MinistryRole },
   ) {
@@ -148,9 +151,9 @@ export class MinistriesController {
       body.memberId,
       body.role,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -160,7 +163,7 @@ export class MinistriesController {
   updateMemberRole(
     @Param('id') id: string,
     @Param('memberId') memberId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Body() body: { role: MinistryRole },
   ) {
@@ -169,9 +172,9 @@ export class MinistriesController {
       memberId,
       body.role,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -180,7 +183,7 @@ export class MinistriesController {
   @RequireMinistryRole(MinistryRole.LEADER)
   removeMember(
     @Param('id') id: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Param('memberId') memberId: string,
   ) {
@@ -188,9 +191,9 @@ export class MinistriesController {
       id,
       memberId,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -207,17 +210,17 @@ export class MinistriesController {
   @RequireMinistryRole(MinistryRole.LEADER, MinistryRole.COORDINATOR)
   createEvent(
     @Param('id') id: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Body() body: CreateMinistryEventDto,
   ) {
     return this.createMinistryEventUseCase.execute(
       id,
-      req.user.personId,
+      securityContext.personId,
       churchId,
       body,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -227,18 +230,18 @@ export class MinistriesController {
   updateEvent(
     @Param('id') id: string,
     @Param('eventId') eventId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Body() body: Partial<CreateMinistryEventDto>,
   ) {
     return this.updateMinistryEventUseCase.execute(
       id,
       eventId,
-      req.user.personId,
+      securityContext.personId,
       churchId,
       body,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -248,16 +251,16 @@ export class MinistriesController {
   deleteEvent(
     @Param('id') id: string,
     @Param('eventId') eventId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ) {
     return this.deleteMinistryEventUseCase.execute(
       id,
       eventId,
-      req.user.personId,
+      securityContext.personId,
       churchId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -281,7 +284,7 @@ export class MinistriesController {
   @RequireMinistryRole(MinistryRole.LEADER, MinistryRole.COORDINATOR)
   createTask(
     @Param('id') id: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Body() body: CreateMinistryTaskDto,
   ) {
@@ -289,9 +292,9 @@ export class MinistriesController {
       id,
       body,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -301,14 +304,14 @@ export class MinistriesController {
   updateTask(
     @Param('taskId') taskId: string,
     @Body() body: UpdateMinistryTaskDto,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ) {
     return this.updateMinistryTaskUseCase.execute(
       taskId,
       body,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -318,16 +321,16 @@ export class MinistriesController {
   deleteTask(
     @Param('id') id: string,
     @Param('taskId') taskId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ) {
     return this.deleteMinistryTaskUseCase.execute(
       id,
       taskId,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -345,18 +348,18 @@ export class MinistriesController {
   createOrUpdateNote(
     @Param('id') ministryId: string,
     @Param('eventId') eventId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Body() body: CreateOrUpdateMeetingNoteDto,
   ) {
     return this.createOrUpdateMeetingNoteUseCase.execute(
       eventId,
-      req.user.personId,
+      securityContext.personId,
       churchId,
       ministryId,
       body,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
   // --- SERVICE DUTIES CONFIGURATION ---
@@ -378,7 +381,7 @@ export class MinistriesController {
   @RequireMinistryRole(MinistryRole.LEADER, MinistryRole.COORDINATOR)
   createServiceDuty(
     @Param('id') id: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Body() body: CreateServiceDutyDto,
   ) {
@@ -387,9 +390,9 @@ export class MinistriesController {
       body.name,
       body.behaviorType,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
   
@@ -399,7 +402,7 @@ export class MinistriesController {
   updateServiceDuty(
     @Param('id') id: string,
     @Param('dutyId') dutyId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Body() body: CreateServiceDutyDto,
   ) {
@@ -409,9 +412,9 @@ export class MinistriesController {
       body.name,
       body.behaviorType,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -421,16 +424,16 @@ export class MinistriesController {
   deleteServiceDuty(
     @Param('id') id: string,
     @Param('dutyId') dutyId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ) {
     return this.deleteServiceDutyUseCase.execute(
       id,
       dutyId,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -453,7 +456,7 @@ export class MinistriesController {
   @RequireMinistryRole(MinistryRole.LEADER, MinistryRole.COORDINATOR)
   createAssignments(
     @Param('id') id: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
     @Body() body: CreateMinistryAssignmentsDto,
   ) {
@@ -461,9 +464,9 @@ export class MinistriesController {
       id,
       body.assignments,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 
@@ -473,16 +476,16 @@ export class MinistriesController {
   deleteAssignment(
     @Param('id') id: string,
     @Param('assignmentId') assignmentId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ) {
     return this.deleteMinistryAssignmentUseCase.execute(
       id,
       assignmentId,
       churchId,
-      req.user.personId,
-      req.user.systemRole,
-      req.user.functionalRole,
+      securityContext.personId,
+      securityContext.systemRole,
+      securityContext.functionalRoles?.[0],
     );
   }
 }

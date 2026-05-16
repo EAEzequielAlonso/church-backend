@@ -7,14 +7,15 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
   Patch,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
-import { CurrentChurch } from '../common/decorators';
+import { CurrentChurch, CurrentUser } from '../common/decorators';
+import { SecurityContext } from '../auth/security-context.interface';
 import { AppPermission } from '../auth/authorization/permissions.enum';
 
 import { MentorshipResponseDto } from './dto/mentorship-response.dto';
@@ -63,7 +64,7 @@ import { GetTasksDto } from './dto/get-tasks.dto';
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 @ApiTags('Mentorship')
 @Controller('mentorship')
-@UseGuards(JwtAuthGuard, PermissionsGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
 @ApiBearerAuth()
 export class MentorshipController {
   constructor(
@@ -100,12 +101,12 @@ export class MentorshipController {
   async createProcess(
     @CurrentChurch() churchId: string,
     @Body() createDto: Omit<CreateMentorshipProcessDto, 'churchId'>,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<MentorshipResponseDto> {
     const result = await this.createUseCase.execute(
       { ...createDto, churchId },
-      req.user?.roles || [],
-      req.user?.memberId,
+      securityContext.functionalRoles || [],
+      securityContext.churchPersonId,
     );
     return MentorshipResponseDto.fromEntity(result);
   }
@@ -115,13 +116,13 @@ export class MentorshipController {
   async getMentorships(
     @CurrentChurch() churchId: string,
     @Query() query: GetMentorshipsDto,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<{ data: MentorshipResponseDto[]; total: number }> {
     return this.getMentorshipsUseCase.execute(
       churchId,
       query,
-      req.user?.memberId,
-      req.user?.permissions,
+      securityContext.churchPersonId,
+      securityContext.permissions,
     );
   }
 
@@ -130,13 +131,13 @@ export class MentorshipController {
   async getInvitations(
     @CurrentChurch() churchId: string,
     @Query() query: GetMentorshipsDto,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<{ data: MentorshipResponseDto[]; total: number }> {
     return this.getInvitationsUseCase.execute(
       churchId,
       query,
-      req.user?.memberId,
-      req.user?.permissions,
+      securityContext.churchPersonId,
+      securityContext.permissions,
     );
   }
 
@@ -145,13 +146,13 @@ export class MentorshipController {
   async getProcess(
     @CurrentChurch() churchId: string,
     @Param('id') id: string,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<MentorshipResponseDto> {
     return this.getMentorshipByIdUseCase.execute(
       churchId,
       id,
-      req.user?.memberId,
-      req.user?.permissions,
+      securityContext.churchPersonId,
+      securityContext.permissions,
     );
   }
 
@@ -159,14 +160,14 @@ export class MentorshipController {
   @ApiOperation({ summary: 'Aceptar una invitación de mentoría' })
   async acceptInvitation(
     @Param('id') participantId: string,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ): Promise<any> {
     return this.acceptParticipationUseCase.execute(
       participantId,
-      req.user?.memberId,
+      securityContext.churchPersonId,
       churchId,
-      req.user?.personId,
+      securityContext.personId,
     );
   }
 
@@ -174,14 +175,14 @@ export class MentorshipController {
   @ApiOperation({ summary: 'Rechazar una invitación de mentoría' })
   async declineInvitation(
     @Param('id') participantId: string,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ): Promise<any> {
     return this.declineParticipationUseCase.execute(
       participantId,
-      req.user?.memberId,
+      securityContext.churchPersonId,
       churchId,
-      req.user?.personId,
+      securityContext.personId,
     );
   }
 
@@ -190,13 +191,13 @@ export class MentorshipController {
   async addMeeting(
     @Param('id') processId: string,
     @Body() dto: Omit<AddMeetingDto, 'processId'>,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ): Promise<MentorshipResponseDto> {
     const result = await this.addMeetingUseCase.execute(
       { ...dto, processId },
-      req.user?.memberId,
-      req.user?.roles || [],
+      securityContext.churchPersonId,
+      securityContext.functionalRoles || [],
       churchId,
     );
     return MentorshipResponseDto.fromEntity(result);
@@ -208,15 +209,15 @@ export class MentorshipController {
     @Param('id') processId: string,
     @Param('meetingId') meetingId: string,
     @Body() dto: Partial<AddMeetingDto>,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ): Promise<MentorshipResponseDto> {
     const result = await this.updateMeetingUseCase.execute(
       processId,
       meetingId,
       dto,
-      req.user?.memberId,
-      req.user?.roles || [],
+      securityContext.churchPersonId,
+      securityContext.functionalRoles || [],
       churchId,
     );
     return MentorshipResponseDto.fromEntity(result);
@@ -227,13 +228,13 @@ export class MentorshipController {
   async getNotes(
     @Param('id') processId: string,
     @Query() query: GetNotesDto,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<any> {
     const result = await this.getNotesUseCase.execute(processId, query, {
-      userId: req.user?.memberId,
-      churchId: req.user?.churchId,
-      roles: req.user?.roles || [],
-      permissions: req.user?.permissions || [],
+      userId: securityContext.churchPersonId,
+      churchId: securityContext.churchId,
+      roles: securityContext.functionalRoles || [],
+      permissions: securityContext.permissions || [],
     });
     return result;
   }
@@ -243,13 +244,13 @@ export class MentorshipController {
   async getTasks(
     @Param('id') processId: string,
     @Query() query: GetTasksDto,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<any> {
     const result = await this.getTasksUseCase.execute(processId, query, {
-      userId: req.user?.memberId,
-      churchId: req.user?.churchId,
-      roles: req.user?.roles || [],
-      permissions: req.user?.permissions || [],
+      userId: securityContext.churchPersonId,
+      churchId: securityContext.churchId,
+      roles: securityContext.functionalRoles || [],
+      permissions: securityContext.permissions || [],
     });
     return result;
   }
@@ -259,14 +260,14 @@ export class MentorshipController {
   async deleteMeeting(
     @Param('id') processId: string,
     @Param('meetingId') meetingId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ): Promise<MentorshipResponseDto> {
     const result = await this.deleteMeetingUseCase.execute(
       processId,
       meetingId,
-      req.user?.memberId,
-      req.user?.roles || [],
+      securityContext.churchPersonId,
+      securityContext.functionalRoles || [],
       churchId,
     );
     return MentorshipResponseDto.fromEntity(result);
@@ -277,19 +278,19 @@ export class MentorshipController {
   async addNote(
     @Param('id') processId: string,
     @Body() dto: Omit<AddNoteDto, 'processId'>,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<MentorshipResponseDto> {
     const result = await this.addNoteUseCase.execute(
       {
         ...dto,
         processId,
-        authorChurchPersonId: req.user?.memberId,
+        authorChurchPersonId: securityContext.churchPersonId,
       },
       {
-        userId: req.user?.memberId,
-        churchId: req.user?.churchId,
-        roles: req.user?.roles || [],
-        permissions: req.user?.permissions || [],
+        userId: securityContext.churchPersonId,
+        churchId: securityContext.churchId,
+        roles: securityContext.functionalRoles || [],
+        permissions: securityContext.permissions || [],
       },
     );
     return MentorshipResponseDto.fromEntity(result);
@@ -300,19 +301,19 @@ export class MentorshipController {
   async addTask(
     @Param('id') processId: string,
     @Body() dto: Omit<AddTaskDto, 'processId'>,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<MentorshipResponseDto> {
     const result = await this.addTaskUseCase.execute(
       {
         ...dto,
         processId,
-        creatorChurchPersonId: req.user?.memberId,
+        creatorChurchPersonId: securityContext.churchPersonId,
       },
       {
-        userId: req.user?.memberId,
-        churchId: req.user?.churchId,
-        roles: req.user?.roles || [],
-        permissions: req.user?.permissions || [],
+        userId: securityContext.churchPersonId,
+        churchId: securityContext.churchId,
+        roles: securityContext.functionalRoles || [],
+        permissions: securityContext.permissions || [],
       },
     );
     return MentorshipResponseDto.fromEntity(result);
@@ -323,13 +324,13 @@ export class MentorshipController {
   async updateNote(
     @Param('id') noteId: string,
     @Body() dto: UpdateNoteDto,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<any> {
     const result = await this.updateNoteUseCase.execute(noteId, dto, {
-      userId: req.user?.memberId,
-      churchId: req.user?.churchId,
-      roles: req.user?.roles || [],
-      permissions: req.user?.permissions || [],
+      userId: securityContext.churchPersonId,
+      churchId: securityContext.churchId,
+      roles: securityContext.functionalRoles || [],
+      permissions: securityContext.permissions || [],
     });
     return result;
   }
@@ -338,13 +339,13 @@ export class MentorshipController {
   @ApiOperation({ summary: 'Eliminar una nota' })
   async deleteNote(
     @Param('id') noteId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<void> {
     await this.deleteNoteUseCase.execute(noteId, {
-      userId: req.user?.memberId,
-      churchId: req.user?.churchId,
-      roles: req.user?.roles || [],
-      permissions: req.user?.permissions || [],
+      userId: securityContext.churchPersonId,
+      churchId: securityContext.churchId,
+      roles: securityContext.functionalRoles || [],
+      permissions: securityContext.permissions || [],
     });
   }
 
@@ -352,13 +353,13 @@ export class MentorshipController {
   @ApiOperation({ summary: 'Iniciar una tarea' })
   async startTask(
     @Param('id') taskId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<any> {
     const result = await this.startTaskUseCase.execute(taskId, {
-      userId: req.user?.memberId,
-      churchId: req.user?.churchId,
-      roles: req.user?.roles || [],
-      permissions: req.user?.permissions || [],
+      userId: securityContext.churchPersonId,
+      churchId: securityContext.churchId,
+      roles: securityContext.functionalRoles || [],
+      permissions: securityContext.permissions || [],
     });
     return result;
   }
@@ -368,15 +369,15 @@ export class MentorshipController {
   async submitTask(
     @Param('id') taskId: string,
     @Body() dto: { menteeResponse: string },
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<any> {
     const result = await this.submitTaskUseCase.execute(
       taskId,
       {
-        userId: req.user?.memberId,
-        churchId: req.user?.churchId,
-        roles: req.user?.roles || [],
-        permissions: req.user?.permissions || [],
+        userId: securityContext.churchPersonId,
+        churchId: securityContext.churchId,
+        roles: securityContext.functionalRoles || [],
+        permissions: securityContext.permissions || [],
       },
       dto,
     );
@@ -388,15 +389,15 @@ export class MentorshipController {
   async saveTaskProgress(
     @Param('id') taskId: string,
     @Body() dto: { menteeResponse: string },
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<any> {
     const result = await this.saveTaskProgressUseCase.execute(
       taskId,
       {
-        userId: req.user?.memberId,
-        churchId: req.user?.churchId,
-        roles: req.user?.roles || [],
-        permissions: req.user?.permissions || [],
+        userId: securityContext.churchPersonId,
+        churchId: securityContext.churchId,
+        roles: securityContext.functionalRoles || [],
+        permissions: securityContext.permissions || [],
       },
       dto,
     );
@@ -408,15 +409,15 @@ export class MentorshipController {
   async reviewTask(
     @Param('id') taskId: string,
     @Body() dto: { mentorFeedback?: string },
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<any> {
     const result = await this.reviewTaskUseCase.execute(
       taskId,
       {
-        userId: req.user?.memberId,
-        churchId: req.user?.churchId,
-        roles: req.user?.roles || [],
-        permissions: req.user?.permissions || [],
+        userId: securityContext.churchPersonId,
+        churchId: securityContext.churchId,
+        roles: securityContext.functionalRoles || [],
+        permissions: securityContext.permissions || [],
       },
       dto,
     );
@@ -428,13 +429,13 @@ export class MentorshipController {
   async updateTask(
     @Param('id') taskId: string,
     @Body() dto: Partial<AddTaskDto>,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<any> {
     const result = await this.updateTaskUseCase.execute(taskId, dto, {
-      userId: req.user?.memberId,
-      churchId: req.user?.churchId,
-      roles: req.user?.roles || [],
-      permissions: req.user?.permissions || [],
+      userId: securityContext.churchPersonId,
+      churchId: securityContext.churchId,
+      roles: securityContext.functionalRoles || [],
+      permissions: securityContext.permissions || [],
     });
     return result;
   }
@@ -443,13 +444,13 @@ export class MentorshipController {
   @ApiOperation({ summary: 'Eliminar una tarea' })
   async deleteTask(
     @Param('id') taskId: string,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
   ): Promise<any> {
     await this.deleteTaskUseCase.execute(taskId, {
-      userId: req.user?.memberId,
-      churchId: req.user?.churchId,
-      roles: req.user?.roles || [],
-      permissions: req.user?.permissions || [],
+      userId: securityContext.churchPersonId,
+      churchId: securityContext.churchId,
+      roles: securityContext.functionalRoles || [],
+      permissions: securityContext.permissions || [],
     });
     return { success: true };
   }
@@ -460,11 +461,11 @@ export class MentorshipController {
   async hardDelete(
     @Param('id') processId: string,
     @Body() deleteInstruction: { confirmString: string },
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ): Promise<{ message: string }> {
-    const executorChurchPersonId = req.user?.memberId;
-    const executorFunctionalRoles = req.user?.roles || [];
+    const executorChurchPersonId = securityContext.churchPersonId;
+    const executorFunctionalRoles = securityContext.functionalRoles || [];
 
     await this.hardDeleteUseCase.execute({
       processId,
@@ -481,15 +482,15 @@ export class MentorshipController {
   async updateProcess(
     @Param('id') id: string,
     @Body() dto: UpdateMentorshipProcessDto,
-    @Request() req: any,
+    @CurrentUser() securityContext: SecurityContext,
     @CurrentChurch() churchId: string,
   ): Promise<MentorshipResponseDto> {
     const result = await this.updateMentorshipUseCase.execute(
       id,
       dto,
       churchId,
-      req.user?.memberId,
-      req.user?.roles || [],
+      securityContext.churchPersonId,
+      securityContext.functionalRoles || [],
     );
     return MentorshipResponseDto.fromEntity(result);
   }
@@ -508,3 +509,4 @@ export class MentorshipController {
     return MentorshipResponseDto.fromEntity(result);
   }
 }
+

@@ -4,7 +4,6 @@ import {
   Post,
   Body,
   UseGuards,
-  Request,
   Patch,
   Param,
   Delete,
@@ -12,28 +11,28 @@ import {
 } from '@nestjs/common';
 import { CreateCalendarEventDto } from './dto/create-calendar-event.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
 import { AgendaService } from './agenda.service';
+import { CurrentChurch, CurrentUser } from '../common/decorators';
+import { SecurityContext } from '../auth/security-context.interface';
 
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
+
 @Controller('agenda')
-@UseGuards(JwtAuthGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, SubscriptionGuard)
 export class AgendaController {
   constructor(private readonly agendaService: AgendaService) {}
 
   @Get()
   async getMyAgenda(
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
+    @CurrentChurch() churchId: string,
     @Query('historical') historical?: string,
     @Query('limit') limit?: string,
   ) {
-    const userId = req.user.userId;
-    const personId = req.user.personId;
-    const memberId = req.user.memberId;
-    const churchId = req.user.churchId;
-
     return this.agendaService.getUpcomingActivities(
-      personId,
-      memberId,
+      securityContext.personId,
+      securityContext.churchPersonId,
       churchId,
       historical === 'true',
       limit ? parseInt(limit, 10) : undefined,
@@ -41,31 +40,45 @@ export class AgendaController {
   }
 
   @Post()
-  async createEvent(@Request() req, @Body() createDto: CreateCalendarEventDto) {
-    const { personId, memberId, churchId, permissions, roles } = req.user;
+  async createEvent(
+    @CurrentUser() securityContext: SecurityContext,
+    @CurrentChurch() churchId: string,
+    @Body() createDto: CreateCalendarEventDto,
+  ) {
     return this.agendaService.createEvent(
       createDto,
-      personId,
+      securityContext.personId,
       churchId,
-      permissions || [],
-      roles || [],
-      memberId,
+      securityContext.permissions || [],
+      securityContext.functionalRoles || [],
+      securityContext.churchPersonId,
     );
   }
 
   @Patch(':id')
   async updateEvent(
     @Param('id') id: string,
-    @Request() req,
+    @CurrentUser() securityContext: SecurityContext,
     @Body() updateDto: any,
   ) {
-    const { personId, roles } = req.user;
-    return this.agendaService.updateEvent(id, updateDto, personId, roles || []);
+    return this.agendaService.updateEvent(
+      id,
+      updateDto,
+      securityContext.personId,
+      securityContext.functionalRoles || [],
+    );
   }
 
   @Delete(':id')
-  async deleteEvent(@Param('id') id: string, @Request() req) {
-    const { personId, roles } = req.user;
-    return this.agendaService.deleteEvent(id, personId, roles || []);
+  async deleteEvent(
+    @Param('id') id: string,
+    @CurrentUser() securityContext: SecurityContext,
+  ) {
+    return this.agendaService.deleteEvent(
+      id,
+      securityContext.personId,
+      securityContext.functionalRoles || [],
+    );
   }
 }
+

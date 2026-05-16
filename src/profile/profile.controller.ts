@@ -5,31 +5,39 @@ import {
   Post,
   Body,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { CurrentUser } from '../common/decorators';
+import { SecurityContext } from '../auth/security-context.interface';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('profile')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard)
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @Get('me')
-  getProfile(@Request() req) {
-    // req.user has userId from JWT
-    return this.profileService.getProfile(req.user.userId);
+  getProfile(@CurrentUser() securityContext: SecurityContext) {
+    return this.profileService.getProfile(securityContext.userId);
   }
 
   @Patch('me')
-  updateProfile(@Request() req, @Body() dto: UpdateProfileDto) {
-    return this.profileService.updateProfile(req.user.userId, dto);
+  updateProfile(
+    @CurrentUser() securityContext: SecurityContext,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.profileService.updateProfile(securityContext.userId, dto);
   }
 
   @Post('change-password')
-  changePassword(@Request() req, @Body() dto: ChangePasswordDto) {
-    return this.profileService.changePassword(req.user.userId, dto);
+  changePassword(
+    @CurrentUser() securityContext: SecurityContext,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.profileService.changePassword(securityContext.userId, dto);
   }
 }
+

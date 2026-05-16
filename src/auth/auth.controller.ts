@@ -20,6 +20,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChurchPerson } from '../members/entities/church-person.entity';
 import { JoinRequest, JoinRequestStatus } from '../members/entities/join-request.entity';
+import { getPermissionsForFunctionalRoles } from './role-permissions';
 
 @Controller('auth')
 export class AuthController {
@@ -129,7 +130,9 @@ export class AuthController {
       onboardingState = 'ACTIVE';
     }
 
-    // 5. Return ONLY DB-derived data (NO req.user fallbacks)
+    const functionalRoles = membership?.functionalRoles ?? [];
+    const permissions = getPermissionsForFunctionalRoles(functionalRoles);
+
     return {
       id: user.id,
       email: user.email,
@@ -139,13 +142,17 @@ export class AuthController {
       systemRole: user.systemRole,
       isEmailVerified: user.isEmailVerified,
       provider: user.provider,
-      // Membership data (only if active member)
-      churchId: membership?.churchId || null,
-      memberId: membership?.id || null,
-      membershipStatus: membership?.membershipStatus || null,
-      ecclesiasticalRole: membership?.ecclesiasticalRole || null,
-      roles: membership?.functionalRoles || [],
-      // Computed state
+      ...(user.systemRole === 'ADMIN_APP'
+        ? {}
+        : {
+            churchId: membership?.churchId ?? null,
+            memberId: membership?.id ?? null,
+            churchPersonId: membership?.id ?? null,
+            functionalRoles,
+            permissions,
+            membershipStatus: membership?.membershipStatus ?? null,
+            ecclesiasticalRole: membership?.ecclesiasticalRole ?? null,
+          }),
       onboardingState,
     };
   }

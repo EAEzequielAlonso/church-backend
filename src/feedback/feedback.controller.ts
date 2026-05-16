@@ -15,13 +15,15 @@ import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { FeedbackQueryDto } from './dto/feedback-query.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard, Roles } from '../auth/guards/roles.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { AppPermission } from '../auth/authorization/permissions.enum';
 import { CurrentUser, CurrentChurch } from '../common/decorators';
-import { SystemRole } from '../common/enums';
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
 
 @Controller('feedback')
-@UseGuards(JwtAuthGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
 export class FeedbackController {
   constructor(private readonly feedbackService: FeedbackService) { }
 
@@ -36,22 +38,19 @@ export class FeedbackController {
 
   // Admin Only Endpoints
   @Get()
-  @UseGuards(RolesGuard)
-  @Roles(SystemRole.ADMIN_APP)
+  @RequirePermissions(AppPermission.ROLE_MANAGE)
   async findAll(@Query() queryDto: FeedbackQueryDto) {
     return this.feedbackService.findAll(queryDto);
   }
 
   @Get('count-new')
-  @UseGuards(RolesGuard)
-  @Roles(SystemRole.ADMIN_APP)
+  @RequirePermissions(AppPermission.ROLE_MANAGE)
   async countNew() {
     return this.feedbackService.countNew();
   }
 
   @Patch(':id')
-  @UseGuards(RolesGuard)
-  @Roles(SystemRole.ADMIN_APP)
+  @RequirePermissions(AppPermission.ROLE_MANAGE)
   async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateFeedbackDto,

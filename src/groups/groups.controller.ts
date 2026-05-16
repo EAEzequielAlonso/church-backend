@@ -25,21 +25,27 @@ import {
 } from '@nestjs/swagger';
 import { GroupType } from './enums/group.enums';
 import { RegisterAttendanceDto } from './dto/groups.dto';
-
+import { UpdateGroupMaterialsDto } from './dto/group-materials.dto';
 import { SubscriptionGuard } from '../subscriptions/guards/subscription.guard';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { AppPermission } from '../auth/authorization/permissions.enum';
+import { CurrentUser } from '../common/decorators';
+import { SecurityContext } from '../auth/security-context.interface';
+
 @ApiTags('Groups')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard, SubscriptionGuard)
 @Controller('groups')
+@RequirePermissions(AppPermission.GROUP_VIEW)
 export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
 
   @Post()
+  @RequirePermissions(AppPermission.GROUP_CREATE)
   @ApiOperation({ summary: 'Create a new group/course/activity' })
-  create(
-    @Body() createGroupDto: CreateGroupDto,
-    @CurrentChurch() churchId: string,
-  ) {
+  create(@Body() createGroupDto: CreateGroupDto, @CurrentChurch() churchId: string) {
     return this.groupsService.create(createGroupDto, churchId);
   }
 
@@ -57,133 +63,108 @@ export class GroupsController {
   }
 
   @Patch(':id')
+  @RequirePermissions(AppPermission.GROUP_UPDATE)
   @ApiOperation({ summary: 'Update a specific group' })
-  update(
-    @Param('id') id: string,
-    @Body() updateGroupDto: UpdateGroupDto,
-    @CurrentChurch() churchId: string,
-  ) {
+  update(@Param('id') id: string, @Body() updateGroupDto: UpdateGroupDto, @CurrentChurch() churchId: string) {
     return this.groupsService.update(id, updateGroupDto, churchId);
   }
 
   @Delete(':id')
+  @RequirePermissions(AppPermission.GROUP_DELETE)
   @ApiOperation({ summary: 'Delete a group' })
   remove(@Param('id') id: string, @CurrentChurch() churchId: string) {
     return this.groupsService.remove(id, churchId);
   }
 
   @Post(':id/enroll/:churchPersonId')
+  @RequirePermissions(AppPermission.GROUP_MANAGE_MEMBERS)
   @ApiOperation({ summary: 'Enroll a person in a group' })
-  enroll(
-    @Param('id') id: string,
-    @Param('churchPersonId') churchPersonId: string,
-    @CurrentChurch() churchId: string,
-  ) {
+  enroll(@Param('id') id: string, @Param('churchPersonId') churchPersonId: string, @CurrentChurch() churchId: string) {
     return this.groupsService.enrollParticipant(id, churchPersonId, churchId);
   }
 
-  @Delete(':id/participants/:churchPersonId')
-  @ApiOperation({ summary: 'Remove a person from a group' })
-  removeParticipant(
+  @Post(':id/join')
+  @ApiOperation({ summary: 'Join a public group as the current member' })
+  joinAsCurrentMember(
     @Param('id') id: string,
-    @Param('churchPersonId') churchPersonId: string,
     @CurrentChurch() churchId: string,
+    @CurrentUser() securityContext: SecurityContext,
   ) {
+    return this.groupsService.joinAsCurrentMember(id, securityContext.churchPersonId, churchId);
+  }
+
+  @Delete(':id/participants/:churchPersonId')
+  @RequirePermissions(AppPermission.GROUP_MANAGE_MEMBERS)
+  @ApiOperation({ summary: 'Remove a person from a group' })
+  removeParticipant(@Param('id') id: string, @Param('churchPersonId') churchPersonId: string, @CurrentChurch() churchId: string) {
     return this.groupsService.removeParticipant(id, churchPersonId, churchId);
   }
 
-  @Post(':id/participants')
-  @ApiOperation({
-    summary: 'Manually add a participant to a group with a specific role',
-  })
-  addParticipant(
+  @Delete(':id/join')
+  @ApiOperation({ summary: 'Leave a group as the current member' })
+  leaveAsCurrentMember(
     @Param('id') id: string,
-    @Body() body: { churchPersonId: string; role: any }, // using any for now, ideally GroupRole
     @CurrentChurch() churchId: string,
+    @CurrentUser() securityContext: SecurityContext,
   ) {
-    return this.groupsService.enrollParticipant(
-      id,
-      body.churchPersonId,
-      churchId,
-      body.role,
-    );
+    return this.groupsService.leaveAsCurrentMember(id, securityContext.churchPersonId, churchId);
+  }
+
+  @Post(':id/participants')
+  @RequirePermissions(AppPermission.GROUP_MANAGE_MEMBERS)
+  addParticipant(@Param('id') id: string, @Body() body: { churchPersonId: string; role: any }, @CurrentChurch() churchId: string) {
+    return this.groupsService.enrollParticipant(id, body.churchPersonId, churchId, body.role);
   }
 
   @Post(':id/participants/bulk')
-  @ApiOperation({ summary: 'Add multiple participants to a group' })
-  bulkAddParticipants(
-    @Param('id') id: string,
-    @Body() dto: BulkAddParticipantsDto,
-    @CurrentChurch() churchId: string,
-  ) {
+  @RequirePermissions(AppPermission.GROUP_MANAGE_MEMBERS)
+  bulkAddParticipants(@Param('id') id: string, @Body() dto: BulkAddParticipantsDto, @CurrentChurch() churchId: string) {
     return this.groupsService.bulkAddParticipants(id, dto, churchId);
   }
 
   @Patch(':id/participants/:churchPersonId/role')
-  @ApiOperation({ summary: 'Update a participant role in a group' })
-  updateParticipantRole(
+  @RequirePermissions(AppPermission.GROUP_MANAGE_MEMBERS)
+  updateParticipantRole(@Param('id') id: string, @Param('churchPersonId') churchPersonId: string, @Body() body: { role: any }, @CurrentChurch() churchId: string) {
+    return this.groupsService.updateParticipantRole(id, churchPersonId, churchId, body.role);
+  }
+
+  @Patch(':id/materials')
+  @RequirePermissions(AppPermission.GROUP_UPDATE)
+  @ApiOperation({ summary: 'Update study resources linked to a group' })
+  updateMaterials(
     @Param('id') id: string,
-    @Param('churchPersonId') churchPersonId: string,
-    @Body() body: { role: any }, // using any for now, ideally GroupRole
+    @Body() dto: UpdateGroupMaterialsDto,
     @CurrentChurch() churchId: string,
   ) {
-    return this.groupsService.updateParticipantRole(
-      id,
-      churchPersonId,
-      churchId,
-      body.role,
-    );
+    return this.groupsService.updateMaterials(id, churchId, dto.resourceIds);
   }
 
   @Post(':id/meetings')
-  @ApiOperation({ summary: 'Register a new meeting/encounter for a group' })
-  createMeeting(
-    @Param('id') id: string,
-    @Body() body: { title?: string; date: string; location?: string; notes?: string },
-    @CurrentChurch() churchId: string,
-  ) {
+  @RequirePermissions(AppPermission.GROUP_UPDATE)
+  createMeeting(@Param('id') id: string, @Body() body: { title?: string; date: string; location?: string; notes?: string }, @CurrentChurch() churchId: string) {
     return this.groupsService.createMeeting(id, churchId, body);
   }
 
   @Patch(':id/meetings/:meetingId')
-  @ApiOperation({ summary: 'Update a specific meeting/encounter for a group' })
-  updateMeeting(
-    @Param('id') id: string,
-    @Param('meetingId') meetingId: string,
-    @Body() body: { title?: string; date?: string; location?: string; notes?: string },
-    @CurrentChurch() churchId: string,
-  ) {
+  @RequirePermissions(AppPermission.GROUP_UPDATE)
+  updateMeeting(@Param('id') id: string, @Param('meetingId') meetingId: string, @Body() body: { title?: string; date?: string; location?: string; notes?: string }, @CurrentChurch() churchId: string) {
     return this.groupsService.updateMeeting(id, meetingId, churchId, body);
   }
 
   @Delete(':id/meetings/:meetingId')
-  @ApiOperation({ summary: 'Delete a specific meeting/encounter from a group' })
-  deleteMeeting(
-    @Param('id') id: string,
-    @Param('meetingId') meetingId: string,
-    @CurrentChurch() churchId: string,
-  ) {
+  @RequirePermissions(AppPermission.GROUP_DELETE)
+  deleteMeeting(@Param('id') id: string, @Param('meetingId') meetingId: string, @CurrentChurch() churchId: string) {
     return this.groupsService.deleteMeeting(id, meetingId, churchId);
   }
 
   @Get(':id/meetings/:meetingId/attendance')
-  @ApiOperation({ summary: 'Get attendance for a specific meeting' })
-  getMeetingAttendance(
-    @Param('id') id: string,
-    @Param('meetingId') meetingId: string,
-    @CurrentChurch() churchId: string,
-  ) {
+  getMeetingAttendance(@Param('id') id: string, @Param('meetingId') meetingId: string, @CurrentChurch() churchId: string) {
     return this.groupsService.getMeetingAttendance(id, meetingId, churchId);
   }
 
   @Post(':id/meetings/:meetingId/attendance')
-  @ApiOperation({ summary: 'Register attendance for a specific meeting' })
-  registerAttendance(
-    @Param('id') id: string,
-    @Param('meetingId') meetingId: string,
-    @Body() body: RegisterAttendanceDto,
-    @CurrentChurch() churchId: string,
-  ) {
+  @RequirePermissions(AppPermission.GROUP_MANAGE_MEMBERS)
+  registerAttendance(@Param('id') id: string, @Param('meetingId') meetingId: string, @Body() body: RegisterAttendanceDto, @CurrentChurch() churchId: string) {
     return this.groupsService.registerAttendance(id, meetingId, body, churchId);
   }
 }

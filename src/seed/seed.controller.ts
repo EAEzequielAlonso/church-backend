@@ -2,14 +2,16 @@ import { Controller, Post, UseGuards } from '@nestjs/common';
 import { SeedService } from './seed.service';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard, Roles } from '../auth/guards/roles.guard';
-import { SystemRole } from '../common/enums';
+import { SecurityContextGuard } from '../auth/guards/security-context.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { AppPermission } from '../auth/authorization/permissions.enum';
 
 @ApiTags('Seed')
 @ApiBearerAuth()
 @Controller('seed')
-@Roles(SystemRole.ADMIN_APP)
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
+@RequirePermissions(AppPermission.ROLE_MANAGE)
 export class SeedController {
   constructor(private readonly seedService: SeedService) {}
 
