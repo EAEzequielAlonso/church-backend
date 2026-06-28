@@ -12,7 +12,7 @@ const toNumber = (value: string | undefined, fallback: number): number => {
 export const getDatabaseConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
   url: process.env.DATABASE_URL,
-  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+  entities: [__dirname + '/../**/*.entity{.ts,.js}', __dirname + '/../**/*.entities{.ts,.js}'],
   autoLoadEntities: true,
   logging: false, // Set to true to debug queries
   //synchronize: true,

@@ -14,11 +14,13 @@
     },
     "incremental": true,
     "skipLibCheck": true,
+
     "strictNullChecks": false,
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "resolveJsonModule": true
-  }
+  },
+  "exclude": ["node_modules", "dist", "erp-frozen-backend"]
 }

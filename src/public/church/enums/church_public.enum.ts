@@ -1,0 +1,18 @@
+export enum ActivityVisibility {
+  PUBLIC = 'PUBLIC',
+  NETWORK_ONLY = 'NETWORK_ONLY',
+  INVITATION = 'INVITATION',
+}
+
+export enum PublicActivityType {
+  WORKSHOP = 'WORKSHOP',
+  CONFERENCE = 'CONFERENCE',
+  EVANGELISTIC_CAMPAIGN = 'EVANGELISTIC_CAMPAIGN',
+}
+
+export enum ActivityStatus {
+  DRAFT = 'DRAFT',
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}

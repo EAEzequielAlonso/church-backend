@@ -5,6 +5,7 @@ export enum SystemRole {
 
 export enum PlanType {
   TRIAL = 'TRIAL',
+  FREE_NETWORK = 'FREE_NETWORK',
   SEMILLA = 'SEMILLA',
   CRECIMIENTO = 'CRECIMIENTO',
   EXPANSION = 'EXPANSION',
@@ -108,18 +109,6 @@ export enum AccountType {
   INCOME = 'income',
   EXPENSE = 'expense',
   EQUITY = 'equity',
-}
-
-export enum MaritalStatus {
-  SINGLE = 'SINGLE',
-  MARRIED = 'MARRIED',
-  DIVORCED = 'DIVORCED',
-  WIDOWED = 'WIDOWED',
-}
-
-export enum Sex {
-  MALE = 'MALE',
-  FEMALE = 'FEMALE',
 }
 
 export enum CareProcessType {
@@ -227,4 +216,24 @@ export enum EventSourceType {
   GROUP_MEETING = 'GROUP_MEETING',
   MENTORSHIP_MEETING = 'MENTORSHIP_MEETING',
   MEETING = 'MEETING', // Para los encuentros generales de la iglesia (ex Cultos)
+}
+
+export enum Currency {
+  USD = 'USD',
+  ARS = 'ARS',
+  EUR = 'EUR',
+  MXN = 'MXN',
+  COP = 'COP',
+  BRL = 'BRL',
+}
+
+export enum MembershipStatus {
+  VISITOR = 'VISITOR',
+  PROSPECT = 'PROSPECT',
+  MEMBER = 'MEMBER',
+  INACTIVE = 'INACTIVE',
+  ARCHIVED = 'ARCHIVED',
+  DECEASED = 'DECEASED',
+  DISCIPLINED = 'DISCIPLINED',
+  EXCOMMUNICATED = 'EXCOMMUNICATED',
 }

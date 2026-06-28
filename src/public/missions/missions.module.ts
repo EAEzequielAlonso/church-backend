@@ -1,0 +1,50 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { MissionProject } from './entities/mission-project.entity';
+import { MissionCollaboration } from './entities/mission-collaboration.entity';
+import { MissionNeed } from './entities/mission-need.entity';
+import { MissionReport } from './entities/mission-report.entity';
+import { MissionsPolicies } from './policies/missions.policies';
+import { MissionsService } from './services/missions.service';
+import { MissionNeedsService } from './services/mission-needs.service';
+import { MissionCollaborationsService } from './services/mission-collaborations.service';
+import { MissionReportsService } from './services/mission-reports.service';
+import { MissionsController } from './controllers/missions.controller';
+import { MissionsManagementController } from './controllers/missions-management.controller'; 
+
+import { Church } from '../../core/churches/entities/church.entity';
+import { ChurchNeedSignal } from '../need/entities/church-need-signal.entity';
+import { ChurchPublicProfile } from '../church/entities/church_public_profile.entity';
+import { EcosystemActivitiesModule } from '../ecosystem/ecosystem-activities.module';
+import { ChurchOwnershipService } from '../church/services/church-ownership.service';
+import { ChurchClaim } from '../church/entities/church_claim.entity';
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([
+      MissionProject,
+      MissionCollaboration,
+      MissionNeed,
+      MissionReport,
+      Church,
+      ChurchNeedSignal,
+      ChurchPublicProfile,
+      ChurchClaim
+    ]),
+    EcosystemActivitiesModule,
+  ],
+  controllers: [
+    MissionsController,
+    MissionsManagementController,
+  ],
+  providers: [
+    MissionsPolicies,
+    MissionsService,
+    MissionNeedsService,
+    MissionCollaborationsService,
+    MissionReportsService,
+    ChurchOwnershipService
+  ],
+  exports: [MissionsService],
+})
+export class MissionsModule {}

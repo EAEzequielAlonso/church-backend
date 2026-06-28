@@ -1,0 +1,77 @@
+import { Type } from 'class-transformer';
+import { IsDate, IsEnum, IsLatitude, IsLongitude, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
+import { GeoPrecision } from 'src/public/ecosystem/enums/ecosystem.enums';
+import { MissionSourceType } from '../enums/missions.enums';
+
+export class CreateMissionProjectDto {
+  @IsString()
+  title: string;
+
+  @IsString()
+  @IsOptional()
+  summary?: string;
+
+  @IsString()
+  description: string;
+
+  @IsString()
+  @IsOptional()
+  vision?: string;
+
+  // Ubicación
+  @IsString()
+  @IsOptional()
+  country?: string;
+
+  @IsString()
+  @IsOptional()
+  state?: string;
+
+  @IsString()
+  @IsOptional()
+  city?: string;
+
+  @IsString()
+  @IsOptional()
+  address?: string;
+
+  @IsString()
+  @IsOptional()
+  postalCode?: string;
+
+  @IsNumber()
+  @IsLatitude()
+  @IsOptional()
+  latitude?: number;
+
+  @IsNumber()
+  @IsLongitude()
+  @IsOptional()
+  longitude?: number;
+
+  @IsEnum(GeoPrecision)
+  @IsOptional()
+  geoPrecision?: GeoPrecision;
+
+  // Propiedad
+  @IsUUID()
+  creatorChurchId: string;
+
+  @IsUUID()
+  leaderId: string;
+
+  // Origen
+  @IsEnum(MissionSourceType)
+  @IsOptional()
+  sourceEntityType?: MissionSourceType;
+
+  @IsUUID()
+  @IsOptional()
+  sourceEntityId?: string;
+
+  // Fechas
+  @IsDate()
+  @Type(() => Date)
+  @IsOptional()
+  plannedStartDate?: Date;
+}

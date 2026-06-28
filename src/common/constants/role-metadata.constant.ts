@@ -3,8 +3,8 @@ import {
   MinistryRole,
   FamilyRole,
   EcclesiasticalRole,
+  MembershipStatus,
 } from '../enums';
-import { MembershipStatus } from '../../members/enums/membership-status.enum';
 
 export const ROLE_METADATA = {
   [SystemRole.ADMIN_APP]: {
