@@ -228,6 +228,10 @@ export class AuthService {
       relations: ['person'],
     });
 
+    if (!user) {
+      throw new UnauthorizedException('Usuario no registrado. Por favor, regístrese primero.');
+    }
+
     // Sync avatar if missing on existing user
     if (user && user.person && !user.person.avatarUrl && dto.picture) {
       user.person.avatarUrl = dto.picture;
