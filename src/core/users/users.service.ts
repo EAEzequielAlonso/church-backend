@@ -115,6 +115,7 @@ export class UsersService implements OnApplicationBootstrap {
 
     // Update User fields
     if (data.password) user.password = await bcrypt.hash(data.password, 10);
+    if (data.isOnboarded !== undefined) user.isOnboarded = data.isOnboarded;
 
     // Update Person fields
     if (user.person) {

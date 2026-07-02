@@ -89,4 +89,8 @@ export class UpdateProfileDto {
   @ApiProperty({ required: false })
   @IsOptional()
   isPublicProfileEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  isOnboarded?: boolean;
 }
