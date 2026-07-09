@@ -46,6 +46,7 @@ export class CreatePublicChurchUseCase {
         website: dto.website,
         instagram: dto.instagram,
         facebook: dto.facebook,
+        youtube: dto.youtube,
         logoUrl: dto.logoUrl,
         coverUrl: dto.coverUrl,
         mainImageUrl: dto.mainImageUrl,

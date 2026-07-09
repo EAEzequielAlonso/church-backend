@@ -98,6 +98,11 @@ export class CreatePublicChurchDto {
   @IsUrl()
   @IsOptional()
   @Transform(({ value }) => value === '' ? undefined : value)
+  youtube?: string;
+
+  @IsUrl()
+  @IsOptional()
+  @Transform(({ value }) => value === '' ? undefined : value)
   coverUrl?: string;
 
   @IsUrl()
