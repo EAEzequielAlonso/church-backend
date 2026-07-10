@@ -10,9 +10,9 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { MaritalStatus, Sex } from '../enums/person.enum';
-import { ChurchFollow } from 'src/public/church/entities/follower.entity';
-import { PublicActivity } from 'src/public/church/entities/public-activity.entity';
-import { SmallGroup } from 'src/public/small-groups/entities/small-group.entity';
+import { ChurchFollow } from '../../../public/church/entities/follower.entity';
+import { PublicActivity } from '../../../public/church/entities/public-activity.entity';
+import { SmallGroup } from '../../../public/small-groups/entities/small-group.entity';
 
 @Entity('persons')
 export class Person {

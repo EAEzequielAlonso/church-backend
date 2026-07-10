@@ -174,6 +174,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (!user.password) {
+      if (user.provider === 'google') {
+        throw new BadRequestException('Esta cuenta fue creada utilizando Google. Inicia sesión con Google o establece una contraseña para acceder mediante email.');
+      }
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
     if (!(await bcrypt.compare(dto.password, user.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -194,29 +201,7 @@ export class AuthService {
       }
     }
 
-    // JWT payload — minimal, NO onboarding state
-    const payload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      personId: user.person?.id || null,
-      systemRole: user.systemRole,
-      isEmailVerified: user.isEmailVerified,
-      provider: user.provider,
-    };
-
-    return {
-      accessToken: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: `${user.person?.firstName || ''} ${user.person?.lastName || ''}`.trim() || 'Usuario',
-        personId: user.person?.id,
-        isOnboarded: user.isOnboarded,
-        isEmailVerified: user.isEmailVerified,
-        systemRole: user.systemRole,
-        provider: user.provider,
-      },
-    };
+    return this.generateTokenForUser(user);
   }
 
   // ==========================================
@@ -229,45 +214,40 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Usuario no registrado. Por favor, regístrese primero.');
-    }
+      // Auto-create User and Person if they don't exist
+      let nameParts = dto.name ? dto.name.split(' ') : ['Usuario'];
+      let firstName = nameParts[0];
+      let lastName = nameParts.slice(1).join(' ');
 
-    // Sync avatar if missing on existing user
-    if (user && user.person && !user.person.avatarUrl && dto.picture) {
-      user.person.avatarUrl = dto.picture;
-      await this.personRepository.save(user.person);
-    }
-
-    // Standard flow
-    if (!user.person) {
-      user = await this.userRepository.findOne({
-        where: { id: user.id },
-        relations: ['person'],
+      const person = this.personRepository.create({
+        email: dto.email,
+        firstName: firstName,
+        lastName: lastName,
+        avatarUrl: dto.picture || null,
       });
+
+      user = this.userRepository.create({
+        email: dto.email,
+        systemRole: SystemRole.USER,
+        isEmailVerified: true,
+        isOnboarded: false,
+        provider: 'google',
+      });
+
+      await this.dataSource.transaction(async (manager) => {
+        const savedPerson = await manager.save(person);
+        user.person = savedPerson;
+        await manager.save(user);
+      });
+    } else {
+      // Existing user logic
+      if (user.person && !user.person.avatarUrl && dto.picture) {
+        user.person.avatarUrl = dto.picture;
+        await this.personRepository.save(user.person);
+      }
     }
 
-    const payload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      personId: user.person?.id || null,
-      systemRole: user.systemRole,
-      isEmailVerified: user.isEmailVerified,
-      provider: user.provider,
-    };
-
-    return {
-      accessToken: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: `${user.person?.firstName || ''} ${user.person?.lastName || ''}`.trim() || 'S/N',
-        personId: user.person?.id,
-        isEmailVerified: user.isEmailVerified,
-        systemRole: user.systemRole,
-        avatarUrl: user.person?.avatarUrl,
-        provider: user.provider,
-      },
-    };
+    return this.generateTokenForUser(user);
   }
 
 
@@ -462,12 +442,13 @@ export class AuthService {
       user: {
         id: reloadedUser.id,
         email: reloadedUser.email,
-        fullName: `${reloadedUser.person?.firstName || ''} ${reloadedUser.person?.lastName || ''}`.trim() || 'S/N',
+        fullName: `${reloadedUser.person?.firstName || ''} ${reloadedUser.person?.lastName || ''}`.trim() || 'Usuario',
         personId: reloadedUser.person?.id,
         isOnboarded: reloadedUser.isOnboarded,
         isEmailVerified: reloadedUser.isEmailVerified,
         systemRole: reloadedUser.systemRole,
         provider: reloadedUser.provider,
+        avatarUrl: reloadedUser.person?.avatarUrl || null,
       },
     };
   }

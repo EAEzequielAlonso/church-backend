@@ -9,11 +9,11 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { ChurchPublicProfile } from 'src/public/church/entities/church_public_profile.entity'; 
-import { MissionProject } from 'src/public/missions/entities/mission-project.entity';
-import { MissionCollaboration } from 'src/public/missions/entities/mission-collaboration.entity';
-import { PublicChurchRelation } from 'src/public/church/entities/public_church_relation.entity';
-import { SmallGroup } from 'src/public/small-groups/entities/small-group.entity';
+import { ChurchPublicProfile } from '../../../public/church/entities/church_public_profile.entity'; 
+import { MissionProject } from '../../../public/missions/entities/mission-project.entity';
+import { MissionCollaboration } from '../../../public/missions/entities/mission-collaboration.entity';
+import { PublicChurchRelation } from '../../../public/church/entities/public_church_relation.entity';
+import { SmallGroup } from '../../../public/small-groups/entities/small-group.entity';
 
 /**
  * ═══════════════════════════════════════════════════
