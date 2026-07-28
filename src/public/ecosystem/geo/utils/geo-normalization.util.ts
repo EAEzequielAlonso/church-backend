@@ -16,7 +16,12 @@ export class GeoNormalizationUtil {
       .map((word) => {
         // Special case for prepositions common in Spanish
         const lowerWord = word.toLowerCase();
-        if (['de', 'del', 'la', 'las', 'el', 'los', 'y', 'en'].includes(lowerWord) && value.length > word.length) {
+        if (
+          ['de', 'del', 'la', 'las', 'el', 'los', 'y', 'en'].includes(
+            lowerWord,
+          ) &&
+          value.length > word.length
+        ) {
           return lowerWord;
         }
         return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -27,7 +32,10 @@ export class GeoNormalizationUtil {
   /**
    * Generates a normalized search key from city and state
    */
-  static generateCityKey(city?: string | null, state?: string | null): string | null {
+  static generateCityKey(
+    city?: string | null,
+    state?: string | null,
+  ): string | null {
     if (!city || !state) return null;
     return `${city.trim().toLowerCase()}|${state.trim().toLowerCase()}`;
   }

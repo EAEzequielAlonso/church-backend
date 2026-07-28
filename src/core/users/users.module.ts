@@ -6,10 +6,13 @@ import { User } from './entities/user.entity';
 import { Person } from './entities/person.entity';
 
 import { ChurchPublicProfile } from 'src/public/church/entities/church_public_profile.entity';
-import { EcosystemContributionsModule } from 'src/public/ecosystem/ecosystem-contributions.module'; 
+import { EcosystemContributionsModule } from 'src/public/ecosystem/ecosystem-contributions.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Person, ChurchPublicProfile]), EcosystemContributionsModule],
+  imports: [
+    TypeOrmModule.forFeature([User, Person, ChurchPublicProfile]),
+    EcosystemContributionsModule,
+  ],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],

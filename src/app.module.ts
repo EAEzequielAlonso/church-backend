@@ -41,4 +41,4 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
   ],
   providers: [MemoryMonitorService],
 })
-export class AppModule { }
+export class AppModule {}

@@ -7,8 +7,7 @@ import { AppPermission } from '../../../core/auth/authorization/permissions.enum
 import { ChurchClaimsService } from '../services/church-claims.service';
 import { ApproveChurchClaimUseCase } from '../use-cases/church-claims/approve-church-claim.use-case';
 import { RejectChurchClaimUseCase } from '../use-cases/church-claims/reject-church-claim.use-case';
-import { ChurchLifecycleService } from '../church-profile/services/church-lifecycle.service'; 
-
+import { ChurchLifecycleService } from '../church-profile/services/church-lifecycle.service';
 
 @ApiTags('Public Claims Admin')
 @ApiBearerAuth()
@@ -21,7 +20,7 @@ export class ChurchClaimsAdminController {
     private readonly approveUseCase: ApproveChurchClaimUseCase,
     private readonly rejectUseCase: RejectChurchClaimUseCase,
     private readonly lifecycleService: ChurchLifecycleService,
-  ) { }
+  ) {}
 
   @Get('pending')
   @ApiOperation({ summary: 'List pending public church claims' })
@@ -30,7 +29,9 @@ export class ChurchClaimsAdminController {
   }
 
   @Post(':id/approve')
-  @ApiOperation({ summary: 'Approve a public church claim and assign church ownership' })
+  @ApiOperation({
+    summary: 'Approve a public church claim and assign church ownership',
+  })
   approve(@Param('id') id: string) {
     return this.approveUseCase.execute(id);
   }
@@ -42,9 +43,10 @@ export class ChurchClaimsAdminController {
   }
 
   @Post('verify-church/:churchId')
-  @ApiOperation({ summary: 'Manually verify an unverified church (without a claim)' })
+  @ApiOperation({
+    summary: 'Manually verify an unverified church (without a claim)',
+  })
   verifyChurch(@Param('churchId') churchId: string) {
     return this.lifecycleService.transitionState(churchId);
   }
 }
-

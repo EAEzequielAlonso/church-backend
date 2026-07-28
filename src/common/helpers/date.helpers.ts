@@ -34,7 +34,12 @@ export function getNowInTimezone(tz: string = DEFAULT_TZ) {
   const get = (type: string) =>
     parseInt(parts.find((p) => p.type === type)!.value);
 
-  return { year: get('year'), month: get('month'), day: get('day'), hour: get('hour') };
+  return {
+    year: get('year'),
+    month: get('month'),
+    day: get('day'),
+    hour: get('hour'),
+  };
 }
 
 /**
@@ -46,7 +51,7 @@ export function daysInMonth(year: number, month: number): number {
 
 /**
  * Converts "midnight local in a given timezone" → its UTC equivalent.
- * 
+ *
  * Example: localMidnightToUTC(2026, 5, 1, 'America/Argentina/Buenos_Aires')
  *   → 2026-05-01 00:00 ARG = 2026-05-01 03:00 UTC
  */

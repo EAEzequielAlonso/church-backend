@@ -6,7 +6,7 @@ export class ChurchClaimResponseDto {
   status: string;
   createdAt: Date;
   updatedAt: Date;
-  
+
   church?: ChurchSummaryDto | null;
 
   static fromEntity(entity: ChurchClaim): ChurchClaimResponseDto {

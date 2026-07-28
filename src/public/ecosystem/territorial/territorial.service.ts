@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NeedSignal } from '../../need/entities/need-signal.entity';
-import { PublicChurchRelationStatus, PublicChurchRelationType, NeedSignalStatus } from '../../enums/public.enums';
+import {
+  PublicChurchRelationStatus,
+  PublicChurchRelationType,
+  NeedSignalStatus,
+} from '../../enums/public.enums';
 import { ChurchOwnershipService } from '../../church/services/church-ownership.service';
 import { ChurchPublicProfile } from '../../church/entities/church_public_profile.entity';
 import { PublicChurchRelation } from '../../church/entities/public_church_relation.entity';
@@ -38,36 +42,55 @@ export interface CityData {
 @Injectable()
 export class TerritorialService {
   constructor(
-    @InjectRepository(ChurchPublicProfile) private readonly churchProfiles: Repository<ChurchPublicProfile>,
-    @InjectRepository(PublicChurchRelation) private readonly relations: Repository<PublicChurchRelation>,
-    @InjectRepository(NeedSignal) private readonly signals: Repository<NeedSignal>,
+    @InjectRepository(ChurchPublicProfile)
+    private readonly churchProfiles: Repository<ChurchPublicProfile>,
+    @InjectRepository(PublicChurchRelation)
+    private readonly relations: Repository<PublicChurchRelation>,
+    @InjectRepository(NeedSignal)
+    private readonly signals: Repository<NeedSignal>,
     private readonly ownership: ChurchOwnershipService,
-  ) { }
+  ) {}
 
   async getDashboard() {
     // 1. Get raw stats from databases grouped by lowercased city, state, country
-    const churchStats = await this.churchProfiles.createQueryBuilder('p')
+    const churchStats = await this.churchProfiles
+      .createQueryBuilder('p')
       .select('MAX(p.city)', 'city')
       .addSelect('MAX(p.state)', 'state')
       .addSelect('MAX(p.country)', 'country')
       .addSelect('COUNT(*)', 'total_churches')
-      .addSelect(`COUNT(*) FILTER (WHERE p.isVerified = true OR p.lifecycleState IN ('HEALTHY', 'VERIFIED'))`, 'verified_churches')
+      .addSelect(
+        `COUNT(*) FILTER (WHERE p.isVerified = true)`,
+        'verified_churches',
+      )
       .where('p.city IS NOT NULL')
-      .groupBy('LOWER(TRIM(p.city)), LOWER(TRIM(p.state)), LOWER(TRIM(p.country))')
+      .groupBy(
+        'LOWER(TRIM(p.city)), LOWER(TRIM(p.state)), LOWER(TRIM(p.country))',
+      )
       .getRawMany();
 
-    const relationStats = await this.relations.createQueryBuilder('r')
+    const relationStats = await this.relations
+      .createQueryBuilder('r')
       .innerJoin('church_public_profiles', 'p', 'p."churchId" = r."churchId"')
       .select('MAX(p.city)', 'city')
       .addSelect('MAX(p.state)', 'state')
       .addSelect('MAX(p.country)', 'country')
-      .addSelect(`COUNT(*) FILTER (WHERE r."relationType" = '${PublicChurchRelationType.COMMUNITY_MEMBER}' AND r.status = '${PublicChurchRelationStatus.APPROVED}')`, 'members')
-      .addSelect(`COUNT(*) FILTER (WHERE r."relationType" = '${PublicChurchRelationType.REGULAR_VISITOR}' AND r.status = '${PublicChurchRelationStatus.APPROVED}')`, 'visitors')
+      .addSelect(
+        `COUNT(*) FILTER (WHERE r."relationType" = '${PublicChurchRelationType.COMMUNITY_MEMBER}' AND r.status = '${PublicChurchRelationStatus.APPROVED}')`,
+        'members',
+      )
+      .addSelect(
+        `COUNT(*) FILTER (WHERE r."relationType" = '${PublicChurchRelationType.REGULAR_VISITOR}' AND r.status = '${PublicChurchRelationStatus.APPROVED}')`,
+        'visitors',
+      )
       .where('p.city IS NOT NULL')
-      .groupBy('LOWER(TRIM(p.city)), LOWER(TRIM(p.state)), LOWER(TRIM(p.country))')
+      .groupBy(
+        'LOWER(TRIM(p.city)), LOWER(TRIM(p.state)), LOWER(TRIM(p.country))',
+      )
       .getRawMany();
 
-    const signalStats = await this.signals.createQueryBuilder('s')
+    const signalStats = await this.signals
+      .createQueryBuilder('s')
       .innerJoin('s.needLocation', 'l')
       .select('MAX(l.city)', 'city')
       .addSelect('MAX(l.state)', 'state')
@@ -75,19 +98,26 @@ export class TerritorialService {
       .addSelect('COUNT(*)', 'need_signals')
       .addSelect('SUM(s."impactedPeopleCount")', 'people_looking')
       .where('s.status = :status', { status: NeedSignalStatus.OPEN })
-      .groupBy('LOWER(TRIM(l.city)), LOWER(TRIM(l.state)), LOWER(TRIM(l.country))')
+      .groupBy(
+        'LOWER(TRIM(l.city)), LOWER(TRIM(l.state)), LOWER(TRIM(l.country))',
+      )
       .getRawMany();
 
     // 2. Merge data by normalized keys
     const citiesMap = new Map<string, CityData>();
 
-    const mergeIntoMap = (rows: any[], type: 'church' | 'relation' | 'signal') => {
+    const mergeIntoMap = (
+      rows: any[],
+      type: 'church' | 'relation' | 'signal',
+    ) => {
       for (const row of rows) {
         if (!row.city || !row.state) continue;
 
         const norm_city = GeoNormalizationUtil.normalizeString(row.city);
         const norm_state = GeoNormalizationUtil.normalizeString(row.state);
-        const norm_country = GeoNormalizationUtil.normalizeString(row.country || '');
+        const norm_country = GeoNormalizationUtil.normalizeString(
+          row.country || '',
+        );
 
         const key = `${norm_city}|${norm_state}|${norm_country}`;
         const existing = citiesMap.get(key) || {
@@ -152,7 +182,10 @@ export class TerritorialService {
 
       coverage.push(cityResult);
 
-      if (opportunityType !== OpportunityType.COBERTURA_SALUDABLE && opportunityType !== OpportunityType.PRESENCIA_INICIAL) {
+      if (
+        opportunityType !== OpportunityType.COBERTURA_SALUDABLE &&
+        opportunityType !== OpportunityType.PRESENCIA_INICIAL
+      ) {
         opportunities.push(cityResult);
       }
 
@@ -180,7 +213,7 @@ export class TerritorialService {
         // Placeholder for phase 6B
         churchesLast30d: 0,
         signalsLast30d: 0,
-      }
+      },
     };
   }
 
@@ -191,7 +224,10 @@ export class TerritorialService {
     }
 
     const churchId = churchIds[0];
-    const profile = await this.churchProfiles.findOne({ where: { churchId }, relations: ['church'] });
+    const profile = await this.churchProfiles.findOne({
+      where: { churchId },
+      relations: ['church'],
+    });
 
     if (!profile || !profile.city || !profile.state) {
       return null;
@@ -200,16 +236,22 @@ export class TerritorialService {
     // Get the whole dashboard to reuse calculations
     const dashboard = await this.getDashboard();
 
-    const zoneCoverage = dashboard.coverage.find(c =>
-      GeoNormalizationUtil.normalizeString(c.city) === GeoNormalizationUtil.normalizeString(profile.city!) &&
-      GeoNormalizationUtil.normalizeString(c.state) === GeoNormalizationUtil.normalizeString(profile.state!)
+    const zoneCoverage = dashboard.coverage.find(
+      (c) =>
+        GeoNormalizationUtil.normalizeString(c.city) ===
+          GeoNormalizationUtil.normalizeString(profile.city!) &&
+        GeoNormalizationUtil.normalizeString(c.state) ===
+          GeoNormalizationUtil.normalizeString(profile.state!),
     );
 
     // Find nearby opportunities (same state, different city)
     const nearbyOpportunities = dashboard.opportunities
-      .filter(o =>
-        GeoNormalizationUtil.normalizeString(o.state) === GeoNormalizationUtil.normalizeString(profile.state!) &&
-        GeoNormalizationUtil.normalizeString(o.city) !== GeoNormalizationUtil.normalizeString(profile.city!)
+      .filter(
+        (o) =>
+          GeoNormalizationUtil.normalizeString(o.state) ===
+            GeoNormalizationUtil.normalizeString(profile.state!) &&
+          GeoNormalizationUtil.normalizeString(o.city) !==
+            GeoNormalizationUtil.normalizeString(profile.city!),
       )
       .slice(0, 3); // Top 3 nearby
 
@@ -238,22 +280,39 @@ export class TerritorialService {
     const verifiedBonus = city.verifiedChurches * 3;
     const memberPenalty = Math.min(city.members, 20) * 0.5;
 
-    return Math.max(0, needWeight + lookingWeight - churchPenalty - verifiedBonus - memberPenalty);
+    return Math.max(
+      0,
+      needWeight +
+        lookingWeight -
+        churchPenalty -
+        verifiedBonus -
+        memberPenalty,
+    );
   }
 
-  private classifyOpportunity(city: CityData, urgencyScore: number): OpportunityType {
-    if (city.churches === 0 && urgencyScore > 5) return OpportunityType.PRIORIDAD_MISIONERA;
-    if (city.churches === 0 && urgencyScore > 0) return OpportunityType.SIN_PRESENCIA;
-    if (city.churches > 0 && urgencyScore > 10) return OpportunityType.OPORTUNIDAD_EXPANSION;
-    if (city.churches <= 2 && city.verifiedChurches === 0) return OpportunityType.PRESENCIA_INICIAL;
+  private classifyOpportunity(
+    city: CityData,
+    urgencyScore: number,
+  ): OpportunityType {
+    if (city.churches === 0 && urgencyScore > 5)
+      return OpportunityType.PRIORIDAD_MISIONERA;
+    if (city.churches === 0 && urgencyScore > 0)
+      return OpportunityType.SIN_PRESENCIA;
+    if (city.churches > 0 && urgencyScore > 10)
+      return OpportunityType.OPORTUNIDAD_EXPANSION;
+    if (city.churches <= 2 && city.verifiedChurches === 0)
+      return OpportunityType.PRESENCIA_INICIAL;
     return OpportunityType.COBERTURA_SALUDABLE;
   }
 
   private classifyCoverage(city: CityData): CoverageLevel {
     if (city.churches === 0) return CoverageLevel.NONE;
-    if (city.churches <= 2 && city.verifiedChurches === 0) return CoverageLevel.LOW;
-    if (city.verifiedChurches >= 1 || city.churches > 2) return CoverageLevel.MEDIUM;
-    if (city.verifiedChurches >= 2 && city.churches >= 3) return CoverageLevel.HIGH;
+    if (city.churches <= 2 && city.verifiedChurches === 0)
+      return CoverageLevel.LOW;
+    if (city.verifiedChurches >= 1 || city.churches > 2)
+      return CoverageLevel.MEDIUM;
+    if (city.verifiedChurches >= 2 && city.churches >= 3)
+      return CoverageLevel.HIGH;
     return CoverageLevel.MEDIUM;
   }
 }

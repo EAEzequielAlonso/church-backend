@@ -28,7 +28,7 @@ export class EcosystemActivitiesController {
   @ApiOperation({ summary: 'Get personal ecosystem activity feed' })
   async getPersonalFeed(
     @Param('personId') personId: string,
-    @Query() query: GetEcosystemActivitiesDto
+    @Query() query: GetEcosystemActivitiesDto,
   ) {
     query.personId = personId;
     const activities = await this.activitiesService.getActivities(query);
@@ -39,7 +39,7 @@ export class EcosystemActivitiesController {
   @ApiOperation({ summary: 'Get church ecosystem activity feed' })
   async getChurchFeed(
     @Param('churchId') churchId: string,
-    @Query() query: GetEcosystemActivitiesDto
+    @Query() query: GetEcosystemActivitiesDto,
   ) {
     query.churchId = churchId;
     const activities = await this.activitiesService.getActivities(query);
@@ -54,7 +54,7 @@ export class EcosystemActivitiesController {
       EcosystemActivityEntityType.UNREACHED_AREA,
       EcosystemActivityEntityType.CHURCH_NEED_SIGNAL,
       EcosystemActivityEntityType.NEED_SIGNAL,
-      EcosystemActivityEntityType.MISSION_COLLABORATION
+      EcosystemActivityEntityType.MISSION_COLLABORATION,
     ];
     const activities = await this.activitiesService.getActivities(query);
     return activities.map(this.mapToResponse);
@@ -71,27 +71,33 @@ export class EcosystemActivitiesController {
         city: activity.city,
       },
       metadata: activity.metadata,
-      actorPerson: activity.actorPerson ? {
-        id: activity.actorPerson.id,
-        firstName: activity.actorPerson.firstName,
-        lastName: activity.actorPerson.lastName,
-        avatarUrl: activity.actorPerson.avatarUrl,
-      } : null,
-      actorChurch: activity.actorChurch ? {
-        id: activity.actorChurch.id,
-        name: activity.actorChurch.canonicalName,
-      } : null,
-      relatedChurch: activity.relatedChurch ? {
-        id: activity.relatedChurch.id,
-        name: activity.relatedChurch.canonicalName,
-      } : null,
+      actorPerson: activity.actorPerson
+        ? {
+            id: activity.actorPerson.id,
+            firstName: activity.actorPerson.firstName,
+            lastName: activity.actorPerson.lastName,
+            avatarUrl: activity.actorPerson.avatarUrl,
+          }
+        : null,
+      actorChurch: activity.actorChurch
+        ? {
+            id: activity.actorChurch.id,
+            name: activity.actorChurch.canonicalName,
+          }
+        : null,
+      relatedChurch: activity.relatedChurch
+        ? {
+            id: activity.relatedChurch.id,
+            name: activity.relatedChurch.canonicalName,
+          }
+        : null,
       targetEntity: {
         id: activity.entityId,
         type: activity.entityType,
         // Since we don't eager load every possible polymorphic target entity,
-        // the frontend will use this reference. If we wanted to enrich further, 
+        // the frontend will use this reference. If we wanted to enrich further,
         // we would need a dedicated resolver or data loader here.
-      }
+      },
     };
   }
 }

@@ -6,9 +6,11 @@ import { EcosystemContributionsService } from '../ecosystem/services/ecosystem-c
 import { EcosystemFeedController } from './ecosystem-feed.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([EcosystemContribution, PublicChurchRelation])],
+  imports: [
+    TypeOrmModule.forFeature([EcosystemContribution, PublicChurchRelation]),
+  ],
   controllers: [EcosystemFeedController],
   providers: [EcosystemContributionsService],
   exports: [EcosystemContributionsService],
 })
-export class EcosystemContributionsModule { }
+export class EcosystemContributionsModule {}

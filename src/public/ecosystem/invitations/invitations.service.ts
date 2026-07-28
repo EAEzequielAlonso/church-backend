@@ -1,8 +1,18 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as crypto from 'crypto';
-import { Invitation, InvitationStatus, InvitationType } from '../entities/invitation.entity';
+import {
+  Invitation,
+  InvitationStatus,
+  InvitationType,
+} from '../entities/invitation.entity';
 import { Person } from '../../../core/users/entities/person.entity';
 import { EcosystemHistory } from '../entities/ecosystem-history.entity';
 import { EcosystemContributionType } from '../enums/ecosystem.enums';
@@ -32,7 +42,10 @@ export class InvitationsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async createInvitation(inviterPersonId: string, dto: CreateInvitationDto): Promise<Invitation> {
+  async createInvitation(
+    inviterPersonId: string,
+    dto: CreateInvitationDto,
+  ): Promise<Invitation> {
     // 0. Validar invitaciones duplicadas
     const existingInvitation = await this.invitationRepository.findOne({
       where: {
@@ -44,7 +57,9 @@ export class InvitationsService {
     });
 
     if (existingInvitation) {
-      throw new ConflictException('Ya existe una invitación pendiente con las mismas características para este email.');
+      throw new ConflictException(
+        'Ya existe una invitación pendiente con las mismas características para este email.',
+      );
     }
 
     // 1. Generate token
@@ -61,7 +76,7 @@ export class InvitationsService {
       token,
       expiresAt,
     });
-    
+
     const savedInvitation = await this.invitationRepository.save(invitation);
 
     // 3. Send email (fire-and-forget)
@@ -101,7 +116,9 @@ export class InvitationsService {
       }
 
       if (invitation.status !== InvitationStatus.PENDING) {
-        throw new BadRequestException('La invitación ya ha sido utilizada, cancelada o expirada');
+        throw new BadRequestException(
+          'La invitación ya ha sido utilizada, cancelada o expirada',
+        );
       }
 
       if (invitation.expiresAt && new Date() > invitation.expiresAt) {
@@ -112,7 +129,9 @@ export class InvitationsService {
 
       // Validar email
       if (invitation.invitedEmail.toLowerCase() !== dto.email.toLowerCase()) {
-        throw new BadRequestException('The invitation does not belong to this email address.');
+        throw new BadRequestException(
+          'The invitation does not belong to this email address.',
+        );
       }
 
       // 2. Delegar registro a AuthService
@@ -124,7 +143,9 @@ export class InvitationsService {
       });
 
       if (!newPerson) {
-        throw new Error('No se pudo localizar el perfil asociado tras el registro');
+        throw new Error(
+          'No se pudo localizar el perfil asociado tras el registro',
+        );
       }
 
       // 4. Update Invitation
@@ -169,7 +190,7 @@ export class InvitationsService {
           personId: newPerson.id,
           churchId: invitation.targetChurchId,
           eventType: EcosystemHistoryEvent.INVITATION_ACCEPTED,
-        })
+        }),
       );
 
       this.eventEmitter.emit('invitation.accepted', {
@@ -186,17 +207,24 @@ export class InvitationsService {
     }
   }
 
-  async resendInvitation(id: string, inviterPersonId: string): Promise<Invitation> {
+  async resendInvitation(
+    id: string,
+    inviterPersonId: string,
+  ): Promise<Invitation> {
     const invitation = await this.invitationRepository.findOne({
       where: { id, inviterPersonId },
     });
 
     if (!invitation) {
-      throw new NotFoundException('Invitación no encontrada o no tienes permisos para reenviarla.');
+      throw new NotFoundException(
+        'Invitación no encontrada o no tienes permisos para reenviarla.',
+      );
     }
 
     if (invitation.status !== InvitationStatus.PENDING) {
-      throw new BadRequestException('Solo se pueden reenviar invitaciones pendientes.');
+      throw new BadRequestException(
+        'Solo se pueden reenviar invitaciones pendientes.',
+      );
     }
 
     // Incrementar contador
@@ -204,7 +232,10 @@ export class InvitationsService {
     const savedInvitation = await this.invitationRepository.save(invitation);
 
     // Reenviar email (fire-and-forget)
-    void this.emailService.sendInvitationLink(invitation.invitedEmail, invitation.token);
+    void this.emailService.sendInvitationLink(
+      invitation.invitedEmail,
+      invitation.token,
+    );
 
     return savedInvitation;
   }

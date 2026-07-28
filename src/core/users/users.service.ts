@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, OnApplicationBootstrap, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  OnApplicationBootstrap,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -16,18 +22,22 @@ export class UsersService implements OnApplicationBootstrap {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(Person) private personRepository: Repository<Person>,
-    @InjectRepository(ChurchPublicProfile) private churchProfileRepository: Repository<ChurchPublicProfile>,
-  ) { }
+    @InjectRepository(ChurchPublicProfile)
+    private churchProfileRepository: Repository<ChurchPublicProfile>,
+  ) {}
 
   async getWorkspaces(personId: string): Promise<UserWorkspaceDto[]> {
     if (!personId) return [];
 
     const profiles = await this.churchProfileRepository.find({
-      where: { isCurrentAdmin: true, church: { relations: { personId, isCurrentAdmin: true } } },
+      where: {
+        isCurrentAdmin: true,
+        church: { relations: { personId, isCurrentAdmin: true } },
+      },
       relations: ['church'],
     });
 
-    return profiles.map(profile => ({
+    return profiles.map((profile) => ({
       churchId: profile.churchId,
       churchSlug: profile.slug,
       churchName: profile.church?.canonicalName || 'Iglesia Desconocida',
@@ -40,7 +50,7 @@ export class UsersService implements OnApplicationBootstrap {
     const adminEmail = 'phyessoft@gmail.com';
     const existingAdmin = await this.userRepository.findOne({
       where: { email: adminEmail },
-      relations: ['person']
+      relations: ['person'],
     });
 
     if (!existingAdmin) {
@@ -86,17 +96,23 @@ export class UsersService implements OnApplicationBootstrap {
       } else {
         // Asegurar integridad de nombre/apellido si estuviere vacío
         if (!existingAdmin.person.firstName || !existingAdmin.person.lastName) {
-          existingAdmin.person.firstName = existingAdmin.person.firstName || 'Ezequiel';
-          existingAdmin.person.lastName = existingAdmin.person.lastName || 'Alonso';
+          existingAdmin.person.firstName =
+            existingAdmin.person.firstName || 'Ezequiel';
+          existingAdmin.person.lastName =
+            existingAdmin.person.lastName || 'Alonso';
           await this.personRepository.save(existingAdmin.person);
         }
       }
 
       if (needsUpdate) {
         await this.userRepository.save(existingAdmin);
-        this.logger.log('Default admin app user updated to enforce ADMIN_APP privileges.');
+        this.logger.log(
+          'Default admin app user updated to enforce ADMIN_APP privileges.',
+        );
       } else {
-        this.logger.log('Default admin app user already verified and has correct privileges.');
+        this.logger.log(
+          'Default admin app user already verified and has correct privileges.',
+        );
       }
     }
   }
@@ -120,7 +136,9 @@ export class UsersService implements OnApplicationBootstrap {
     // Update Person fields
     if (user.person) {
       if (data.slug && data.slug !== user.person.slug) {
-        const existing = await this.personRepository.findOne({ where: { slug: data.slug, id: Not(user.person.id) } });
+        const existing = await this.personRepository.findOne({
+          where: { slug: data.slug, id: Not(user.person.id) },
+        });
         if (existing) {
           throw new ConflictException('Slug is already taken');
         }
@@ -128,21 +146,29 @@ export class UsersService implements OnApplicationBootstrap {
 
       if (data.firstName !== undefined) user.person.firstName = data.firstName;
       if (data.lastName !== undefined) user.person.lastName = data.lastName;
-      if (data.phoneNumber !== undefined) user.person.phoneNumber = data.phoneNumber;
+      if (data.phoneNumber !== undefined)
+        user.person.phoneNumber = data.phoneNumber;
       if (data.birthDate !== undefined) user.person.birthDate = data.birthDate;
       if (data.avatarUrl !== undefined) user.person.avatarUrl = data.avatarUrl;
       if (data.sex !== undefined) user.person.sex = data.sex;
-      if (data.maritalStatus !== undefined) user.person.maritalStatus = data.maritalStatus;
-      if (data.nationality !== undefined) user.person.nationality = data.nationality;
-      if (data.neighborhood !== undefined) user.person.neighborhood = data.neighborhood;
+      if (data.maritalStatus !== undefined)
+        user.person.maritalStatus = data.maritalStatus;
+      if (data.nationality !== undefined)
+        user.person.nationality = data.nationality;
+      if (data.address !== undefined) user.person.address = data.address;
       if (data.city !== undefined) user.person.city = data.city;
       if (data.state !== undefined) user.person.state = data.state;
-      if (data.postalCode !== undefined) user.person.postalCode = data.postalCode;
+      if (data.postalCode !== undefined)
+        user.person.postalCode = data.postalCode;
       if (data.country !== undefined) user.person.country = data.country;
-      if (data.occupation !== undefined) user.person.occupation = data.occupation;
+      if (data.latitude !== undefined) user.person.latitude = data.latitude;
+      if (data.longitude !== undefined) user.person.longitude = data.longitude;
+      if (data.occupation !== undefined)
+        user.person.occupation = data.occupation;
 
       if (data.slug !== undefined) user.person.slug = data.slug;
-      if (data.isPublicProfileEnabled !== undefined) user.person.isPublicProfileEnabled = data.isPublicProfileEnabled;
+      if (data.isPublicProfileEnabled !== undefined)
+        user.person.isPublicProfileEnabled = data.isPublicProfileEnabled;
 
       await this.personRepository.save(user.person);
     }

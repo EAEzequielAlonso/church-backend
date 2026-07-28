@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Param, Patch, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../../core/auth/guards/jwt-auth.guard';
 import { SecurityContextGuard } from '../../../core/auth/guards/security-context.guard';
 import { CurrentUser } from '../../../common/decorators';
@@ -25,19 +32,30 @@ export class MissionsManagementController {
   ) {}
 
   @Post()
-  async createMission(@Body() dto: CreateMissionProjectDto, @CurrentUser() context: any) {
+  async createMission(
+    @Body() dto: CreateMissionProjectDto,
+    @CurrentUser() context: any,
+  ) {
     const actor = { id: context.personId } as Person;
     return this.missionsService.create(dto, actor);
   }
 
   @Patch(':id')
-  async updateMission(@Param('id') id: string, @Body() dto: UpdateMissionProjectDto, @CurrentUser() context: any) {
+  async updateMission(
+    @Param('id') id: string,
+    @Body() dto: UpdateMissionProjectDto,
+    @CurrentUser() context: any,
+  ) {
     const actor = { id: context.personId } as Person;
     return this.missionsService.update(id, dto, actor);
   }
 
   @Post(':id/complete')
-  async completeMission(@Param('id') id: string, @Body() dto: CompleteMissionDto, @CurrentUser() context: any) {
+  async completeMission(
+    @Param('id') id: string,
+    @Body() dto: CompleteMissionDto,
+    @CurrentUser() context: any,
+  ) {
     const actor = { id: context.personId } as Person;
     return this.missionsService.completeMission(id, dto, actor);
   }
@@ -49,19 +67,31 @@ export class MissionsManagementController {
   }
 
   @Post(':id/needs')
-  async createNeed(@Param('id') id: string, @Body() dto: CreateMissionNeedDto, @CurrentUser() context: any) {
+  async createNeed(
+    @Param('id') id: string,
+    @Body() dto: CreateMissionNeedDto,
+    @CurrentUser() context: any,
+  ) {
     const actor = { id: context.personId } as Person;
     return this.needsService.create(id, dto, actor);
   }
 
   @Post(':id/collaborations')
-  async createCollaboration(@Param('id') id: string, @Body() dto: CreateMissionCollaborationDto, @CurrentUser() context: any) {
+  async createCollaboration(
+    @Param('id') id: string,
+    @Body() dto: CreateMissionCollaborationDto,
+    @CurrentUser() context: any,
+  ) {
     const actor = { id: context.personId } as Person;
     return this.collabsService.create(id, dto, actor);
   }
 
   @Post(':id/reports')
-  async createReport(@Param('id') id: string, @Body() dto: CreateMissionReportDto, @CurrentUser() context: any) {
+  async createReport(
+    @Param('id') id: string,
+    @Body() dto: CreateMissionReportDto,
+    @CurrentUser() context: any,
+  ) {
     const actor = { id: context.personId } as Person;
     return this.reportsService.create(id, dto, actor);
   }

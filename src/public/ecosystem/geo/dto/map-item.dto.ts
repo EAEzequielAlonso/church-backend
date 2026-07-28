@@ -7,7 +7,6 @@ export class ChurchMapItemDto {
   state: string;
   isCurrentAdmin: boolean;
   verified: boolean;
-  lifecycleState: string;
   type: 'CHURCH' = 'CHURCH';
 }
 

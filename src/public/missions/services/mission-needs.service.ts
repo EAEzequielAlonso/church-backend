@@ -11,7 +11,10 @@ import { MissionCollaborationStatus } from '../enums/missions.enums';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { In } from 'typeorm';
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
-import { EcosystemActivityType, EcosystemActivityEntityType } from '../../ecosystem/enums/ecosystem.enums';
+import {
+  EcosystemActivityType,
+  EcosystemActivityEntityType,
+} from '../../ecosystem/enums/ecosystem.enums';
 
 @Injectable()
 export class MissionNeedsService {
@@ -26,11 +29,20 @@ export class MissionNeedsService {
     private readonly activitiesService: EcosystemActivitiesService,
   ) {}
 
-  async create(missionId: string, dto: CreateMissionNeedDto, actor: Person, isChurchAdmin?: boolean): Promise<MissionNeed> {
+  async create(
+    missionId: string,
+    dto: CreateMissionNeedDto,
+    actor: Person,
+    isChurchAdmin?: boolean,
+  ): Promise<MissionNeed> {
     const mission = await this.missionsService.findOne(missionId);
 
-    if (!(await this.policies.canManageMission(actor, mission, isChurchAdmin))) {
-      throw new ForbiddenException('No tienes permiso para gestionar necesidades en esta misión');
+    if (
+      !(await this.policies.canManageMission(actor, mission, isChurchAdmin))
+    ) {
+      throw new ForbiddenException(
+        'No tienes permiso para gestionar necesidades en esta misión',
+      );
     }
 
     const need = this.needsRepo.create({
@@ -49,8 +61,11 @@ export class MissionNeedsService {
       relatedChurchId: mission.creatorChurchId,
     });
 
-    const activeCollabs = mission.collaborations?.filter(c => c.status === MissionCollaborationStatus.ACTIVE) || [];
-    const churchIds = activeCollabs.map(c => c.churchId);
+    const activeCollabs =
+      mission.collaborations?.filter(
+        (c) => c.status === MissionCollaborationStatus.ACTIVE,
+      ) || [];
+    const churchIds = activeCollabs.map((c) => c.churchId);
 
     if (churchIds.length > 0) {
       const profiles = await this.churchProfileRepo.find({
@@ -58,8 +73,8 @@ export class MissionNeedsService {
       });
 
       const recipientPersonIds = profiles
-        .map(p => p.claimerPersonId || p.creatorPersonId)
-        .filter(id => !!id);
+        .map((p) => p.claimerPersonId || p.creatorPersonId)
+        .filter((id) => !!id);
 
       if (recipientPersonIds.length > 0) {
         this.eventEmitter.emit('mission.need.created', {

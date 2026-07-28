@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../../../core/auth/guards/jwt-auth.guard';
 
 @Controller('public/territorial')
 export class TerritorialController {
-  constructor(private readonly territorialService: TerritorialService) { }
+  constructor(private readonly territorialService: TerritorialService) {}
 
   @Get('dashboard')
   async getDashboard() {

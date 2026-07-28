@@ -17,10 +17,12 @@ export class PublicPeopleController {
     @InjectRepository(EcosystemContribution)
     private readonly contributionRepository: Repository<EcosystemContribution>,
     private readonly contributionsService: EcosystemContributionsService,
-  ) { }
+  ) {}
 
   @Get(':slug')
-  async getPublicProfile(@Param('slug') slug: string): Promise<PublicPersonProfileDto> {
+  async getPublicProfile(
+    @Param('slug') slug: string,
+  ): Promise<PublicPersonProfileDto> {
     const person = await this.personRepository.findOne({
       where: { slug, isPublicProfileEnabled: true },
     });
@@ -60,7 +62,10 @@ export class PublicPeopleController {
       where: { actorPersonId: person.id },
     });
 
-    const visibleContributions = await this.contributionsService.getAggregatedContributionsForPerson(person.id);
+    const visibleContributions =
+      await this.contributionsService.getAggregatedContributionsForPerson(
+        person.id,
+      );
 
     return {
       slug: person.slug,

@@ -6,7 +6,11 @@ import { CreateOrUpdateDoctrinalOpinionDto } from './dto/create-or-update-doctri
 import { DoctrinalOpinionResponseDto } from './dto/doctrinal-opinion-response.dto';
 import { EcosystemContributionsService } from 'src/public/ecosystem/services/ecosystem-contributions.service';
 import { EcosystemActivitiesService } from 'src/public/ecosystem/services/ecosystem-activities.service';
-import { EcosystemContributionType, EcosystemActivityType, EcosystemActivityEntityType } from 'src/public/ecosystem/enums/ecosystem.enums';
+import {
+  EcosystemContributionType,
+  EcosystemActivityType,
+  EcosystemActivityEntityType,
+} from 'src/public/ecosystem/enums/ecosystem.enums';
 
 @Injectable()
 export class DoctrinalOpinionsService {
@@ -84,7 +88,8 @@ export class DoctrinalOpinionsService {
     churchId: string,
     filterPending?: boolean,
   ): Promise<DoctrinalOpinionResponseDto[]> {
-    const query = this.doctrinalOpinionRepo.createQueryBuilder('opinion')
+    const query = this.doctrinalOpinionRepo
+      .createQueryBuilder('opinion')
       .where('opinion.churchId = :churchId', { churchId })
       .orderBy('opinion.createdAt', 'DESC');
 
@@ -100,7 +105,9 @@ export class DoctrinalOpinionsService {
     id: string,
     churchId: string,
   ): Promise<DoctrinalOpinionResponseDto> {
-    const opinion = await this.doctrinalOpinionRepo.findOne({ where: { id, churchId } });
+    const opinion = await this.doctrinalOpinionRepo.findOne({
+      where: { id, churchId },
+    });
 
     if (!opinion) {
       throw new NotFoundException('Opinion not found');

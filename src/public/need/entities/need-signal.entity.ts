@@ -32,7 +32,11 @@ export class NeedSignal {
   @JoinColumn({ name: 'needLocationId' })
   needLocation: NeedLocation;
 
-  @Column({ type: 'enum', enum: NeedSignalStatus, default: NeedSignalStatus.OPEN })
+  @Column({
+    type: 'enum',
+    enum: NeedSignalStatus,
+    default: NeedSignalStatus.OPEN,
+  })
   status: NeedSignalStatus;
 
   @Column({ type: 'int', default: 1 })

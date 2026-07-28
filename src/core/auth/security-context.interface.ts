@@ -1,4 +1,8 @@
-import { EcclesiasticalRole, FunctionalRole, SystemRole } from '../../common/enums';
+import {
+  EcclesiasticalRole,
+  FunctionalRole,
+  SystemRole,
+} from '../../common/enums';
 import { AppPermission } from './authorization/permissions.enum';
 import { MembershipStatus } from '../../common/enums';
 

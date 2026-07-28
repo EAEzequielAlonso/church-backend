@@ -1,4 +1,9 @@
-import { EcclesiasticalRole, FunctionalRole, MembershipStatus, Permission } from '../../../common/enums';
+import {
+  EcclesiasticalRole,
+  FunctionalRole,
+  MembershipStatus,
+  Permission,
+} from '../../../common/enums';
 
 export class ChurchMembershipContextDto {
   churchId: string;

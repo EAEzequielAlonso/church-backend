@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 import { DayOfWeek } from '../../enums/public.enums';
 import { ChurchPublicProfile } from './church_public_profile.entity';
@@ -11,7 +19,9 @@ export class PublicServiceSchedule {
   @Column()
   profileId: string;
 
-  @ManyToOne(() => ChurchPublicProfile, (profile) => profile.schedules, { onDelete: 'CASCADE' })
+  @ManyToOne(() => ChurchPublicProfile, (profile) => profile.schedules, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'profileId' })
   profile: ChurchPublicProfile;
 

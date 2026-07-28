@@ -11,20 +11,31 @@ import { ChurchDoctrinalIdentity } from '../entities/church-doctrinal-identity.e
 @Injectable()
 export class UpdatePublicChurchProfileUseCase {
   constructor(
-    @InjectRepository(ChurchPublicProfile) private readonly profiles: Repository<ChurchPublicProfile>,
+    @InjectRepository(ChurchPublicProfile)
+    private readonly profiles: Repository<ChurchPublicProfile>,
     @InjectRepository(Church) private readonly churches: Repository<Church>,
-    @InjectRepository(ChurchDoctrinalIdentity) private readonly doctrinals: Repository<ChurchDoctrinalIdentity>,
-    @InjectRepository(PublicServiceSchedule) private readonly schedules: Repository<PublicServiceSchedule>,
+    @InjectRepository(ChurchDoctrinalIdentity)
+    private readonly doctrinals: Repository<ChurchDoctrinalIdentity>,
+    @InjectRepository(PublicServiceSchedule)
+    private readonly schedules: Repository<PublicServiceSchedule>,
     private readonly ownership: ChurchOwnershipService,
-  ) { }
+  ) {}
 
-  async execute(personId: string, churchId: string, dto: UpdatePublicChurchProfileDto) {
+  async execute(
+    personId: string,
+    churchId: string,
+    dto: UpdatePublicChurchProfileDto,
+  ) {
     await this.ownership.assertOwnsChurch(personId, churchId);
 
-    const profile = await this.profiles.findOne({ where: { churchId }, relations: ['church'] });
+    const profile = await this.profiles.findOne({
+      where: { churchId },
+      relations: ['church'],
+    });
     if (!profile) throw new NotFoundException('Public profile not found');
 
-    if (dto.publicDescription !== undefined) profile.publicDescription = dto.publicDescription;
+    if (dto.publicDescription !== undefined)
+      profile.publicDescription = dto.publicDescription;
     if (dto.photoUrls !== undefined) profile.photoUrls = dto.photoUrls;
 
     if (dto.address !== undefined) profile.address = dto.address;
@@ -52,18 +63,22 @@ export class UpdatePublicChurchProfileUseCase {
     if (dto.meetings !== undefined) {
       await this.schedules.delete({ profileId: profile.id });
       if (dto.meetings.length > 0) {
-        const newSchedules = dto.meetings.map(m => this.schedules.create({
-          profileId: profile.id,
-          title: m.title,
-          dayOfWeek: m.dayOfWeek,
-          startTime: m.startTime,
-        }));
+        const newSchedules = dto.meetings.map((m) =>
+          this.schedules.create({
+            profileId: profile.id,
+            title: m.title,
+            dayOfWeek: m.dayOfWeek,
+            startTime: m.startTime,
+          }),
+        );
         await this.schedules.save(newSchedules);
       }
     }
 
     if (dto.doctrinalIdentity !== undefined) {
-      let doc = await this.doctrinals.findOne({ where: { profileId: profile.id } });
+      let doc = await this.doctrinals.findOne({
+        where: { profileId: profile.id },
+      });
       if (!doc) {
         doc = this.doctrinals.create({ profileId: profile.id });
       }
@@ -83,7 +98,7 @@ export class UpdatePublicChurchProfileUseCase {
         facebook: saved.facebook,
         youtube: saved.youtube,
       },
-      updatedAt: saved.updatedAt
+      updatedAt: saved.updatedAt,
     };
   }
 }

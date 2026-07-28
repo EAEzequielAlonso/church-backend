@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/core/users/entities/user.entity';
 import { Person } from 'src/core/users/entities/person.entity';
@@ -7,8 +11,12 @@ import { ChurchPublicProfile } from '../../public/church/entities/church_public_
 import { ChurchClaim } from '../../public/church/entities/church_claim.entity';
 import { PublicChurchRelation } from '../../public/church/entities/public_church_relation.entity';
 import { EcosystemContributionsService } from '../../public/ecosystem/services/ecosystem-contributions.service';
-import { ChurchLifecycleService } from 'src/public/church/church-profile/services/church-lifecycle.service'; 
-import { ChurchClaimStatus, EcclesialRole, PublicChurchRelationType } from '../../public/enums/public.enums';
+import { ChurchLifecycleService } from 'src/public/church/church-profile/services/church-lifecycle.service';
+import {
+  ChurchClaimStatus,
+  EcclesialRole,
+  PublicChurchRelationType,
+} from '../../public/enums/public.enums';
 import { EcosystemContributionType } from '../../public/ecosystem/enums/ecosystem.enums';
 
 @Injectable()
@@ -16,12 +24,15 @@ export class AdminService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Person) private readonly personRepo: Repository<Person>,
-    @InjectRepository(ChurchPublicProfile) private readonly profileRepo: Repository<ChurchPublicProfile>,
-    @InjectRepository(ChurchClaim) private readonly claimRepo: Repository<ChurchClaim>,
-    @InjectRepository(PublicChurchRelation) private readonly relationRepo: Repository<PublicChurchRelation>,
+    @InjectRepository(ChurchPublicProfile)
+    private readonly profileRepo: Repository<ChurchPublicProfile>,
+    @InjectRepository(ChurchClaim)
+    private readonly claimRepo: Repository<ChurchClaim>,
+    @InjectRepository(PublicChurchRelation)
+    private readonly relationRepo: Repository<PublicChurchRelation>,
     private readonly contributionsService: EcosystemContributionsService,
     private readonly lifecycleService: ChurchLifecycleService,
-  ) { }
+  ) {}
 
   async getDashboardStats() {
     const thirtyDaysAgo = new Date();
@@ -49,31 +60,62 @@ export class AdminService {
       this.profileRepo.count(),
       this.profileRepo.count({ where: { isVerified: true } }),
       this.profileRepo.count({ where: { isVerified: false } }),
-      this.profileRepo.createQueryBuilder('p').where('p.currentAdminPersonId IS NOT NULL').getCount(),
-      this.profileRepo.createQueryBuilder('p').where('p.currentAdminPersonId IS NULL').getCount(),
-      this.profileRepo.count({ where: { createdAt: MoreThanOrEqual(thirtyDaysAgo) } }),
+      this.profileRepo
+        .createQueryBuilder('p')
+        .where('p.currentAdminPersonId IS NOT NULL')
+        .getCount(),
+      this.profileRepo
+        .createQueryBuilder('p')
+        .where('p.currentAdminPersonId IS NULL')
+        .getCount(),
+      this.profileRepo.count({
+        where: { createdAt: MoreThanOrEqual(thirtyDaysAgo) },
+      }),
 
       this.userRepo.count(),
-      this.relationRepo.count({ where: { relationType: PublicChurchRelationType.COMMUNITY_MEMBER } }),
-      this.relationRepo.count({ where: { relationType: PublicChurchRelationType.REGULAR_VISITOR } }),
-      this.relationRepo.count({ where: { ecclesialRole: EcclesialRole.PASTOR } }),
-      this.relationRepo.createQueryBuilder('r')
-        .where('r.ecclesialRole IN (:...roles)', { roles: [EcclesialRole.ELDER, EcclesialRole.BISHOP, EcclesialRole.DEACON, EcclesialRole.MINISTRY_LEADER] })
+      this.relationRepo.count({
+        where: { relationType: PublicChurchRelationType.COMMUNITY_MEMBER },
+      }),
+      this.relationRepo.count({
+        where: { relationType: PublicChurchRelationType.REGULAR_VISITOR },
+      }),
+      this.relationRepo.count({
+        where: { ecclesialRole: EcclesialRole.PASTOR },
+      }),
+      this.relationRepo
+        .createQueryBuilder('r')
+        .where('r.ecclesialRole IN (:...roles)', {
+          roles: [
+            EcclesialRole.ELDER,
+            EcclesialRole.BISHOP,
+            EcclesialRole.DEACON,
+            EcclesialRole.MINISTRY_LEADER,
+          ],
+        })
         .getCount(),
-      this.userRepo.count({ where: { createdAt: MoreThanOrEqual(thirtyDaysAgo) } }),
+      this.userRepo.count({
+        where: { createdAt: MoreThanOrEqual(thirtyDaysAgo) },
+      }),
 
       this.claimRepo.count({ where: { status: ChurchClaimStatus.PENDING } }),
       this.claimRepo.count({
         where: [
-          { status: ChurchClaimStatus.APPROVED, updatedAt: MoreThanOrEqual(thirtyDaysAgo) },
-          { status: ChurchClaimStatus.REJECTED, updatedAt: MoreThanOrEqual(thirtyDaysAgo) }
-        ]
+          {
+            status: ChurchClaimStatus.APPROVED,
+            updatedAt: MoreThanOrEqual(thirtyDaysAgo),
+          },
+          {
+            status: ChurchClaimStatus.REJECTED,
+            updatedAt: MoreThanOrEqual(thirtyDaysAgo),
+          },
+        ],
       }),
-      this.claimRepo.createQueryBuilder('c')
+      this.claimRepo
+        .createQueryBuilder('c')
         .select('c.churchId')
         .where('c.status = :status', { status: ChurchClaimStatus.PENDING })
         .distinct(true)
-        .getCount()
+        .getCount(),
     ]);
 
     return {
@@ -83,7 +125,7 @@ export class AdminService {
         unverified: unverifiedChurches,
         managed: managedChurches,
         unmanaged: unmanagedChurches,
-        newLast30d: newChurches30d
+        newLast30d: newChurches30d,
       },
       users: {
         total: totalUsers,
@@ -92,28 +134,30 @@ export class AdminService {
         followers: totalFollowers,
         pastors: totalPastors,
         leaders: totalLeaders,
-        newLast30d: newUsers30d
+        newLast30d: newUsers30d,
       },
       claims: {
         pending: pendingClaims,
         resolvedLast30d: resolvedClaims30d,
-      }
+      },
     };
   }
 
   async getChurches() {
     const profiles = await this.profileRepo.find({
       relations: ['church'],
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
 
     const pendingClaims = await this.claimRepo.find({
       where: { status: ChurchClaimStatus.PENDING },
-      select: ['churchId']
+      select: ['churchId'],
     });
-    const churchesWithPendingSet = new Set(pendingClaims.map(c => c.churchId));
+    const churchesWithPendingSet = new Set(
+      pendingClaims.map((c) => c.churchId),
+    );
 
-    return profiles.map(p => ({
+    return profiles.map((p) => ({
       id: p.churchId,
       canonicalName: p.church?.canonicalName || 'Sin Nombre',
       city: p.city,
@@ -122,7 +166,7 @@ export class AdminService {
       isVerified: p.isVerified,
       hasPendingClaim: churchesWithPendingSet.has(p.churchId),
       createdAt: p.createdAt,
-      slug: p.slug
+      slug: p.slug,
     }));
   }
 
@@ -133,7 +177,7 @@ export class AdminService {
 
     const profile = await this.profileRepo.findOne({
       where: { churchId: id },
-      relations: ['church']
+      relations: ['church'],
     });
     if (!relation) throw new NotFoundException('Church not found');
 
@@ -141,26 +185,28 @@ export class AdminService {
     let adminEmail = null;
     const adminPerson = await this.personRepo.findOne({
       where: { id: relation.personId },
-      relations: ['user']
+      relations: ['user'],
     });
     if (adminPerson) {
-      adminName = `${adminPerson.firstName || ''} ${adminPerson.lastName || ''}`.trim();
+      adminName =
+        `${adminPerson.firstName || ''} ${adminPerson.lastName || ''}`.trim();
       adminEmail = adminPerson.user?.email || null;
     }
 
-
     const pendingClaim = await this.claimRepo.findOne({
       where: { churchId: id, status: ChurchClaimStatus.PENDING },
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
 
     let claimData = null;
     if (pendingClaim) {
-      const claimPerson = await this.personRepo.findOne({ where: { id: pendingClaim.claimantPersonId } });
+      const claimPerson = await this.personRepo.findOne({
+        where: { id: pendingClaim.claimantPersonId },
+      });
       claimData = {
         firstName: claimPerson?.firstName || 'Usuario',
         lastName: claimPerson?.lastName || '',
-        createdAt: pendingClaim.createdAt
+        createdAt: pendingClaim.createdAt,
       };
     }
 
@@ -181,7 +227,7 @@ export class AdminService {
       adminEmail,
       pendingClaim: claimData,
       createdAt: profile.createdAt,
-      slug: profile.slug
+      slug: profile.slug,
     };
   }
 
@@ -204,34 +250,40 @@ export class AdminService {
   async getUsers() {
     const users = await this.userRepo.find({
       relations: ['person'],
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
 
     // To get the number of relations for each user, we query relations grouped by personId
-    const relationsCount = await this.relationRepo.createQueryBuilder('r')
+    const relationsCount = await this.relationRepo
+      .createQueryBuilder('r')
       .select('r.personId', 'personId')
       .addSelect('COUNT(r.id)', 'count')
       .groupBy('r.personId')
       .getRawMany();
 
     const relationsMap = new Map<string, number>();
-    relationsCount.forEach(r => relationsMap.set(r.personId, parseInt(r.count, 10)));
+    relationsCount.forEach((r) =>
+      relationsMap.set(r.personId, parseInt(r.count, 10)),
+    );
 
-    return users.map(u => ({
+    return users.map((u) => ({
       id: u.id,
       email: u.email,
       firstName: u.person?.firstName,
       lastName: u.person?.lastName,
       systemRole: u.systemRole,
       isActive: u.person?.isActive ?? false,
-      relationsCount: u.personId ? (relationsMap.get(u.personId) || 0) : 0,
+      relationsCount: u.personId ? relationsMap.get(u.personId) || 0 : 0,
       createdAt: u.createdAt,
-      slug: u.person?.slug
+      slug: u.person?.slug,
     }));
   }
 
   async toggleUserActive(id: string, isActive: boolean) {
-    const user = await this.userRepo.findOne({ where: { id }, relations: ['person'] });
+    const user = await this.userRepo.findOne({
+      where: { id },
+      relations: ['person'],
+    });
     if (!user) throw new NotFoundException('User not found');
     if (user.person) {
       user.person.isActive = isActive;
@@ -243,14 +295,14 @@ export class AdminService {
   async getAdministrationRequests() {
     const claims = await this.claimRepo.find({
       relations: ['church', 'church.publicProfile'],
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
 
-    const claimantIds = claims.map(c => c.claimantPersonId).filter(Boolean);
+    const claimantIds = claims.map((c) => c.claimantPersonId).filter(Boolean);
     const persons = await this.personRepo.findByIds(claimantIds);
-    const personMap = new Map(persons.map(p => [p.id, p]));
+    const personMap = new Map(persons.map((p) => [p.id, p]));
 
-    return claims.map(c => {
+    return claims.map((c) => {
       const p = personMap.get(c.claimantPersonId);
       return {
         id: c.id,
@@ -260,11 +312,13 @@ export class AdminService {
         churchIsVerified: c.church?.publicProfile?.isVerified || false,
         churchHasAdmin: c.church?.publicProfile?.isCurrentAdmin,
         claimantPersonId: c.claimantPersonId,
-        claimantName: p ? `${p.firstName || ''} ${p.lastName || ''}`.trim() : 'Usuario',
+        claimantName: p
+          ? `${p.firstName || ''} ${p.lastName || ''}`.trim()
+          : 'Usuario',
         claimantSlug: p?.slug,
         status: c.status,
         verificationNotes: c.verificationNotes,
-        createdAt: c.createdAt
+        createdAt: c.createdAt,
       };
     });
   }
@@ -272,7 +326,8 @@ export class AdminService {
   async approveAdministrationRequest(claimId: string) {
     const claim = await this.claimRepo.findOne({ where: { id: claimId } });
     if (!claim) throw new NotFoundException('Claim not found');
-    if (claim.status !== ChurchClaimStatus.PENDING) throw new BadRequestException('Claim is not pending');
+    if (claim.status !== ChurchClaimStatus.PENDING)
+      throw new BadRequestException('Claim is not pending');
 
     claim.status = ChurchClaimStatus.APPROVED;
     claim.verifiedAt = new Date();
@@ -283,12 +338,13 @@ export class AdminService {
     // Update ChurchPublicProfile currentAdminPersonId
     const profile = await this.profileRepo.findOne({
       where: { churchId: claim.churchId },
-      relations: ['church']
+      relations: ['church'],
     });
 
     if (profile) {
       profile.isCurrentAdmin = true;
-      if (!profile.claimerPersonId) profile.claimerPersonId = claim.claimantPersonId;
+      if (!profile.claimerPersonId)
+        profile.claimerPersonId = claim.claimantPersonId;
       await this.profileRepo.save(profile);
     }
     return { success: true };
@@ -297,7 +353,8 @@ export class AdminService {
   async rejectAdministrationRequest(claimId: string, notes?: string) {
     const claim = await this.claimRepo.findOne({ where: { id: claimId } });
     if (!claim) throw new NotFoundException('Claim not found');
-    if (claim.status !== ChurchClaimStatus.PENDING) throw new BadRequestException('Claim is not pending');
+    if (claim.status !== ChurchClaimStatus.PENDING)
+      throw new BadRequestException('Claim is not pending');
 
     claim.status = ChurchClaimStatus.REJECTED;
     if (notes) claim.verificationNotes = notes;

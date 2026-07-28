@@ -3,7 +3,7 @@ import { Type } from 'class-transformer';
 
 export enum ChurchNeedSignalSortBy {
   DATE_DESC = 'DATE_DESC',
-  SUPPORTS_DESC = 'SUPPORTS_DESC'
+  SUPPORTS_DESC = 'SUPPORTS_DESC',
 }
 
 export class ChurchNeedSignalFilterDto {

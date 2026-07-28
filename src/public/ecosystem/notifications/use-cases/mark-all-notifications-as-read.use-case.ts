@@ -5,15 +5,15 @@ import { Notification } from '../entities/notification.entity';
 
 @Injectable()
 export class MarkAllNotificationsAsReadUseCase {
-    constructor(
-        @InjectRepository(Notification)
-        private repo: Repository<Notification>,
-    ) { }
+  constructor(
+    @InjectRepository(Notification)
+    private repo: Repository<Notification>,
+  ) {}
 
-    async execute(userId: string): Promise<void> {
-        await this.repo.update(
-            { userId, read: false },
-            { read: true, readAt: new Date() },
-        );
-    }
+  async execute(userId: string): Promise<void> {
+    await this.repo.update(
+      { userId, read: false },
+      { read: true, readAt: new Date() },
+    );
+  }
 }

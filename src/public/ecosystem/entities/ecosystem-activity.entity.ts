@@ -1,5 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index, ManyToOne, JoinColumn } from 'typeorm';
-import { EcosystemActivityType, EcosystemActivityEntityType } from '../enums/ecosystem.enums';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import {
+  EcosystemActivityType,
+  EcosystemActivityEntityType,
+} from '../enums/ecosystem.enums';
 import { Person } from '../../../core/users/entities/person.entity';
 import { Church } from '../../../core/churches/entities/church.entity';
 

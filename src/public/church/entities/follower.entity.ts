@@ -17,7 +17,7 @@ export class ChurchFollow {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => ChurchPublicProfile, church => church.followers, {
+  @ManyToOne(() => ChurchPublicProfile, (church) => church.followers, {
     nullable: false,
     onDelete: 'CASCADE',
   })
@@ -26,7 +26,7 @@ export class ChurchFollow {
   @Column({ type: 'uuid' })
   profileChurchId: string;
 
-  @ManyToOne(() => Person, person => person.followedChurches, {
+  @ManyToOne(() => Person, (person) => person.followedChurches, {
     nullable: false,
     onDelete: 'CASCADE',
   })

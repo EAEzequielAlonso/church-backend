@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsIn, IsUrl } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsIn,
+  IsUrl,
+} from 'class-validator';
 import { Currency } from '../../../common/enums';
 import { ALLOWED_TIMEZONES } from '../../../common/constants/timezones';
 

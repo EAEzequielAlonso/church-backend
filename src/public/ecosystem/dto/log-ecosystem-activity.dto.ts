@@ -1,4 +1,7 @@
-import { EcosystemActivityType, EcosystemActivityEntityType } from '../enums/ecosystem.enums';
+import {
+  EcosystemActivityType,
+  EcosystemActivityEntityType,
+} from '../enums/ecosystem.enums';
 
 export class LogEcosystemActivityDto {
   actorPersonId: string;

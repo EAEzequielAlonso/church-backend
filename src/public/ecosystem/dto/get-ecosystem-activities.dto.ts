@@ -1,6 +1,16 @@
-import { IsOptional, IsNumber, Min, IsString, IsEnum, IsArray } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  Min,
+  IsString,
+  IsEnum,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-import { EcosystemActivityType, EcosystemActivityEntityType } from '../enums/ecosystem.enums';
+import {
+  EcosystemActivityType,
+  EcosystemActivityEntityType,
+} from '../enums/ecosystem.enums';
 
 export class GetEcosystemActivitiesDto {
   @IsOptional()

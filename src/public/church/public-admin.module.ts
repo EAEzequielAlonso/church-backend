@@ -18,9 +18,17 @@ import { ChurchDoctrinalIdentity } from './entities/church-doctrinal-identity.en
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ChurchPublicProfile, PublicChurchRelation, Church, ChurchClaim, EcosystemHistory, ChurchDoctrinalIdentity, PublicServiceSchedule]),
+    TypeOrmModule.forFeature([
+      ChurchPublicProfile,
+      PublicChurchRelation,
+      Church,
+      ChurchClaim,
+      EcosystemHistory,
+      ChurchDoctrinalIdentity,
+      PublicServiceSchedule,
+    ]),
     EcosystemContributionsModule,
-    EcosystemActivitiesModule
+    EcosystemActivitiesModule,
   ],
   controllers: [ChurchPublicAdminController],
   providers: [
@@ -31,4 +39,4 @@ import { ChurchDoctrinalIdentity } from './entities/church-doctrinal-identity.en
   ],
   exports: [ChurchPublicAdminService, ChurchOwnershipService],
 })
-export class PublicAdminModule { }
+export class PublicAdminModule {}

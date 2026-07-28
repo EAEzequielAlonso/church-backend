@@ -1,4 +1,12 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Body,
+  UseGuards,
+  Post,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { PermissionsGuard } from 'src/core/auth/guards/permissions.guard';
 import { SecurityContextGuard } from 'src/core/auth/guards/security-context.guard';
@@ -10,7 +18,7 @@ import { RequirePermissions } from 'src/core/auth/decorators/require-permissions
 @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
 @RequirePermissions(AppPermission.ROLE_MANAGE)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
 
   @Get('dashboard')
   getDashboardStats() {
@@ -28,10 +36,7 @@ export class AdminController {
   }
 
   @Patch('churches/:id/verify')
-  verifyChurch(
-    @Param('id') id: string,
-    @Body() body: { isVerified: boolean }
-  ) {
+  verifyChurch(@Param('id') id: string, @Body() body: { isVerified: boolean }) {
     return this.adminService.verifyChurch(id, body.isVerified);
   }
 
@@ -48,7 +53,7 @@ export class AdminController {
   @Patch('users/:id/active')
   toggleUserActive(
     @Param('id') id: string,
-    @Body() body: { isActive: boolean }
+    @Body() body: { isActive: boolean },
   ) {
     return this.adminService.toggleUserActive(id, body.isActive);
   }
@@ -66,7 +71,7 @@ export class AdminController {
   @Post('administration-requests/:id/reject')
   rejectAdministrationRequest(
     @Param('id') id: string,
-    @Body() body: { notes?: string }
+    @Body() body: { notes?: string },
   ) {
     return this.adminService.rejectAdministrationRequest(id, body.notes);
   }

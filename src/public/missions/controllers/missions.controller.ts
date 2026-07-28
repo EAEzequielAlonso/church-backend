@@ -9,7 +9,7 @@ export class MissionsController {
   @Get()
   async findAll() {
     const missions = await this.missionsService.findAllActive();
-    return missions.map(m => MissionProjectResponseDto.fromEntity(m));
+    return missions.map((m) => MissionProjectResponseDto.fromEntity(m));
   }
 
   @Get(':id/map-summary')

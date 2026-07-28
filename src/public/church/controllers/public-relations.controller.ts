@@ -1,4 +1,14 @@
-import { Controller, Delete, Get, Param, Post, Body, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Body,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../../core/auth/guards/jwt-auth.guard';
 import { PublicRelationsService } from '../services/public-relations.service';
 import { CreatePublicRelationDto } from '../dto/create-public-relation.dto';
@@ -7,7 +17,7 @@ import { PublicRateLimit } from '../../../core/auth/decorators/public-rate-limit
 @Controller('public/relations')
 @UseGuards(JwtAuthGuard)
 export class PublicRelationsController {
-  constructor(private readonly service: PublicRelationsService) { }
+  constructor(private readonly service: PublicRelationsService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, PublicRateLimit(20, 60))

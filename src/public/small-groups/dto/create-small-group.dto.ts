@@ -1,6 +1,19 @@
-import { IsString, IsOptional, IsEnum, IsUUID, IsNumber, IsUrl, Matches } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsUUID,
+  IsNumber,
+  IsUrl,
+  Matches,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-import { DayOfWeek, GroupCapacityStatus, MeetingFrequency, SmallGroupStatus } from '../enums/small-groups.enums';
+import {
+  DayOfWeek,
+  GroupCapacityStatus,
+  MeetingFrequency,
+  SmallGroupStatus,
+} from '../enums/small-groups.enums';
 import { GeoPrecision } from 'src/public/ecosystem/enums/ecosystem.enums';
 
 export class CreateSmallGroupDto {
@@ -33,7 +46,9 @@ export class CreateSmallGroupDto {
   meetingDay: DayOfWeek;
 
   @IsString()
-  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'meetingTime must be in HH:MM format' })
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: 'meetingTime must be in HH:MM format',
+  })
   meetingTime: string;
 
   @IsEnum(MeetingFrequency)

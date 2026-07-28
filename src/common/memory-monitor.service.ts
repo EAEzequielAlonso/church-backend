@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { runtimeFlags } from './runtime-flags';
 
 @Injectable()
@@ -15,7 +20,8 @@ export class MemoryMonitorService implements OnModuleInit, OnModuleDestroy {
 
     this.timer = setInterval(() => {
       const memory = process.memoryUsage();
-      const toMb = (bytes: number) => Math.round((bytes / 1024 / 1024) * 10) / 10;
+      const toMb = (bytes: number) =>
+        Math.round((bytes / 1024 / 1024) * 10) / 10;
 
       this.logger.log(
         `memory rss=${toMb(memory.rss)}MB heapUsed=${toMb(

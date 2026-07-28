@@ -9,11 +9,15 @@ import { PublicChurchRelation } from '../../church/entities/public_church_relati
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ChurchPublicProfile, PublicChurchRelation, NeedSignal]),
+    TypeOrmModule.forFeature([
+      ChurchPublicProfile,
+      PublicChurchRelation,
+      NeedSignal,
+    ]),
     PublicAdminModule, // To use ChurchOwnershipService
   ],
   controllers: [TerritorialController],
   providers: [TerritorialService],
   exports: [TerritorialService],
 })
-export class TerritorialModule { }
+export class TerritorialModule {}

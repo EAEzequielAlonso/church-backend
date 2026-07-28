@@ -68,7 +68,7 @@ export class CreatePublicChurchDto {
 
   @IsEmail()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   contactEmail?: string;
 
   @IsString()
@@ -77,37 +77,37 @@ export class CreatePublicChurchDto {
 
   @IsUrl()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   website?: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   instagram?: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   facebook?: string;
 
   @IsUrl()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   logoUrl?: string;
 
   @IsUrl()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   youtube?: string;
 
   @IsUrl()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   coverUrl?: string;
 
   @IsUrl()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   mainImageUrl?: string;
 
   @IsArray()

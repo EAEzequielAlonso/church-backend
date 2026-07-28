@@ -10,7 +10,9 @@ export const CurrentChurch = createParamDecorator(
     const securityContext = request.securityContext;
 
     if (!securityContext || !securityContext.churchId) {
-      throw new UnauthorizedException('No se encontro el contexto de seguridad');
+      throw new UnauthorizedException(
+        'No se encontro el contexto de seguridad',
+      );
     }
 
     return securityContext.churchId;

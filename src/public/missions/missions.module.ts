@@ -10,7 +10,7 @@ import { MissionNeedsService } from './services/mission-needs.service';
 import { MissionCollaborationsService } from './services/mission-collaborations.service';
 import { MissionReportsService } from './services/mission-reports.service';
 import { MissionsController } from './controllers/missions.controller';
-import { MissionsManagementController } from './controllers/missions-management.controller'; 
+import { MissionsManagementController } from './controllers/missions-management.controller';
 
 import { Church } from '../../core/churches/entities/church.entity';
 import { ChurchNeedSignal } from '../need/entities/church-need-signal.entity';
@@ -29,21 +29,18 @@ import { ChurchClaim } from '../church/entities/church_claim.entity';
       Church,
       ChurchNeedSignal,
       ChurchPublicProfile,
-      ChurchClaim
+      ChurchClaim,
     ]),
     EcosystemActivitiesModule,
   ],
-  controllers: [
-    MissionsController,
-    MissionsManagementController,
-  ],
+  controllers: [MissionsController, MissionsManagementController],
   providers: [
     MissionsPolicies,
     MissionsService,
     MissionNeedsService,
     MissionCollaborationsService,
     MissionReportsService,
-    ChurchOwnershipService
+    ChurchOwnershipService,
   ],
   exports: [MissionsService],
 })

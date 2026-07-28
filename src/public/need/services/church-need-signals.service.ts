@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { ChurchNeedSignal } from '../entities/church-need-signal.entity';
@@ -9,9 +13,16 @@ import { EcosystemContributionsService } from '../../ecosystem/services/ecosyste
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
 import { CreateChurchNeedSignalDto } from '../dto/church-need-signals/create-church-need-signal.dto';
 import { AddNeedInformationDto } from '../dto/church-need-signals/add-need-information.dto';
-import { ChurchNeedSignalFilterDto, ChurchNeedSignalSortBy } from '../dto/church-need-signals/church-need-signal-filter.dto';
+import {
+  ChurchNeedSignalFilterDto,
+  ChurchNeedSignalSortBy,
+} from '../dto/church-need-signals/church-need-signal-filter.dto';
 import { InformationFilterDto } from '../dto/church-need-signals/information-filter.dto';
-import { EcosystemContributionType, EcosystemActivityType, EcosystemActivityEntityType } from '../../ecosystem/enums/ecosystem.enums';
+import {
+  EcosystemContributionType,
+  EcosystemActivityType,
+  EcosystemActivityEntityType,
+} from '../../ecosystem/enums/ecosystem.enums';
 import { NeedInformationEntityType } from '../enums/need-signals.enum';
 import { GeoNormalizationUtil } from '../../ecosystem/geo/utils/geo-normalization.util';
 import { NeedSignalStatus } from 'src/public/enums/public.enums';
@@ -43,8 +54,8 @@ export class ChurchNeedSignalsService {
         where: {
           country: nCountry,
           state: nState,
-          city: nCity
-        }
+          city: nCity,
+        },
       });
 
       if (!location) {
@@ -64,7 +75,9 @@ export class ChurchNeedSignalsService {
       });
 
       if (existingSignal) {
-        throw new ConflictException('A church need signal already exists for this location.');
+        throw new ConflictException(
+          'A church need signal already exists for this location.',
+        );
       }
 
       // 3. Create signal
@@ -84,15 +97,18 @@ export class ChurchNeedSignalsService {
         manager,
       });
 
-      await this.activitiesService.logActivity({
-        actorPersonId: personId,
-        activityType: EcosystemActivityType.CHURCH_NEED_SIGNAL_CREATED,
-        entityId: signal.id,
-        entityType: EcosystemActivityEntityType.CHURCH_NEED_SIGNAL,
-        country: location.country,
-        state: location.state,
-        city: location.city,
-      }, manager);
+      await this.activitiesService.logActivity(
+        {
+          actorPersonId: personId,
+          activityType: EcosystemActivityType.CHURCH_NEED_SIGNAL_CREATED,
+          entityId: signal.id,
+          entityType: EcosystemActivityEntityType.CHURCH_NEED_SIGNAL,
+          country: location.country,
+          state: location.state,
+          city: location.city,
+        },
+        manager,
+      );
 
       return signal;
     });
@@ -124,7 +140,8 @@ export class ChurchNeedSignalsService {
   async listSignals(filterDto: ChurchNeedSignalFilterDto) {
     const { country, state, city, sortBy, page = 1, limit = 10 } = filterDto;
 
-    const query = this.signalRepo.createQueryBuilder('signal')
+    const query = this.signalRepo
+      .createQueryBuilder('signal')
       .leftJoinAndSelect('signal.needLocation', 'location')
       .leftJoinAndSelect('signal.person', 'creator')
       .where('signal.status = :status', { status: NeedSignalStatus.OPEN });
@@ -134,20 +151,25 @@ export class ChurchNeedSignalsService {
     if (city) query.andWhere('location.city = :city', { city });
 
     // Subquery for support count
-    query.loadRelationCountAndMap('signal.supportCount', 'signal.supports', 'supports');
+    query.loadRelationCountAndMap(
+      'signal.supportCount',
+      'signal.supports',
+      'supports',
+    );
 
     if (sortBy === ChurchNeedSignalSortBy.DATE_DESC) {
       query.orderBy('signal.createdAt', 'DESC');
     } else if (sortBy === ChurchNeedSignalSortBy.SUPPORTS_DESC) {
       // For supports desc, typeorm relation count ordering is tricky in loadRelationCountAndMap
       // We will add a select for it
-      query.addSelect((subQuery) => {
-        return subQuery
-          .select('COUNT(support.id)', 'count')
-          .from(ChurchNeedSignalSupport, 'support')
-          .where('support.churchNeedSignalId = signal.id');
-      }, 'supports_count')
-      .orderBy('supports_count', 'DESC');
+      query
+        .addSelect((subQuery) => {
+          return subQuery
+            .select('COUNT(support.id)', 'count')
+            .from(ChurchNeedSignalSupport, 'support')
+            .where('support.churchNeedSignalId = signal.id');
+        }, 'supports_count')
+        .orderBy('supports_count', 'DESC');
     }
 
     query.skip((page - 1) * limit);
@@ -165,7 +187,8 @@ export class ChurchNeedSignalsService {
   }
 
   async getSignalDetail(signalId: string) {
-    const signal = await this.signalRepo.createQueryBuilder('signal')
+    const signal = await this.signalRepo
+      .createQueryBuilder('signal')
       .leftJoinAndSelect('signal.needLocation', 'location')
       .leftJoinAndSelect('signal.person', 'creator')
       .where('signal.id = :signalId', { signalId })
@@ -195,13 +218,17 @@ export class ChurchNeedSignalsService {
     };
   }
 
-  async addInformation(personId: string, signalId: string, dto: AddNeedInformationDto) {
+  async addInformation(
+    personId: string,
+    signalId: string,
+    dto: AddNeedInformationDto,
+  ) {
     return this.dataSource.transaction(async (manager) => {
-      const signal = await manager.findOne(ChurchNeedSignal, { 
+      const signal = await manager.findOne(ChurchNeedSignal, {
         where: { id: signalId },
-        relations: ['needLocation'] 
+        relations: ['needLocation'],
       });
-      
+
       if (!signal) {
         throw new NotFoundException('Church need signal not found');
       }
@@ -225,15 +252,18 @@ export class ChurchNeedSignalsService {
         manager,
       });
 
-      await this.activitiesService.logActivity({
-        actorPersonId: personId,
-        activityType: EcosystemActivityType.NEED_INFORMATION_ADDED,
-        entityId: info.id,
-        entityType: EcosystemActivityEntityType.CHURCH_NEED_SIGNAL,
-        country: signal.needLocation.country,
-        state: signal.needLocation.state,
-        city: signal.needLocation.city,
-      }, manager);
+      await this.activitiesService.logActivity(
+        {
+          actorPersonId: personId,
+          activityType: EcosystemActivityType.NEED_INFORMATION_ADDED,
+          entityId: info.id,
+          entityType: EcosystemActivityEntityType.CHURCH_NEED_SIGNAL,
+          country: signal.needLocation.country,
+          state: signal.needLocation.state,
+          city: signal.needLocation.city,
+        },
+        manager,
+      );
 
       return info;
     });
@@ -242,9 +272,12 @@ export class ChurchNeedSignalsService {
   async listInformation(signalId: string, filterDto: InformationFilterDto) {
     const { category, page = 1, limit = 10 } = filterDto;
 
-    const query = this.infoRepo.createQueryBuilder('info')
+    const query = this.infoRepo
+      .createQueryBuilder('info')
       .leftJoinAndSelect('info.person', 'person')
-      .where('info.entityType = :entityType', { entityType: NeedInformationEntityType.CHURCH_NEED_SIGNAL })
+      .where('info.entityType = :entityType', {
+        entityType: NeedInformationEntityType.CHURCH_NEED_SIGNAL,
+      })
       .andWhere('info.entityId = :signalId', { signalId });
 
     if (category) {
@@ -267,7 +300,10 @@ export class ChurchNeedSignalsService {
   }
 
   async mapSummary(id: string) {
-    const signal = await this.signalRepo.findOne({ where: { id }, relations: ['needLocation'] });
+    const signal = await this.signalRepo.findOne({
+      where: { id },
+      relations: ['needLocation'],
+    });
     if (!signal) return null;
     return {
       id: signal.id,
@@ -276,7 +312,7 @@ export class ChurchNeedSignalsService {
       description: signal.observation?.slice(0, 150) ?? null,
       city: signal.needLocation?.city,
       state: signal.needLocation?.state,
-      ctaLink: `/church-need-signals/${signal.id}`
+      ctaLink: `/church-need-signals/${signal.id}`,
     };
   }
 }

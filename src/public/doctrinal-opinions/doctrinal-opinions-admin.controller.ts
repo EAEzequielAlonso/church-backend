@@ -19,7 +19,9 @@ import { AppPermission } from 'src/core/auth/authorization/permissions.enum';
 @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
 @RequirePermissions(AppPermission.ROLE_MANAGE)
 export class DoctrinalOpinionsAdminController {
-  constructor(private readonly doctrinalOpinionsService: DoctrinalOpinionsService) {}
+  constructor(
+    private readonly doctrinalOpinionsService: DoctrinalOpinionsService,
+  ) {}
 
   @Get('church/:churchId')
   getChurchOpinions(

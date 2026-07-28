@@ -7,10 +7,12 @@ export class NeedSignalResponseDto {
   contactEmail: string | null;
   contactPhone: string | null;
   contactUrl: string | null;
+  // TODO(Consistencia): Refactorizar esto para usar el enum NeedSignalStatus en lugar de string,
+  // para mantener simetría estricta con el Frontend (dtos/need-signals.enums.ts).
   status: string;
   createdAt: Date;
   updatedAt: Date;
-  
+
   location?: any | null;
 
   static fromEntity(entity: NeedSignal): NeedSignalResponseDto {
@@ -26,7 +28,7 @@ export class NeedSignalResponseDto {
     dto.updatedAt = entity.updatedAt;
 
     if (entity.needLocation) {
-        dto.location = entity.needLocation;
+      dto.location = entity.needLocation;
     }
 
     return dto;

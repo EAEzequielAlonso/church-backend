@@ -1,4 +1,7 @@
-import { DoctrinalOpinion, DoctrinalOpinionValue } from 'src/public/church/entities/doctrinal-opinion.entity';
+import {
+  DoctrinalOpinion,
+  DoctrinalOpinionValue,
+} from 'src/public/church/entities/doctrinal-opinion.entity';
 
 export class DoctrinalOpinionResponseDto {
   id: string;

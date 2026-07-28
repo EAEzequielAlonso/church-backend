@@ -31,7 +31,13 @@ import { EcosystemContributionsModule } from 'src/public/ecosystem/ecosystem-con
     EcosystemContributionsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, Auth0Strategy, EmailService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    GoogleStrategy,
+    Auth0Strategy,
+    EmailService,
+  ],
   exports: [AuthService, EmailService],
 })
-export class AuthModule { }
+export class AuthModule {}

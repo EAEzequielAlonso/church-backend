@@ -1,4 +1,3 @@
-
 import { IsEnum, IsOptional } from 'class-validator';
 import { FeedbackStatus, InternalPriority } from '../enums/feedback.enums';
 

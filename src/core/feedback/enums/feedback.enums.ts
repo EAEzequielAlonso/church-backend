@@ -1,4 +1,3 @@
-
 export enum FeedbackType {
   BUG = 'BUG',
   FEATURE = 'FEATURE',

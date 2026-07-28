@@ -50,7 +50,11 @@ export class ChurchNeedSignal {
   })
   personallyVerified: boolean;
 
-  @Column({ type: 'enum', enum: NeedSignalStatus, default: NeedSignalStatus.OPEN })
+  @Column({
+    type: 'enum',
+    enum: NeedSignalStatus,
+    default: NeedSignalStatus.OPEN,
+  })
   status: NeedSignalStatus;
 
   @CreateDateColumn()

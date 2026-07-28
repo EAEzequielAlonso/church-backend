@@ -10,9 +10,9 @@ import { EcosystemContributionsModule } from '../ecosystem/ecosystem-contributio
 @Module({
   imports: [
     TypeOrmModule.forFeature([PublicChurchRelation, Church, EcosystemHistory]),
-    EcosystemContributionsModule
+    EcosystemContributionsModule,
   ],
   controllers: [PublicRelationsController],
-  providers: [PublicRelationsService]
+  providers: [PublicRelationsService],
 })
-export class PublicRelationsModule { }
+export class PublicRelationsModule {}

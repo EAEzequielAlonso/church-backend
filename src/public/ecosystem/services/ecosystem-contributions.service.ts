@@ -4,7 +4,10 @@ import { Repository, EntityManager, In } from 'typeorm';
 import { EcosystemContribution } from '../entities/ecosystem-contribution.entity';
 import { PublicChurchRelation } from 'src/public/church/entities/public_church_relation.entity';
 import { EcosystemContributionType } from '../enums/ecosystem.enums';
-import { PublicChurchRelationStatus, PublicChurchRelationType } from '../../enums/public.enums';
+import {
+  PublicChurchRelationStatus,
+  PublicChurchRelationType,
+} from '../../enums/public.enums';
 
 export interface RecordContributionParams {
   actorPersonId: string;
@@ -30,13 +33,15 @@ export class EcosystemContributionsService {
     private readonly repo: Repository<EcosystemContribution>,
     @InjectRepository(PublicChurchRelation)
     private readonly relationsRepo: Repository<PublicChurchRelation>,
-  ) { }
+  ) {}
 
   /**
    * Append-oriented event recording for ecosystem contributions.
    * Can accept a transaction manager if part of a broader transaction.
    */
-  async recordContribution(params: RecordContributionParams): Promise<EcosystemContribution> {
+  async recordContribution(
+    params: RecordContributionParams,
+  ): Promise<EcosystemContribution> {
     const manager = params.manager || this.repo.manager;
 
     const contribution = manager.create(EcosystemContribution, {
@@ -49,7 +54,9 @@ export class EcosystemContributionsService {
     return manager.save(EcosystemContribution, contribution);
   }
 
-  async getAggregatedContributionsForPerson(personId: string): Promise<VisibleContributions> {
+  async getAggregatedContributionsForPerson(
+    personId: string,
+  ): Promise<VisibleContributions> {
     const counts = await this.repo
       .createQueryBuilder('c')
       .select('c.type', 'type')
@@ -62,11 +69,15 @@ export class EcosystemContributionsService {
 
     return {
       churchesAdded: map.get(EcosystemContributionType.CHURCH_ADDED) ?? 0,
-      doctrinalOpinions: map.get(EcosystemContributionType.DOCTRINAL_OPINION_SUBMITTED) ?? 0,
-      needSignalsCreated: map.get(EcosystemContributionType.CHURCH_NEED_SIGNAL_CREATED) ?? 0,
-      unreachedAreasCreated: map.get(EcosystemContributionType.UNREACHED_AREA_CREATED) ?? 0,
-      needInformationAdded: map.get(EcosystemContributionType.NEED_INFORMATION_ADDED) ?? 0,
-      invitationsCompleted: 
+      doctrinalOpinions:
+        map.get(EcosystemContributionType.DOCTRINAL_OPINION_SUBMITTED) ?? 0,
+      needSignalsCreated:
+        map.get(EcosystemContributionType.CHURCH_NEED_SIGNAL_CREATED) ?? 0,
+      unreachedAreasCreated:
+        map.get(EcosystemContributionType.UNREACHED_AREA_CREATED) ?? 0,
+      needInformationAdded:
+        map.get(EcosystemContributionType.NEED_INFORMATION_ADDED) ?? 0,
+      invitationsCompleted:
         (map.get(EcosystemContributionType.USER_INVITED) ?? 0) +
         (map.get(EcosystemContributionType.CHURCH_ADMIN_INVITED) ?? 0) +
         (map.get(EcosystemContributionType.CHURCH_MEMBER_INVITED) ?? 0) +
@@ -74,7 +85,9 @@ export class EcosystemContributionsService {
     };
   }
 
-  async getAggregatedContributionsForChurch(churchId: string): Promise<VisibleContributions> {
+  async getAggregatedContributionsForChurch(
+    churchId: string,
+  ): Promise<VisibleContributions> {
     const members = await this.relationsRepo.find({
       select: ['personId'],
       where: {
@@ -84,7 +97,7 @@ export class EcosystemContributionsService {
       },
     });
 
-    const memberIds = members.map((m) => m.personId).filter(id => id != null);
+    const memberIds = members.map((m) => m.personId).filter((id) => id != null);
 
     if (memberIds.length === 0) {
       return {
@@ -109,11 +122,15 @@ export class EcosystemContributionsService {
 
     return {
       churchesAdded: map.get(EcosystemContributionType.CHURCH_ADDED) ?? 0,
-      doctrinalOpinions: map.get(EcosystemContributionType.DOCTRINAL_OPINION_SUBMITTED) ?? 0,
-      needSignalsCreated: map.get(EcosystemContributionType.CHURCH_NEED_SIGNAL_CREATED) ?? 0,
-      unreachedAreasCreated: map.get(EcosystemContributionType.UNREACHED_AREA_CREATED) ?? 0,
-      needInformationAdded: map.get(EcosystemContributionType.NEED_INFORMATION_ADDED) ?? 0,
-      invitationsCompleted: 
+      doctrinalOpinions:
+        map.get(EcosystemContributionType.DOCTRINAL_OPINION_SUBMITTED) ?? 0,
+      needSignalsCreated:
+        map.get(EcosystemContributionType.CHURCH_NEED_SIGNAL_CREATED) ?? 0,
+      unreachedAreasCreated:
+        map.get(EcosystemContributionType.UNREACHED_AREA_CREATED) ?? 0,
+      needInformationAdded:
+        map.get(EcosystemContributionType.NEED_INFORMATION_ADDED) ?? 0,
+      invitationsCompleted:
         (map.get(EcosystemContributionType.USER_INVITED) ?? 0) +
         (map.get(EcosystemContributionType.CHURCH_ADMIN_INVITED) ?? 0) +
         (map.get(EcosystemContributionType.CHURCH_MEMBER_INVITED) ?? 0) +
@@ -121,10 +138,16 @@ export class EcosystemContributionsService {
     };
   }
 
-  async getFeed(limit: number = 20, offset: number = 0, personId?: string, churchId?: string): Promise<EcosystemContribution[]> {
+  async getFeed(
+    limit: number = 20,
+    offset: number = 0,
+    personId?: string,
+    churchId?: string,
+  ): Promise<EcosystemContribution[]> {
     const allowedTypes = Object.values(EcosystemContributionType);
 
-    const qb = this.repo.createQueryBuilder('c')
+    const qb = this.repo
+      .createQueryBuilder('c')
       .leftJoinAndSelect('c.actorPerson', 'actor')
       .where('c.type IN (:...allowedTypes)', { allowedTypes })
       .orderBy('c.createdAt', 'DESC')

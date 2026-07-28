@@ -4,7 +4,7 @@ import { IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { MissionProjectStatus } from '../enums/missions.enums';
 
 export class UpdateMissionProjectDto extends PartialType(
-  OmitType(CreateMissionProjectDto, ['creatorChurchId'] as const)
+  OmitType(CreateMissionProjectDto, ['creatorChurchId'] as const),
 ) {
   @IsEnum(MissionProjectStatus)
   @IsOptional()

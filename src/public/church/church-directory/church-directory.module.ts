@@ -16,7 +16,11 @@ import { EcosystemActivitiesModule } from 'src/public/ecosystem/ecosystem-activi
     EcosystemActivitiesModule,
   ],
   controllers: [ChurchDirectoryController],
-  providers: [ChurchDirectoryService, ChurchSlugService, CreatePublicChurchUseCase],
+  providers: [
+    ChurchDirectoryService,
+    ChurchSlugService,
+    CreatePublicChurchUseCase,
+  ],
   exports: [ChurchDirectoryService],
 })
-export class ChurchDirectoryModule { }
+export class ChurchDirectoryModule {}

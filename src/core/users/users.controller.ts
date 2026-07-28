@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Patch,
-  Get,
-  Body,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Patch, Get, Body, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SecurityContextGuard } from '../auth/guards/security-context.guard';
@@ -22,7 +16,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly contributionsService: EcosystemContributionsService,
-  ) { }
+  ) {}
 
   @UseGuards(JwtAuthGuard, SecurityContextGuard)
   @Get('profile')
@@ -46,10 +40,12 @@ export class UsersController {
         successfulClaims: 0,
         invitedBelievers: 0,
         approvedCorrections: 0,
-        validatedChurches: 0
+        validatedChurches: 0,
       };
     }
-    return this.contributionsService.getAggregatedContributionsForPerson(user.person.id);
+    return this.contributionsService.getAggregatedContributionsForPerson(
+      user.person.id,
+    );
   }
 
   @UseGuards(JwtAuthGuard, SecurityContextGuard)
@@ -67,8 +63,10 @@ export class UsersController {
     @CurrentUser() securityContext: SecurityContext,
     @Body() dto: UpdateProfileDto,
   ) {
-    const user = await this.usersService.updateProfile(securityContext.userId, dto);
+    const user = await this.usersService.updateProfile(
+      securityContext.userId,
+      dto,
+    );
     return user.person ? UserProfileResponseDto.fromPerson(user.person) : {};
   }
 }
-

@@ -12,17 +12,23 @@ const toNumber = (value: string | undefined, fallback: number): number => {
 export const getDatabaseConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
   url: process.env.DATABASE_URL,
-  entities: [__dirname + '/../**/*.entity{.ts,.js}', __dirname + '/../**/*.entities{.ts,.js}'],
+  entities: [
+    __dirname + '/../**/*.entity{.ts,.js}',
+    __dirname + '/../**/*.entities{.ts,.js}',
+  ],
   autoLoadEntities: true,
   logging: false, // Set to true to debug queries
-  //synchronize: true,
-  //dropSchema: true,
+  synchronize: true,
+  dropSchema: true,
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   migrationsRun: false,
   extra: {
     max: toNumber(process.env.DB_POOL_MAX, 3),
     idleTimeoutMillis: toNumber(process.env.DB_IDLE_TIMEOUT_MS, 10000),
-    connectionTimeoutMillis: toNumber(process.env.DB_CONNECTION_TIMEOUT_MS, 5000),
+    connectionTimeoutMillis: toNumber(
+      process.env.DB_CONNECTION_TIMEOUT_MS,
+      5000,
+    ),
   },
 });
 

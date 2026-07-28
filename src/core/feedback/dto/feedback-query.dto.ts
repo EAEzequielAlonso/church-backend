@@ -1,7 +1,10 @@
-
 import { IsEnum, IsOptional, IsInt, Min, Max, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-import { FeedbackType, FeedbackModule, FeedbackStatus } from '../enums/feedback.enums';
+import {
+  FeedbackType,
+  FeedbackModule,
+  FeedbackStatus,
+} from '../enums/feedback.enums';
 
 export class FeedbackQueryDto {
   @IsEnum(FeedbackStatus)

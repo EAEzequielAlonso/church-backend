@@ -20,7 +20,7 @@ import { SecurityContext } from '../auth/security-context.interface';
 
 @Controller('churches')
 export class ChurchesController {
-  constructor(private readonly churchesService: ChurchesService) { }
+  constructor(private readonly churchesService: ChurchesService) {}
 
   @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
   @Post()

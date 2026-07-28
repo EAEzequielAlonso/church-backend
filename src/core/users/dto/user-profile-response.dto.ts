@@ -12,13 +12,15 @@ export class UserProfileResponseDto {
   country: string;
   state: string;
   city: string;
-  neighborhood: string;
+  address: string;
   postalCode: string;
   occupation: string;
   slug: string;
   isPublicProfileEnabled: boolean;
   email: string;
   avatarUrl: string;
+  latitude: number | null;
+  longitude: number | null;
 
   static fromPerson(p: Person): UserProfileResponseDto {
     return {
@@ -32,13 +34,15 @@ export class UserProfileResponseDto {
       country: p.country,
       state: p.state,
       city: p.city,
-      neighborhood: p.neighborhood,
+      address: p.address,
       postalCode: p.postalCode,
       occupation: p.occupation,
       slug: p.slug,
       isPublicProfileEnabled: p.isPublicProfileEnabled,
       email: p.email,
       avatarUrl: p.avatarUrl,
+      latitude: p.latitude,
+      longitude: p.longitude,
     };
   }
 }

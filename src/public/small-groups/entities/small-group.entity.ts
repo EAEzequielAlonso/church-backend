@@ -1,9 +1,24 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
 import { Church } from 'src/core/churches/entities/church.entity';
 import { Person } from 'src/core/users/entities/person.entity';
 import { MissionProject } from 'src/public/missions/entities/mission-project.entity';
 import { GeoPrecision } from 'src/public/ecosystem/enums/ecosystem.enums';
-import { SmallGroupStatus, GroupCapacityStatus, MeetingFrequency, DayOfWeek } from '../enums/small-groups.enums';
+import {
+  SmallGroupStatus,
+  GroupCapacityStatus,
+  MeetingFrequency,
+  DayOfWeek,
+} from '../enums/small-groups.enums';
 
 @Entity('small_groups')
 @Index(['churchId'])
@@ -16,19 +31,26 @@ export class SmallGroup {
   id: string;
 
   // ─── Relaciones Base ────────────────────────────────
-  @ManyToOne(() => Church, (church) => church.smallGroups, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Church, (church) => church.smallGroups, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'churchId' })
   church: Church;
   @Column()
   churchId: string;
 
-  @ManyToOne(() => Person, (person) => person.ledSmallGroups, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Person, (person) => person.ledSmallGroups, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'leaderId' })
   leader: Person;
   @Column()
   leaderId: string;
 
-  @ManyToOne(() => MissionProject, (mission) => mission.resultingSmallGroups, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => MissionProject, (mission) => mission.resultingSmallGroups, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'originMissionId' })
   originMission: MissionProject;
   @Column({ nullable: true })
@@ -41,10 +63,18 @@ export class SmallGroup {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ type: 'enum', enum: SmallGroupStatus, default: SmallGroupStatus.ACTIVE })
+  @Column({
+    type: 'enum',
+    enum: SmallGroupStatus,
+    default: SmallGroupStatus.ACTIVE,
+  })
   status: SmallGroupStatus;
 
-  @Column({ type: 'enum', enum: GroupCapacityStatus, default: GroupCapacityStatus.AVAILABLE })
+  @Column({
+    type: 'enum',
+    enum: GroupCapacityStatus,
+    default: GroupCapacityStatus.AVAILABLE,
+  })
   capacityStatus: GroupCapacityStatus;
 
   // ─── Reuniones (Iteración y Logística) ──────────────

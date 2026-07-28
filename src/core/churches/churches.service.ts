@@ -15,7 +15,7 @@ export class ChurchesService {
 
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(Person) private personRepository: Repository<Person>,
-  ) { }
+  ) {}
 
   async create(userId: string, dto: CreateChurchDto) {
     const slug = dto.slug || this.generateSlug(dto.name);
@@ -25,8 +25,6 @@ export class ChurchesService {
     // 1. Create canonical Church
     const church = this.churchRepository.create({
       canonicalName: dto.name,
-
-
     });
     const savedChurch = await this.churchRepository.save(church);
 
@@ -44,7 +42,9 @@ export class ChurchesService {
 
     let person = user.person;
     if (!person) {
-      this.logger.warn(`Person relation missing for user ${user.id}; repairing link.`);
+      this.logger.warn(
+        `Person relation missing for user ${user.id}; repairing link.`,
+      );
       const existingPerson = await this.personRepository.findOne({
         where: { email: user.email },
       });

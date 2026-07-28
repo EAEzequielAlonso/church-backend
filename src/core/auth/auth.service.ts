@@ -13,16 +13,10 @@ import * as crypto from 'crypto';
 import { User } from '../users/entities/user.entity';
 import { Person } from '../users/entities/person.entity';
 import { Church } from '../churches/entities/church.entity';
-import {
-  RegisterChurchDto,
-  LoginDto,
-  RegisterUserDto,
-} from './dto/dto';
+import { RegisterChurchDto, LoginDto, RegisterUserDto } from './dto/dto';
 
 import { SocialLoginDto } from './dto/social-login.dto';
-import {
-  SystemRole,
-} from '../../common/enums';
+import { SystemRole } from '../../common/enums';
 import { JwtPayload } from './interfaces';
 import { EmailService } from './email.service';
 
@@ -36,7 +30,7 @@ export class AuthService {
     private jwtService: JwtService,
     private emailService: EmailService,
     private dataSource: DataSource,
-  ) { }
+  ) {}
 
   // ==========================================
   // REGISTER CHURCH (founder flow)
@@ -61,7 +55,9 @@ export class AuthService {
     // Create Church canonical identity
     const church = this.churchRepository.create({
       canonicalName: dto.churchName,
-      publicProfile: { slug: dto.churchSlug || this.generateSlug(dto.churchName) },
+      publicProfile: {
+        slug: dto.churchSlug || this.generateSlug(dto.churchName),
+      },
     });
 
     // Create Person
@@ -130,7 +126,9 @@ export class AuthService {
 
     // Create User
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const verificationCode = dto.inviteToken ? null : this.generateVerificationCode();
+    const verificationCode = dto.inviteToken
+      ? null
+      : this.generateVerificationCode();
 
     const user = this.userRepository.create({
       email: dto.email,
@@ -140,7 +138,9 @@ export class AuthService {
       isOnboarded: !!dto.inviteToken,
       provider: 'local',
       verificationCode,
-      verificationCodeExpiresAt: verificationCode ? new Date(Date.now() + 15 * 60 * 1000) : null,
+      verificationCodeExpiresAt: verificationCode
+        ? new Date(Date.now() + 15 * 60 * 1000)
+        : null,
     });
 
     await this.dataSource.transaction(async (manager) => {
@@ -166,7 +166,17 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.userRepository.findOne({
       where: { email: dto.email },
-      select: ['id', 'email', 'password', 'isOnboarded', 'systemRole', 'isEmailVerified', 'verificationCode', 'verificationCodeExpiresAt', 'provider'],
+      select: [
+        'id',
+        'email',
+        'password',
+        'isOnboarded',
+        'systemRole',
+        'isEmailVerified',
+        'verificationCode',
+        'verificationCodeExpiresAt',
+        'provider',
+      ],
       relations: ['person'],
     });
 
@@ -176,7 +186,9 @@ export class AuthService {
 
     if (!user.password) {
       if (user.provider === 'google') {
-        throw new BadRequestException('Esta cuenta fue creada utilizando Google. Inicia sesión con Google o establece una contraseña para acceder mediante email.');
+        throw new BadRequestException(
+          'Esta cuenta fue creada utilizando Google. Inicia sesión con Google o establece una contraseña para acceder mediante email.',
+        );
       }
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -215,9 +227,9 @@ export class AuthService {
 
     if (!user) {
       // Auto-create User and Person if they don't exist
-      let nameParts = dto.name ? dto.name.split(' ') : ['Usuario'];
-      let firstName = nameParts[0];
-      let lastName = nameParts.slice(1).join(' ');
+      const nameParts = dto.name ? dto.name.split(' ') : ['Usuario'];
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ');
 
       const person = this.personRepository.create({
         email: dto.email,
@@ -250,8 +262,6 @@ export class AuthService {
     return this.generateTokenForUser(user);
   }
 
-
-
   // ==========================================
   // CLAIM PROFILE
   // ==========================================
@@ -266,7 +276,8 @@ export class AuthService {
       relations: ['person'],
     });
     if (!user) throw new UnauthorizedException('User not found');
-    if (user.person) throw new BadRequestException('User is already linked to a person');
+    if (user.person)
+      throw new BadRequestException('User is already linked to a person');
 
     if (createNew) {
       const person = this.personRepository.create({
@@ -323,7 +334,10 @@ export class AuthService {
       throw new BadRequestException('Código de verificación incorrecto');
     }
 
-    if (!user.verificationCodeExpiresAt || new Date() > user.verificationCodeExpiresAt) {
+    if (
+      !user.verificationCodeExpiresAt ||
+      new Date() > user.verificationCodeExpiresAt
+    ) {
       throw new BadRequestException('El código de verificación ha expirado');
     }
 
@@ -365,11 +379,14 @@ export class AuthService {
   // ==========================================
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email } });
-    
+
     // Si no existe el usuario, o es un usuario social sin contraseña,
     // retornamos éxito genérico para evitar enumeración.
     if (!user || user.provider !== 'local') {
-      return { message: 'Si el correo electrónico está registrado, recibirás instrucciones para restablecer tu contraseña.' };
+      return {
+        message:
+          'Si el correo electrónico está registrado, recibirás instrucciones para restablecer tu contraseña.',
+      };
     }
 
     // Generar token criptográficamente seguro
@@ -382,14 +399,25 @@ export class AuthService {
     await this.userRepository.save(user);
     await this.emailService.sendPasswordResetEmail(user.email, token);
 
-    return { message: 'Si el correo electrónico está registrado, recibirás instrucciones para restablecer tu contraseña.' };
+    return {
+      message:
+        'Si el correo electrónico está registrado, recibirás instrucciones para restablecer tu contraseña.',
+    };
   }
 
   async validateResetToken(token: string) {
-    const user = await this.userRepository.findOne({ where: { resetPasswordToken: token } });
+    const user = await this.userRepository.findOne({
+      where: { resetPasswordToken: token },
+    });
 
-    if (!user || !user.resetPasswordExpiresAt || new Date() > user.resetPasswordExpiresAt) {
-      throw new BadRequestException('El enlace de recuperación es inválido o ha expirado.');
+    if (
+      !user ||
+      !user.resetPasswordExpiresAt ||
+      new Date() > user.resetPasswordExpiresAt
+    ) {
+      throw new BadRequestException(
+        'El enlace de recuperación es inválido o ha expirado.',
+      );
     }
 
     return { valid: true };
@@ -401,12 +429,18 @@ export class AuthService {
       select: ['id', 'email', 'resetPasswordToken', 'resetPasswordExpiresAt'],
     });
 
-    if (!user || !user.resetPasswordExpiresAt || new Date() > user.resetPasswordExpiresAt) {
-      throw new BadRequestException('El enlace de recuperación es inválido o ha expirado.');
+    if (
+      !user ||
+      !user.resetPasswordExpiresAt ||
+      new Date() > user.resetPasswordExpiresAt
+    ) {
+      throw new BadRequestException(
+        'El enlace de recuperación es inválido o ha expirado.',
+      );
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    
+
     user.password = hashedPassword;
     user.resetPasswordToken = null;
     user.resetPasswordExpiresAt = null;
@@ -442,7 +476,9 @@ export class AuthService {
       user: {
         id: reloadedUser.id,
         email: reloadedUser.email,
-        fullName: `${reloadedUser.person?.firstName || ''} ${reloadedUser.person?.lastName || ''}`.trim() || 'Usuario',
+        fullName:
+          `${reloadedUser.person?.firstName || ''} ${reloadedUser.person?.lastName || ''}`.trim() ||
+          'Usuario',
         personId: reloadedUser.person?.id,
         isOnboarded: reloadedUser.isOnboarded,
         isEmailVerified: reloadedUser.isEmailVerified,

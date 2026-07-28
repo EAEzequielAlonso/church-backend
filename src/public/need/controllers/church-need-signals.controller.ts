@@ -20,7 +20,9 @@ import { ChurchNeedSignalResponseDto } from '../dto/church-need-signals/church-n
 
 @Controller('public/church-need-signals')
 export class ChurchNeedSignalsController {
-  constructor(private readonly churchNeedSignalsService: ChurchNeedSignalsService) {}
+  constructor(
+    private readonly churchNeedSignalsService: ChurchNeedSignalsService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -43,7 +45,7 @@ export class ChurchNeedSignalsController {
     const result = await this.churchNeedSignalsService.listSignals(filterDto);
     return {
       ...result,
-      items: result.items.map(i => ChurchNeedSignalResponseDto.fromEntity(i)),
+      items: result.items.map((i) => ChurchNeedSignalResponseDto.fromEntity(i)),
     };
   }
 
@@ -51,7 +53,11 @@ export class ChurchNeedSignalsController {
   async getSignalDetail(@Param('id') id: string) {
     const detail = await this.churchNeedSignalsService.getSignalDetail(id);
     // detail contains the entity properties plus supportCount and recentInformation
-    return ChurchNeedSignalResponseDto.fromEntity(detail as any, detail.supportCount, detail.recentInformation);
+    return ChurchNeedSignalResponseDto.fromEntity(
+      detail as any,
+      detail.supportCount,
+      detail.recentInformation,
+    );
   }
 
   @Get(':id/map-summary')

@@ -12,7 +12,10 @@ export class MissionsPolicies {
   /**
    * Solo un administrador de la iglesia puede crear una misión.
    */
-  async canCreateMission(actor: Person, targetChurchId: string): Promise<boolean> {
+  async canCreateMission(
+    actor: Person,
+    targetChurchId: string,
+  ): Promise<boolean> {
     try {
       await this.ownershipService.assertOwnsChurch(actor.id, targetChurchId);
       return true;
@@ -24,15 +27,22 @@ export class MissionsPolicies {
   /**
    * Solo el líder de la misión o un admin de la iglesia creadora pueden gestionarla.
    */
-  async canManageMission(actor: Person, mission: MissionProject, isChurchAdmin?: boolean): Promise<boolean> {
+  async canManageMission(
+    actor: Person,
+    mission: MissionProject,
+    isChurchAdmin?: boolean,
+  ): Promise<boolean> {
     if (mission.leaderId === actor.id) return true;
-    
+
     if (isChurchAdmin !== undefined) {
       return isChurchAdmin;
     }
 
     try {
-      await this.ownershipService.assertOwnsChurch(actor.id, mission.creatorChurchId);
+      await this.ownershipService.assertOwnsChurch(
+        actor.id,
+        mission.creatorChurchId,
+      );
       return true;
     } catch {
       return false;
@@ -42,13 +52,20 @@ export class MissionsPolicies {
   /**
    * Solo un administrador de otra iglesia puede enviar una colaboración, y la misión debe estar activa.
    */
-  async canCollaborate(actor: Person, mission: MissionProject, collaboratorChurchId: string): Promise<boolean> {
+  async canCollaborate(
+    actor: Person,
+    mission: MissionProject,
+    collaboratorChurchId: string,
+  ): Promise<boolean> {
     if (mission.status !== MissionProjectStatus.ACTIVE) {
       return false;
     }
-    
+
     try {
-      await this.ownershipService.assertOwnsChurch(actor.id, collaboratorChurchId);
+      await this.ownershipService.assertOwnsChurch(
+        actor.id,
+        collaboratorChurchId,
+      );
       return true;
     } catch {
       return false;
@@ -58,14 +75,22 @@ export class MissionsPolicies {
   /**
    * Mismas reglas de manage: solo lider o admin.
    */
-  async canCreateReport(actor: Person, mission: MissionProject, isChurchAdmin?: boolean): Promise<boolean> {
+  async canCreateReport(
+    actor: Person,
+    mission: MissionProject,
+    isChurchAdmin?: boolean,
+  ): Promise<boolean> {
     return this.canManageMission(actor, mission, isChurchAdmin);
   }
 
   /**
    * Mismas reglas de manage, es una accion critica protegida.
    */
-  async canCompleteMission(actor: Person, mission: MissionProject, isChurchAdmin?: boolean): Promise<boolean> {
+  async canCompleteMission(
+    actor: Person,
+    mission: MissionProject,
+    isChurchAdmin?: boolean,
+  ): Promise<boolean> {
     return this.canManageMission(actor, mission, isChurchAdmin);
   }
 }

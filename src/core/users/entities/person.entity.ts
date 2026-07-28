@@ -13,6 +13,7 @@ import { MaritalStatus, Sex } from '../enums/person.enum';
 import { ChurchFollow } from '../../../public/church/entities/follower.entity';
 import { PublicActivity } from '../../../public/church/entities/public-activity.entity';
 import { SmallGroup } from '../../../public/small-groups/entities/small-group.entity';
+import { GeoPrecision } from '../../../public/ecosystem/enums/ecosystem.enums';
 
 @Entity('persons')
 export class Person {
@@ -47,9 +48,9 @@ export class Person {
   @Column({ nullable: true })
   nationality: string;
 
-  // Direccion
+  // ─── Geo / Location ──────────────────────────────
   @Column({ nullable: true })
-  neighborhood: string;
+  address: string;
 
   @Column({ nullable: true })
   city: string;
@@ -58,10 +59,23 @@ export class Person {
   state: string;
 
   @Column({ nullable: true })
-  postalCode: string;
+  country: string;
 
   @Column({ nullable: true })
-  country: string;
+  postalCode: string;
+
+  @Column({ type: 'numeric', nullable: true })
+  latitude: number | null;
+
+  @Column({ type: 'numeric', nullable: true })
+  longitude: number | null;
+
+  @Column({
+    type: 'enum',
+    enum: GeoPrecision,
+    default: GeoPrecision.UNKNOWN,
+  })
+  geoPrecision: GeoPrecision;
 
   // 👨‍👩‍👧‍👦
   @Column({
@@ -110,5 +124,4 @@ export class Person {
 
   @DeleteDateColumn()
   deletedAt: Date;
-
 }

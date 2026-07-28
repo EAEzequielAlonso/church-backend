@@ -1,4 +1,11 @@
-import { IsArray, IsOptional, IsString, IsEnum, IsObject, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsObject,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ChurchDenomination, DayOfWeek } from '../../enums/public.enums';
 
@@ -15,10 +22,10 @@ export class UpdatePublicChurchProfileDto {
   @IsOptional() @IsString() city?: string;
   @IsOptional() @IsString() state?: string;
   @IsOptional() @IsString() country?: string;
-  
+
   @IsOptional() @IsString() contactEmail?: string;
   @IsOptional() @IsString() contactPhone?: string;
-  
+
   @IsOptional() @IsString() logoUrl?: string;
   @IsOptional() @IsString() coverUrl?: string;
   @IsOptional() @IsString() mainImageUrl?: string;
@@ -31,13 +38,13 @@ export class UpdatePublicChurchProfileDto {
 
   @IsOptional() @IsEnum(ChurchDenomination) denomination?: ChurchDenomination;
 
-  @IsOptional() 
-  @IsArray() 
+  @IsOptional()
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdatePublicChurchMeetingDto)
   meetings?: UpdatePublicChurchMeetingDto[];
 
-  @IsOptional() 
-  @IsObject() 
+  @IsOptional()
+  @IsObject()
   doctrinalIdentity?: any;
 }

@@ -12,17 +12,19 @@ import { ChurchProfileModule } from 'src/public/church/church-profile/church-pro
 import { ChurchPublicProfile } from '../../public/church/entities/church_public_profile.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([
-    User,
-    Person,
-    Church,
-    ChurchPublicProfile,
-    ChurchClaim,
-    PublicChurchRelation
-  ]),
+  imports: [
+    TypeOrmModule.forFeature([
+      User,
+      Person,
+      Church,
+      ChurchPublicProfile,
+      ChurchClaim,
+      PublicChurchRelation,
+    ]),
     EcosystemContributionsModule,
-    ChurchProfileModule],
+    ChurchProfileModule,
+  ],
   controllers: [AdminController],
   providers: [AdminService],
 })
-export class AdminModule { }
+export class AdminModule {}

@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Post,
@@ -23,7 +22,7 @@ import { CurrentUser, CurrentChurch } from '../../common/decorators';
 @Controller('feedback')
 @UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
 export class FeedbackController {
-  constructor(private readonly feedbackService: FeedbackService) { }
+  constructor(private readonly feedbackService: FeedbackService) {}
 
   @Post()
   async create(
@@ -31,7 +30,11 @@ export class FeedbackController {
     @CurrentUser() user: any,
     @CurrentChurch() churchId: string,
   ) {
-    return this.feedbackService.create(createFeedbackDto, user.userId, churchId);
+    return this.feedbackService.create(
+      createFeedbackDto,
+      user.userId,
+      churchId,
+    );
   }
 
   // Admin Only Endpoints
@@ -49,10 +52,7 @@ export class FeedbackController {
 
   @Patch(':id')
   @RequirePermissions(AppPermission.ROLE_MANAGE)
-  async update(
-    @Param('id') id: string,
-    @Body() updateDto: UpdateFeedbackDto,
-  ) {
+  async update(@Param('id') id: string, @Body() updateDto: UpdateFeedbackDto) {
     return this.feedbackService.update(id, updateDto);
   }
 }

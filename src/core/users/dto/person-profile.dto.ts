@@ -1,5 +1,4 @@
-import { MaritalStatus, Sex } from "../enums/person.enum";
-
+import { MaritalStatus, Sex } from '../enums/person.enum';
 
 export class PersonProfileDto {
   firstName: string;
@@ -12,9 +11,9 @@ export class PersonProfileDto {
   country: string | null;
   state: string | null;
   city: string | null;
-  neighborhood: string | null; 
+  neighborhood: string | null;
   slug: string | null;
   isPublicProfileEnabled: boolean;
-  email: string;                  
-  avatarUrl: string | null;       
+  email: string;
+  avatarUrl: string | null;
 }

@@ -1,5 +1,14 @@
 import { Type } from 'class-transformer';
-import { IsDate, IsEnum, IsLatitude, IsLongitude, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsDate,
+  IsEnum,
+  IsLatitude,
+  IsLongitude,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { GeoPrecision } from 'src/public/ecosystem/enums/ecosystem.enums';
 import { MissionSourceType } from '../enums/missions.enums';
 

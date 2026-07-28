@@ -35,7 +35,11 @@ export class Invitation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'enum', enum: InvitationType, default: InvitationType.GENERAL_USER })
+  @Column({
+    type: 'enum',
+    enum: InvitationType,
+    default: InvitationType.GENERAL_USER,
+  })
   type: InvitationType;
 
   @Column({

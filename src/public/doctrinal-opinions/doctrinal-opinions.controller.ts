@@ -15,7 +15,9 @@ import { CreateOrUpdateDoctrinalOpinionDto } from './dto/create-or-update-doctri
 @Controller('doctrinal-opinions')
 @UseGuards(JwtAuthGuard)
 export class DoctrinalOpinionsController {
-  constructor(private readonly doctrinalOpinionsService: DoctrinalOpinionsService) {}
+  constructor(
+    private readonly doctrinalOpinionsService: DoctrinalOpinionsService,
+  ) {}
 
   @Post('church/:churchId')
   createOrUpdateOpinion(

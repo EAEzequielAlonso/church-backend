@@ -1,8 +1,20 @@
-import { Church } from "src/core/churches/entities/church.entity";
-import { EcclesialRole, PublicChurchRelationStatus, PublicChurchRelationType } from "src/public/enums/public.enums";
-import { Person } from "src/core/users/entities/person.entity";
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
-
+import { Church } from 'src/core/churches/entities/church.entity';
+import {
+  EcclesialRole,
+  PublicChurchRelationStatus,
+  PublicChurchRelationType,
+} from 'src/public/enums/public.enums';
+import { Person } from 'src/core/users/entities/person.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
 
 @Entity('public_church_relations')
 @Index(['churchId', 'personId'], { unique: true })
@@ -13,7 +25,10 @@ export class PublicChurchRelation {
   @Column({ type: 'uuid', nullable: true })
   churchId: string | null;
 
-  @ManyToOne(() => Church, (church) => church.relations, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => Church, (church) => church.relations, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'churchId' })
   church: Church | null;
 

@@ -7,7 +7,11 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { NeedEngagementStatus, NeedEngagementType, NeedEntityType } from '../enums/need-signals.enum';
+import {
+  NeedEngagementStatus,
+  NeedEngagementType,
+  NeedEntityType,
+} from '../enums/need-signals.enum';
 import { Church } from 'src/core/churches/entities/church.entity';
 import { Person } from 'src/core/users/entities/person.entity';
 

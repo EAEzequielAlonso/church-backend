@@ -1,5 +1,9 @@
-
-import { Injectable, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Feedback } from './entities/feedback.entity';
@@ -51,7 +55,7 @@ export class FeedbackService {
 
   async findAll(queryDto: FeedbackQueryDto) {
     const { status, type, module, page, limit } = queryDto;
-    
+
     const queryBuilder = this.feedbackRepository.createQueryBuilder('feedback');
 
     // Filters
@@ -93,10 +97,10 @@ export class FeedbackService {
 
   async update(id: string, updateDto: UpdateFeedbackDto): Promise<Feedback> {
     const feedback = await this.findOne(id);
-    
+
     // Partially update fields
     Object.assign(feedback, updateDto);
-    
+
     return await this.feedbackRepository.save(feedback);
   }
 

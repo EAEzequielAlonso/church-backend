@@ -1,4 +1,10 @@
-import { IsString, IsEnum, IsOptional, IsArray, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsArray,
+  IsNotEmpty,
+} from 'class-validator';
 import { NeedInformationCategory } from '../../enums/need-signals.enum';
 
 export class AddNeedInformationDto {

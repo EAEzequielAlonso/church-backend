@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsEnum, IsNumber, IsUUID } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsNumber,
+  IsUUID,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { DayOfWeek, SmallGroupStatus } from '../enums/small-groups.enums';
 

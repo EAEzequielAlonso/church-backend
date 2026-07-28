@@ -9,7 +9,6 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 
-
 import { GetMyNotificationsUseCase } from './use-cases/get-my-notifications.use-case';
 import { GetUnreadCountUseCase } from './use-cases/get-unread-count.use-case';
 import { MarkNotificationAsReadUseCase } from './use-cases/mark-notification-as-read.use-case';
@@ -30,7 +29,7 @@ export class NotificationsController {
     private readonly getUnreadCount: GetUnreadCountUseCase,
     private readonly markAsRead: MarkNotificationAsReadUseCase,
     private readonly markAllAsRead: MarkAllNotificationsAsReadUseCase,
-  ) { }
+  ) {}
 
   /** GET /notifications — last 20 notifications for the current user */
   @Get()
@@ -47,9 +46,7 @@ export class NotificationsController {
 
   /** GET /notifications/unread-count — number badge for the bell */
   @Get('unread-count')
-  unreadCount(
-    @CurrentUser() securityContext: SecurityContext,
-  ) {
+  unreadCount(@CurrentUser() securityContext: SecurityContext) {
     return this.getUnreadCount
       .execute(null, securityContext.userId)
       .then((count) => ({ count }));
@@ -66,12 +63,9 @@ export class NotificationsController {
 
   /** POST /notifications/read-all — mark all as read */
   @Post('read-all')
-  markAll(
-    @CurrentUser() securityContext: SecurityContext,
-  ) {
+  markAll(@CurrentUser() securityContext: SecurityContext) {
     return this.markAllAsRead
       .execute(securityContext.userId)
       .then(() => ({ ok: true }));
   }
 }
-

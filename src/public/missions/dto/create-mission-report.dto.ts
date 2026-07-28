@@ -1,4 +1,10 @@
-import { IsArray, IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { MissionReportCategory } from '../enums/missions.enums';
 
 export class CreateMissionReportDto {

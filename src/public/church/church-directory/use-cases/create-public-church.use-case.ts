@@ -7,7 +7,12 @@ import { CreatePublicChurchDto } from '../dto/create-public-church.dto';
 import { ChurchSlugService } from '../services/church-slug.service';
 import { EcosystemContributionsService } from '../../../ecosystem/services/ecosystem-contributions.service';
 import { EcosystemActivitiesService } from '../../../ecosystem/services/ecosystem-activities.service';
-import { EcosystemContributionType, GeoPrecision, EcosystemActivityType, EcosystemActivityEntityType } from '../../../ecosystem/enums/ecosystem.enums';
+import {
+  EcosystemContributionType,
+  GeoPrecision,
+  EcosystemActivityType,
+  EcosystemActivityEntityType,
+} from '../../../ecosystem/enums/ecosystem.enums';
 import { GeoNormalizationUtil } from '../../../ecosystem/geo/utils/geo-normalization.util';
 
 @Injectable()
@@ -17,7 +22,7 @@ export class CreatePublicChurchUseCase {
     private readonly slugService: ChurchSlugService,
     private readonly contributionsService: EcosystemContributionsService,
     private readonly activitiesService: EcosystemActivitiesService,
-  ) { }
+  ) {}
 
   async execute(dto: CreatePublicChurchDto, personId: string) {
     await this.slugService.detectDuplicate(dto.name, dto.city);
@@ -35,8 +40,11 @@ export class CreatePublicChurchUseCase {
         creatorPersonId: personId,
         isVerified: false,
         publicDescription: dto.publicDescription,
-        country: GeoNormalizationUtil.normalizeString(dto.country) || dto.country.trim(),
-        state: GeoNormalizationUtil.normalizeString(dto.state) || dto.state.trim(),
+        country:
+          GeoNormalizationUtil.normalizeString(dto.country) ||
+          dto.country.trim(),
+        state:
+          GeoNormalizationUtil.normalizeString(dto.state) || dto.state.trim(),
         city: GeoNormalizationUtil.normalizeString(dto.city) || dto.city.trim(),
         address: dto.address.trim(),
         postalCode: dto.postalCode,
@@ -57,7 +65,12 @@ export class CreatePublicChurchUseCase {
       await manager.save(profile);
 
       const meetings = (dto.meetings ?? [])
-        .filter((meeting) => meeting.dayOfWeek && meeting.title.trim() && meeting.startTime.trim())
+        .filter(
+          (meeting) =>
+            meeting.dayOfWeek &&
+            meeting.title.trim() &&
+            meeting.startTime.trim(),
+        )
         .map((meeting) =>
           manager.create(PublicServiceSchedule, {
             profileId: profile.id,
@@ -77,28 +90,60 @@ export class CreatePublicChurchUseCase {
         targetChurchId: church.id,
         type: EcosystemContributionType.CHURCH_ADDED,
         metadata: {
-          churchName: church.canonicalName,
-          geoCity: GeoNormalizationUtil.normalizeString(dto.city) || dto.city.trim(),
-          geoState: GeoNormalizationUtil.normalizeString(dto.state) || dto.state.trim(),
-          geoCountry: GeoNormalizationUtil.normalizeString(dto.country) || dto.country.trim(),
+          entityId: church.id,
+          entitySlug: slug,
+          entityType: EcosystemActivityEntityType.CHURCH,
+          entityName: church.canonicalName,
+          entitySubtitle: dto.denomination,
+          entityVisuals: {
+            coverUrl: dto.coverUrl || dto.mainImageUrl,
+            logoUrl: dto.logoUrl,
+          },
+          city: profile.city,
+          state: profile.state,
+          country: profile.country,
+          latitude: dto.latitude,
+          longitude: dto.longitude,
+          metrics: {
+            meetingsCount: meetings.length,
+          },
           source: 'network_directory_form',
         },
         manager,
       });
 
-      await this.activitiesService.logActivity({
-        actorPersonId: personId,
-        relatedChurchId: church.id,
-        activityType: EcosystemActivityType.CHURCH_ADDED,
-        entityId: church.id,
-        entityType: EcosystemActivityEntityType.CHURCH,
-        country: profile.country,
-        state: profile.state,
-        city: profile.city,
-        metadata: {
-          meetingsCount: meetings.length,
+      await this.activitiesService.logActivity(
+        {
+          actorPersonId: personId,
+          relatedChurchId: church.id,
+          activityType: EcosystemActivityType.CHURCH_ADDED,
+          entityId: church.id,
+          entityType: EcosystemActivityEntityType.CHURCH,
+          country: profile.country,
+          state: profile.state,
+          city: profile.city,
+          metadata: {
+            entityId: church.id,
+            entitySlug: slug,
+            entityType: EcosystemActivityEntityType.CHURCH,
+            entityName: church.canonicalName,
+            entitySubtitle: dto.denomination,
+            entityVisuals: {
+              coverUrl: dto.coverUrl || dto.mainImageUrl,
+              logoUrl: dto.logoUrl,
+            },
+            city: profile.city,
+            state: profile.state,
+            country: profile.country,
+            latitude: dto.latitude,
+            longitude: dto.longitude,
+            metrics: {
+              meetingsCount: meetings.length,
+            },
+          },
         },
-      }, manager);
+        manager,
+      );
 
       return {
         message: 'Church added to the public network successfully.',

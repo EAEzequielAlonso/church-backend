@@ -1,4 +1,7 @@
 export enum NeedEngagementStatus {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
   ACTIVE = 'ACTIVE',
   COMPLETED = 'COMPLETED',
   ABANDONED = 'ABANDONED',
@@ -53,4 +56,4 @@ export enum NeedInformationSourceType {
 export enum UnreachedAreaStatus {
   OPEN = 'OPEN',
   REACHED = 'REACHED',
-}
+}

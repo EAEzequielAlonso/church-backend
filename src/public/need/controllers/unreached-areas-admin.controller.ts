@@ -23,10 +23,7 @@ export class UnreachedAreasAdminController {
   constructor(private readonly unreachedAreasService: UnreachedAreasService) {}
 
   @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateUnreachedAreaDto,
-  ) {
+  async update(@Param('id') id: string, @Body() dto: UpdateUnreachedAreaDto) {
     return this.unreachedAreasService.updateAsAdmin(id, dto);
   }
 
@@ -37,7 +34,12 @@ export class UnreachedAreasAdminController {
     @Body() dto: UpdateUnreachedAreaStatusDto,
   ) {
     const adminPersonId = req.user?.personId;
-    if (!adminPersonId) throw new UnauthorizedException('Missing person context');
-    return this.unreachedAreasService.updateStatusAsAdmin(id, adminPersonId, dto);
+    if (!adminPersonId)
+      throw new UnauthorizedException('Missing person context');
+    return this.unreachedAreasService.updateStatusAsAdmin(
+      id,
+      adminPersonId,
+      dto,
+    );
   }
 }

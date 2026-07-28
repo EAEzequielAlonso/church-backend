@@ -12,7 +12,7 @@ export class SmallGroupResponseDto {
   city: string;
   createdAt: Date;
   updatedAt: Date;
-  
+
   leader?: PersonSummaryDto | null;
   church?: ChurchSummaryDto | null;
 

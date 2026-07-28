@@ -26,7 +26,9 @@ export class SmallGroupsPolicies {
     });
 
     if (!relation) {
-      throw new ForbiddenException('User is not an active administrator for this church.');
+      throw new ForbiddenException(
+        'User is not an active administrator for this church.',
+      );
     }
   }
 
@@ -44,7 +46,9 @@ export class SmallGroupsPolicies {
     });
 
     if (!relation) {
-      throw new ForbiddenException('The assigned leader does not have an active relation with this church.');
+      throw new ForbiddenException(
+        'The assigned leader does not have an active relation with this church.',
+      );
     }
   }
 }

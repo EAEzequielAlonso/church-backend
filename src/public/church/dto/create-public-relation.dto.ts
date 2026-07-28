@@ -1,4 +1,12 @@
-import { IsEnum, IsLatitude, IsLongitude, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsLatitude,
+  IsLongitude,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 import { PublicChurchRelationType } from '../../enums/public.enums';
 
 export class CreatePublicRelationDto {

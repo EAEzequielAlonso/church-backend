@@ -8,7 +8,10 @@ import { MissionsPolicies } from '../policies/missions.policies';
 import { MissionsService } from './missions.service';
 import { MissionCollaborationStatus } from '../enums/missions.enums';
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
-import { EcosystemActivityType, EcosystemActivityEntityType } from '../../ecosystem/enums/ecosystem.enums';
+import {
+  EcosystemActivityType,
+  EcosystemActivityEntityType,
+} from '../../ecosystem/enums/ecosystem.enums';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Church } from 'src/core/churches/entities/church.entity';
 
@@ -25,11 +28,17 @@ export class MissionCollaborationsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async create(missionId: string, dto: CreateMissionCollaborationDto, actor: Person): Promise<MissionCollaboration> {
+  async create(
+    missionId: string,
+    dto: CreateMissionCollaborationDto,
+    actor: Person,
+  ): Promise<MissionCollaboration> {
     const mission = await this.missionsService.findOne(missionId);
 
     if (!(await this.policies.canCollaborate(actor, mission, dto.churchId))) {
-      throw new ForbiddenException('No tienes permiso para colaborar en nombre de esa iglesia o la misión no está activa');
+      throw new ForbiddenException(
+        'No tienes permiso para colaborar en nombre de esa iglesia o la misión no está activa',
+      );
     }
 
     const collab = this.collabsRepo.create({
@@ -40,7 +49,9 @@ export class MissionCollaborationsService {
     const saved = await this.collabsRepo.save(collab);
 
     if (saved.status === MissionCollaborationStatus.ACTIVE) {
-      const church = await this.churchRepo.findOne({ where: { id: dto.churchId } });
+      const church = await this.churchRepo.findOne({
+        where: { id: dto.churchId },
+      });
       await this.activitiesService.logActivity({
         actorPersonId: actor.id,
         activityType: EcosystemActivityType.MISSION_JOINED,
@@ -54,11 +65,13 @@ export class MissionCollaborationsService {
       if (!recipientPersonId && mission.creatorChurchId) {
         const creatorChurch = await this.churchRepo.findOne({
           where: { id: mission.creatorChurchId },
-          relations: ['publicProfile']
+          relations: ['publicProfile'],
         });
 
         if (creatorChurch && creatorChurch.publicProfile) {
-          recipientPersonId = creatorChurch.publicProfile.claimerPersonId || creatorChurch.publicProfile.creatorPersonId;
+          recipientPersonId =
+            creatorChurch.publicProfile.claimerPersonId ||
+            creatorChurch.publicProfile.creatorPersonId;
         }
       }
 

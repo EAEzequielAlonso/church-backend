@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Get, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../../core/auth/guards/jwt-auth.guard';
 import { SubmitChurchClaimUseCase } from '../use-cases/church-claims/submit-church-claim.use-case';
 import { PublicRateLimit } from '../../../core/auth/decorators/public-rate-limit.decorator';
@@ -13,8 +21,9 @@ import { ChurchClaimResponseDto } from '../dto/church-claim/church-claim-respons
 export class ChurchClaimsController {
   constructor(
     private readonly submitUseCase: SubmitChurchClaimUseCase,
-    @InjectRepository(ChurchClaim) private readonly claimsRepo: Repository<ChurchClaim>
-  ) { }
+    @InjectRepository(ChurchClaim)
+    private readonly claimsRepo: Repository<ChurchClaim>,
+  ) {}
 
   @Post('claim')
   @UseGuards(JwtAuthGuard, PublicRateLimit(5, 60))
@@ -31,12 +40,12 @@ export class ChurchClaimsController {
     if (!personId) throw new UnauthorizedException('Missing person context');
 
     const activeClaim = await this.claimsRepo.findOne({
-      where: { 
+      where: {
         claimantPersonId: personId,
-        status: In([ChurchClaimStatus.PENDING, ChurchClaimStatus.APPROVED])
+        status: In([ChurchClaimStatus.PENDING, ChurchClaimStatus.APPROVED]),
       },
       relations: ['church', 'church.publicProfile'],
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
 
     return activeClaim ? ChurchClaimResponseDto.fromEntity(activeClaim) : null;

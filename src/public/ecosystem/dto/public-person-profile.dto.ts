@@ -24,11 +24,11 @@ export class PublicPersonProfileDto {
   city: string | null;
   country: string | null;
   createdAt: Date;
-  
+
   memberChurch: ChurchRelationDto | null;
   visitorChurch: ChurchRelationDto | null;
   followedChurches: ChurchRelationDto[];
-  
+
   contributionsCount: number;
   visibleContributions: VisibleContributionsDto;
 }

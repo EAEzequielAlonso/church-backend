@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsUrl, IsEmail, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  IsUrl,
+  IsEmail,
+  Min,
+  Max,
+} from 'class-validator';
 import { NeedSignalType } from 'src/public/enums/public.enums';
 
 export class CreateOrUpdateNeedSignalDto {

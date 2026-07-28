@@ -31,7 +31,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User no longer exists');
     }
     if (user.person && user.person.isActive === false) {
-      throw new UnauthorizedException('Tu cuenta ha sido suspendida temporalmente. Si consideras que esto es un error, puedes contactarnos o enviar feedback.');
+      throw new UnauthorizedException(
+        'Tu cuenta ha sido suspendida temporalmente. Si consideras que esto es un error, puedes contactarnos o enviar feedback.',
+      );
     }
 
     return {
@@ -44,5 +46,3 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     };
   }
 }
-
-

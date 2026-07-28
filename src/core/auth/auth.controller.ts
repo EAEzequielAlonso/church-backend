@@ -19,7 +19,10 @@ import {
 } from './dto/dto';
 import { SocialLoginDto } from './dto/social-login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { EcosystemContributionsService, VisibleContributions } from '../../public/ecosystem/services/ecosystem-contributions.service';
+import {
+  EcosystemContributionsService,
+  VisibleContributions,
+} from '../../public/ecosystem/services/ecosystem-contributions.service';
 
 @Controller('auth')
 export class AuthController {
@@ -27,7 +30,7 @@ export class AuthController {
     private authService: AuthService,
     private usersService: UsersService,
     private contributionsService: EcosystemContributionsService,
-  ) { }
+  ) {}
 
   @Post('register-church')
   registerChurch(@Body() dto: RegisterChurchDto) {
@@ -107,7 +110,11 @@ export class AuthController {
       systemRole: user.systemRole,
       isEmailVerified: user.isEmailVerified,
       isOnboarded: user.isOnboarded,
-      hasLocation: !!(user.person?.country && user.person?.state && user.person?.city),
+      hasLocation: !!(
+        user.person?.country &&
+        user.person?.state &&
+        user.person?.city
+      ),
       provider: user.provider,
     };
 

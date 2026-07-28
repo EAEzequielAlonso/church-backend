@@ -1,35 +1,51 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ChurchClaim } from '../../entities/church_claim.entity'; 
-import { ChurchClaimStatus, PublicChurchRelationStatus, PublicChurchRelationType } from '../../../enums/public.enums';
+import { ChurchClaim } from '../../entities/church_claim.entity';
+import {
+  ChurchClaimStatus,
+  PublicChurchRelationStatus,
+  PublicChurchRelationType,
+} from '../../../enums/public.enums';
 import { ChurchLifecycleService } from '../../church-profile/services/church-lifecycle.service';
 import { EcosystemHistory } from '../../../ecosystem/entities/ecosystem-history.entity';
 import { EcosystemHistoryEvent } from '../../../enums/public.enums';
 import { ChurchPublicProfile } from '../../entities/church_public_profile.entity';
 import { PublicChurchRelation } from '../../entities/public_church_relation.entity';
 import { EcosystemActivitiesService } from '../../../ecosystem/services/ecosystem-activities.service';
-import { EcosystemActivityType, EcosystemActivityEntityType } from '../../../ecosystem/enums/ecosystem.enums';
+import {
+  EcosystemActivityType,
+  EcosystemActivityEntityType,
+} from '../../../ecosystem/enums/ecosystem.enums';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Person } from '../../../../core/users/entities/person.entity';
 
 @Injectable()
 export class ApproveChurchClaimUseCase {
   constructor(
-    @InjectRepository(ChurchClaim) private readonly claimsRepo: Repository<ChurchClaim>,
-    @InjectRepository(EcosystemHistory) private readonly historyRepo: Repository<EcosystemHistory>,
-    @InjectRepository(ChurchPublicProfile) private readonly profilesRepo: Repository<ChurchPublicProfile>,
-    @InjectRepository(PublicChurchRelation) private readonly relationsRepo: Repository<PublicChurchRelation>,
+    @InjectRepository(ChurchClaim)
+    private readonly claimsRepo: Repository<ChurchClaim>,
+    @InjectRepository(EcosystemHistory)
+    private readonly historyRepo: Repository<EcosystemHistory>,
+    @InjectRepository(ChurchPublicProfile)
+    private readonly profilesRepo: Repository<ChurchPublicProfile>,
+    @InjectRepository(PublicChurchRelation)
+    private readonly relationsRepo: Repository<PublicChurchRelation>,
     @InjectRepository(Person) private readonly personRepo: Repository<Person>,
     private readonly lifecycleService: ChurchLifecycleService,
     private readonly activitiesService: EcosystemActivitiesService,
     private readonly eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   async execute(claimId: string) {
     const claim = await this.claimsRepo.findOne({ where: { id: claimId } });
     if (!claim) throw new NotFoundException('Claim not found');
-    if (claim.status !== ChurchClaimStatus.PENDING) throw new BadRequestException('Claim is not pending');
+    if (claim.status !== ChurchClaimStatus.PENDING)
+      throw new BadRequestException('Claim is not pending');
 
     claim.status = ChurchClaimStatus.APPROVED;
     claim.verifiedAt = new Date();
@@ -40,7 +56,7 @@ export class ApproveChurchClaimUseCase {
     // Fetch ChurchPublicProfile to check claimerPersonId and get metadata
     const profile = await this.profilesRepo.findOne({
       where: { churchId: claim.churchId },
-      relations: ['church']
+      relations: ['church'],
     });
 
     if (profile) {
@@ -56,7 +72,7 @@ export class ApproveChurchClaimUseCase {
         personId: claim.claimantPersonId,
         relationType: PublicChurchRelationType.COMMUNITY_MEMBER,
         status: PublicChurchRelationStatus.APPROVED,
-        isCurrentAdmin:true,
+        isCurrentAdmin: true,
       });
 
       await this.activitiesService.logActivity({
@@ -89,17 +105,25 @@ export class ApproveChurchClaimUseCase {
         personId: claim.claimantPersonId,
         churchId: claim.churchId,
         eventType: EcosystemHistoryEvent.ADMIN_ASSIGNED,
-      })
+      }),
     ];
     await this.historyRepo.save(historyEvents);
 
-    const person = await this.personRepo.findOne({ where: { id: claim.claimantPersonId }, relations: ['user'] });
+    const person = await this.personRepo.findOne({
+      where: { id: claim.claimantPersonId },
+      relations: ['user'],
+    });
     this.eventEmitter.emit('church-claim.approved', {
       recipientPersonId: claim.claimantPersonId,
       email: person?.user?.email,
       churchName: profile?.church?.canonicalName || 'la iglesia',
     });
 
-    return { claimId: claim.id, churchId: claim.churchId, status: claim.status, verificationStatus: 'VERIFIED' };
+    return {
+      claimId: claim.id,
+      churchId: claim.churchId,
+      status: claim.status,
+      verificationStatus: 'VERIFIED',
+    };
   }
 }

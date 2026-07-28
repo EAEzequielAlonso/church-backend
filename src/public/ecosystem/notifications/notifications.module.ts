@@ -22,10 +22,7 @@ const UseCases = [
 ];
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Notification,User]),
-    AuthModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Notification, User]), AuthModule],
   controllers: [NotificationsController],
   providers: [...UseCases, NotificationListener],
   /**

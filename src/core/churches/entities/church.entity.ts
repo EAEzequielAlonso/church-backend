@@ -9,7 +9,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { ChurchPublicProfile } from '../../../public/church/entities/church_public_profile.entity'; 
+import { ChurchPublicProfile } from '../../../public/church/entities/church_public_profile.entity';
 import { MissionProject } from '../../../public/missions/entities/mission-project.entity';
 import { MissionCollaboration } from '../../../public/missions/entities/mission-collaboration.entity';
 import { PublicChurchRelation } from '../../../public/church/entities/public_church_relation.entity';
@@ -38,7 +38,10 @@ export class Church {
   canonicalName: string;
 
   // ─── Trazabilidad Missions ───────────────────────
-  @ManyToOne(() => MissionProject, project => project.resultingChurches, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => MissionProject, (project) => project.resultingChurches, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'originMissionId' })
   originMission: MissionProject;
 
@@ -50,14 +53,17 @@ export class Church {
   @OneToOne(() => ChurchPublicProfile, (profile) => profile.church)
   publicProfile: ChurchPublicProfile;
 
-  @OneToMany(() => MissionProject, mission => mission.creatorChurch)
+  @OneToMany(() => MissionProject, (mission) => mission.creatorChurch)
   createdMissionProjects: MissionProject[];
 
-  @OneToMany(() => MissionCollaboration, collaboration => collaboration.church)
+  @OneToMany(
+    () => MissionCollaboration,
+    (collaboration) => collaboration.church,
+  )
   missionCollaborations: MissionCollaboration[];
 
-    @OneToMany(() => PublicChurchRelation, (relation) => relation.church)
-    relations: PublicChurchRelation[];
+  @OneToMany(() => PublicChurchRelation, (relation) => relation.church)
+  relations: PublicChurchRelation[];
 
   @OneToMany(() => SmallGroup, (group) => group.church)
   smallGroups: SmallGroup[];

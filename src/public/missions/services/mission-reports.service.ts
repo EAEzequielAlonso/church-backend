@@ -7,7 +7,10 @@ import { Person } from 'src/core/users/entities/person.entity';
 import { MissionsPolicies } from '../policies/missions.policies';
 import { MissionsService } from './missions.service';
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
-import { EcosystemActivityType, EcosystemActivityEntityType } from '../../ecosystem/enums/ecosystem.enums';
+import {
+  EcosystemActivityType,
+  EcosystemActivityEntityType,
+} from '../../ecosystem/enums/ecosystem.enums';
 
 @Injectable()
 export class MissionReportsService {
@@ -19,11 +22,18 @@ export class MissionReportsService {
     private readonly activitiesService: EcosystemActivitiesService,
   ) {}
 
-  async create(missionId: string, dto: CreateMissionReportDto, actor: Person, isChurchAdmin?: boolean): Promise<MissionReport> {
+  async create(
+    missionId: string,
+    dto: CreateMissionReportDto,
+    actor: Person,
+    isChurchAdmin?: boolean,
+  ): Promise<MissionReport> {
     const mission = await this.missionsService.findOne(missionId);
 
     if (!(await this.policies.canCreateReport(actor, mission, isChurchAdmin))) {
-      throw new ForbiddenException('No tienes permiso para crear reportes en esta misión');
+      throw new ForbiddenException(
+        'No tienes permiso para crear reportes en esta misión',
+      );
     }
 
     const report = this.reportsRepo.create({

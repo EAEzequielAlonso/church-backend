@@ -14,4 +14,4 @@ import { ChurchClaim } from 'src/public/church/entities/church_claim.entity';
   providers: [ChurchesService],
   exports: [TypeOrmModule],
 })
-export class ChurchesModule { }
+export class ChurchesModule {}

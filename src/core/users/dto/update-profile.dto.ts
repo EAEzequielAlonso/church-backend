@@ -1,7 +1,12 @@
-import { IsString, IsOptional, IsEnum, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsDateString,
+  IsNumber,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { MaritalStatus, Sex } from '../enums/person.enum';
-
 
 export class UpdateProfileDto {
   @ApiProperty({ required: false })
@@ -52,7 +57,7 @@ export class UpdateProfileDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  neighborhood?: string;
+  address?: string;
 
   @ApiProperty({ required: false })
   @IsString()
@@ -74,7 +79,15 @@ export class UpdateProfileDto {
   @IsOptional()
   country?: string;
 
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
 
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
 
   @ApiProperty({ required: false })
   @IsString()

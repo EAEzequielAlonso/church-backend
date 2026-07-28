@@ -14,7 +14,7 @@ export class MissionProjectResponseDto {
   outcomeType: string | null;
   createdAt: Date;
   updatedAt: Date;
-  
+
   leader?: PersonSummaryDto | null;
   creatorChurch?: ChurchSummaryDto | null;
 
@@ -54,7 +54,7 @@ export class MissionProjectResponseDto {
       };
     }
 
-    // Include other necessary fields if needed (like needs, collaborations) 
+    // Include other necessary fields if needed (like needs, collaborations)
     // but the instruction specifically asked to remove full Person/Church.
 
     return dto;

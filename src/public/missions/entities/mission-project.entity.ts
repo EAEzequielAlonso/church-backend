@@ -129,7 +129,10 @@ export class MissionProject {
   status: MissionProjectStatus;
 
   // ─── Colecciones ──────────────────────────────────
-  @OneToMany(() => MissionCollaboration, (collaboration) => collaboration.missionProject)
+  @OneToMany(
+    () => MissionCollaboration,
+    (collaboration) => collaboration.missionProject,
+  )
   collaborations: MissionCollaboration[];
 
   @OneToMany(() => MissionNeed, (need) => need.missionProject)

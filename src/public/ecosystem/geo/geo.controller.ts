@@ -13,11 +13,13 @@ class GeocodeChurchAddressDto {
 
 @Controller('public/geo')
 export class GeoController {
-  constructor(private readonly geo: GeoService) { }
+  constructor(private readonly geo: GeoService) {}
 
   @Post('geocode-church-address')
   @UseGuards(PublicRateLimit(20, 60))
-  geocodeChurchAddress(@Body() body: GeocodeChurchAddressDto) { return this.geo.geocodeChurchAddress(body); }
+  geocodeChurchAddress(@Body() body: GeocodeChurchAddressDto) {
+    return this.geo.geocodeChurchAddress(body);
+  }
 
   @Get('locations/autocomplete')
   @UseGuards(PublicRateLimit(50, 60))
@@ -33,5 +35,7 @@ export class GeoController {
 
   @Get('need-heatmap')
   @UseGuards(PublicRateLimit(30, 60))
-  heatmap() { return this.geo.needHeatmap(); }
+  heatmap() {
+    return this.geo.needHeatmap();
+  }
 }

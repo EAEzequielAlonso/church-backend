@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Req, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Req,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { OptionalJwtAuthGuard } from '../../../core/auth/guards/optional-jwt-auth.guard';
 import { JwtAuthGuard } from '../../../core/auth/guards/jwt-auth.guard';
 import { ChurchDirectoryService } from './services/church-directory.service';
@@ -12,9 +20,11 @@ export class ChurchDirectoryController {
   constructor(
     private readonly directoryService: ChurchDirectoryService,
     private readonly createUseCase: CreatePublicChurchUseCase,
-  ) { }
+  ) {}
 
-  @Get() find(@Query() query: ChurchDirectoryQueryDto) { return this.directoryService.find(query); }
+  @Get() find(@Query() query: ChurchDirectoryQueryDto) {
+    return this.directoryService.find(query);
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard) // Requires a logged-in user to contribute

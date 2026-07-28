@@ -11,6 +11,20 @@ import { GeoModule } from './ecosystem/geo/geo.module';
 import { PublicAdminModule } from './church/public-admin.module';
 import { NeedSignalsController } from './need/controllers/need-signals.controller';
 import { NeedSignalsService } from './need/services/need-signals.service';
+import { GetMapAggregatedNeedSignalsUseCase } from './need/use-cases/get-map-aggregated-need-signals.use-case';
+import { CreateOrUpdatePersonalNeedSignalUseCase } from './need/use-cases/create-or-update-personal-need-signal.use-case';
+import { ClosePersonalNeedSignalUseCase } from './need/use-cases/close-personal-need-signal.use-case';
+import { GetActivePersonalNeedSignalUseCase } from './need/use-cases/get-active-personal-need-signal.use-case';
+import { RecordNeedSignalContactAttemptUseCase } from './need/use-cases/record-need-signal-contact-attempt.use-case';
+import { AddNeedSignalInformationUseCase } from './need/use-cases/add-need-signal-information.use-case';
+import { ListNeedSignalInformationUseCase } from './need/use-cases/list-need-signal-information.use-case';
+import { GetNeedSignalMapSummaryUseCase } from './need/use-cases/get-need-signal-map-summary.use-case';
+import { GetLocationPublicNeedSignalsUseCase } from './need/use-cases/get-location-public-need-signals.use-case';
+import { ListReceivedContactRequestsUseCase } from './need/use-cases/list-received-contact-requests.use-case';
+import { ListSentContactRequestsUseCase } from './need/use-cases/list-sent-contact-requests.use-case';
+import { AcceptPersonalNeedSignalContactUseCase } from './need/use-cases/accept-personal-need-signal-contact.use-case';
+import { RejectPersonalNeedSignalContactUseCase } from './need/use-cases/reject-personal-need-signal-contact.use-case';
+import { GetNeedEngagementContactDetailsUseCase } from './need/use-cases/get-need-engagement-contact-details.use-case';
 import { TerritorialModule } from './ecosystem/territorial/territorial.module';
 import { ChurchPublicProfile } from './church/entities/church_public_profile.entity';
 import { PublicChurchRelation } from './church/entities/public_church_relation.entity';
@@ -68,9 +82,32 @@ import { NeedEngagement } from './need/entities/need-engagement.entity';
     MissionsModule,
     SmallGroupsModule,
   ],
-  providers: [NeedSignalsService, ChurchNeedSignalsService, UnreachedAreasService],
-  controllers: [PublicPeopleController, NeedSignalsController, ChurchNeedSignalsController, UnreachedAreasController, UnreachedAreasAdminController],
+  providers: [
+    NeedSignalsService,
+    ChurchNeedSignalsService,
+    UnreachedAreasService,
+    GetMapAggregatedNeedSignalsUseCase,
+    CreateOrUpdatePersonalNeedSignalUseCase,
+    ClosePersonalNeedSignalUseCase,
+    GetActivePersonalNeedSignalUseCase,
+    RecordNeedSignalContactAttemptUseCase,
+    AddNeedSignalInformationUseCase,
+    ListNeedSignalInformationUseCase,
+    GetNeedSignalMapSummaryUseCase,
+    GetLocationPublicNeedSignalsUseCase,
+    ListReceivedContactRequestsUseCase,
+    ListSentContactRequestsUseCase,
+    AcceptPersonalNeedSignalContactUseCase,
+    RejectPersonalNeedSignalContactUseCase,
+    GetNeedEngagementContactDetailsUseCase,
+  ],
+  controllers: [
+    PublicPeopleController,
+    NeedSignalsController,
+    ChurchNeedSignalsController,
+    UnreachedAreasController,
+    UnreachedAreasAdminController,
+  ],
   exports: [TypeOrmModule],
 })
-export class PublicModule { }
-
+export class PublicModule {}

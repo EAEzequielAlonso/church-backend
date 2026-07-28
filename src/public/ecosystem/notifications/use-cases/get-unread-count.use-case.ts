@@ -5,14 +5,14 @@ import { Notification } from '../entities/notification.entity';
 
 @Injectable()
 export class GetUnreadCountUseCase {
-    constructor(
-        @InjectRepository(Notification)
-        private repo: Repository<Notification>,
-    ) { }
+  constructor(
+    @InjectRepository(Notification)
+    private repo: Repository<Notification>,
+  ) {}
 
-    async execute(churchId: string | null, userId: string): Promise<number> {
-        return this.repo.count({
-            where: { userId, read: false },
-        });
-    }
+  async execute(churchId: string | null, userId: string): Promise<number> {
+    return this.repo.count({
+      where: { userId, read: false },
+    });
+  }
 }
