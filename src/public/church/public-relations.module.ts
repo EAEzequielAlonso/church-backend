@@ -6,6 +6,7 @@ import { EcosystemHistory } from '../ecosystem/entities/ecosystem-history.entity
 import { PublicRelationsController } from './controllers/public-relations.controller';
 import { PublicRelationsService } from './services/public-relations.service';
 import { EcosystemContributionsModule } from '../ecosystem/ecosystem-contributions.module';
+import { ChurchOwnershipService } from './services/church-ownership.service';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { EcosystemContributionsModule } from '../ecosystem/ecosystem-contributio
     EcosystemContributionsModule,
   ],
   controllers: [PublicRelationsController],
-  providers: [PublicRelationsService],
+  providers: [PublicRelationsService, ChurchOwnershipService],
+  exports: [PublicRelationsService],
 })
 export class PublicRelationsModule {}

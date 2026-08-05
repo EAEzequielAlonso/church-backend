@@ -1,6 +1,12 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../core/auth/guards/jwt-auth.guard';
+import { SecurityContextGuard } from '../../../core/auth/guards/security-context.guard';
 import { PermissionsGuard } from '../../../core/auth/guards/permissions.guard';
 import { RequirePermissions } from '../../../core/auth/decorators/require-permissions.decorator';
 import { AppPermission } from '../../../core/auth/authorization/permissions.enum';
@@ -8,11 +14,13 @@ import { ChurchClaimsService } from '../services/church-claims.service';
 import { ApproveChurchClaimUseCase } from '../use-cases/church-claims/approve-church-claim.use-case';
 import { RejectChurchClaimUseCase } from '../use-cases/church-claims/reject-church-claim.use-case';
 import { ChurchLifecycleService } from '../church-profile/services/church-lifecycle.service';
+import { AdminPendingClaimDto } from '../dto/church-claim/admin-pending-claim.dto';
+import { RejectChurchClaimDto } from '../dto/church-claim/reject-church-claim.dto';
 
 @ApiTags('Public Claims Admin')
 @ApiBearerAuth()
 @Controller('public/admin/claims')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard, PermissionsGuard)
 @RequirePermissions(AppPermission.NETWORK_ADMINISTRATION)
 export class ChurchClaimsAdminController {
   constructor(
@@ -24,7 +32,8 @@ export class ChurchClaimsAdminController {
 
   @Get('pending')
   @ApiOperation({ summary: 'List pending public church claims' })
-  pending() {
+  @ApiResponse({ status: 200, type: [AdminPendingClaimDto] })
+  pending(): Promise<AdminPendingClaimDto[]> {
     return this.service.pendingClaims();
   }
 
@@ -38,8 +47,8 @@ export class ChurchClaimsAdminController {
 
   @Post(':id/reject')
   @ApiOperation({ summary: 'Reject a public church claim' })
-  reject(@Param('id') id: string, @Body('notes') notes?: string) {
-    return this.rejectUseCase.execute(id, notes || null);
+  reject(@Param('id') id: string, @Body() dto: RejectChurchClaimDto) {
+    return this.rejectUseCase.execute(id, dto.notes);
   }
 
   @Post('verify-church/:churchId')

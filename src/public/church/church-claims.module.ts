@@ -14,6 +14,7 @@ import { EcosystemContributionsModule } from '../ecosystem/ecosystem-contributio
 import { EcosystemActivitiesModule } from '../ecosystem/ecosystem-activities.module';
 import { ChurchPublicProfile } from './entities/church_public_profile.entity';
 import { PublicChurchRelation } from './entities/public_church_relation.entity';
+import { PublicRelationsModule } from './public-relations.module';
 import { Person } from '../../core/users/entities/person.entity';
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { Person } from '../../core/users/entities/person.entity';
     ChurchProfileModule,
     EcosystemContributionsModule,
     EcosystemActivitiesModule,
+    PublicRelationsModule,
   ],
   controllers: [ChurchClaimsController, ChurchClaimsAdminController],
   providers: [

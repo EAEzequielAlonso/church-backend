@@ -13,11 +13,12 @@ import { MissionsController } from './controllers/missions.controller';
 import { MissionsManagementController } from './controllers/missions-management.controller';
 
 import { Church } from '../../core/churches/entities/church.entity';
-import { ChurchNeedSignal } from '../need/entities/church-need-signal.entity';
+
 import { ChurchPublicProfile } from '../church/entities/church_public_profile.entity';
 import { EcosystemActivitiesModule } from '../ecosystem/ecosystem-activities.module';
 import { ChurchOwnershipService } from '../church/services/church-ownership.service';
 import { ChurchClaim } from '../church/entities/church_claim.entity';
+import { PublicChurchRelation } from '../church/entities/public_church_relation.entity';
 
 @Module({
   imports: [
@@ -27,9 +28,10 @@ import { ChurchClaim } from '../church/entities/church_claim.entity';
       MissionNeed,
       MissionReport,
       Church,
-      ChurchNeedSignal,
+
       ChurchPublicProfile,
       ChurchClaim,
+      PublicChurchRelation,
     ]),
     EcosystemActivitiesModule,
   ],

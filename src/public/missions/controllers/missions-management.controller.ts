@@ -1,10 +1,13 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   Param,
   Patch,
+  Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../core/auth/guards/jwt-auth.guard';
 import { SecurityContextGuard } from '../../../core/auth/guards/security-context.guard';
@@ -18,8 +21,12 @@ import { CreateMissionProjectDto } from '../dto/create-mission-project.dto';
 import { UpdateMissionProjectDto } from '../dto/update-mission-project.dto';
 import { CompleteMissionDto } from '../dto/complete-mission.dto';
 import { CreateMissionNeedDto } from '../dto/create-mission-need.dto';
+import { UpdateMissionNeedDto } from '../dto/update-mission-need.dto';
 import { CreateMissionCollaborationDto } from '../dto/create-mission-collaboration.dto';
 import { CreateMissionReportDto } from '../dto/create-mission-report.dto';
+import { UpdateMissionReportDto } from '../dto/update-mission-report.dto';
+import { UpdateMissionCollaborationDto } from '../dto/update-mission-collaboration.dto';
+import { MissionProjectResponseDto } from '../dto/mission-response.dto';
 
 @Controller('missions-management')
 @UseGuards(JwtAuthGuard, SecurityContextGuard)
@@ -38,6 +45,29 @@ export class MissionsManagementController {
   ) {
     const actor = { id: context.personId } as Person;
     return this.missionsService.create(dto, actor);
+  }
+
+  @Get('church/:churchId')
+  async getChurchMissions(
+    @Param('churchId') churchId: string,
+    @CurrentUser() context: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const actor = { id: context.personId } as Person;
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 12;
+    
+    const result = await this.missionsService.findAllByChurch(churchId, pageNum, limitNum);
+    return {
+      data: result.data.map((m) => MissionProjectResponseDto.fromEntity(m)),
+      total: result.total,
+      page: result.page,
+      pageSize: result.limit,
+      totalPages: Math.ceil(result.total / result.limit),
+      hasNextPage: result.page < Math.ceil(result.total / result.limit),
+      hasPreviousPage: result.page > 1
+    };
   }
 
   @Patch(':id')
@@ -76,6 +106,27 @@ export class MissionsManagementController {
     return this.needsService.create(id, dto, actor);
   }
 
+  @Patch(':id/needs/:needId')
+  async updateNeed(
+    @Param('id') id: string,
+    @Param('needId') needId: string,
+    @Body() dto: UpdateMissionNeedDto,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.needsService.update(id, needId, dto, actor);
+  }
+
+  @Delete(':id/needs/:needId')
+  async removeNeed(
+    @Param('id') id: string,
+    @Param('needId') needId: string,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.needsService.remove(id, needId, actor);
+  }
+
   @Post(':id/collaborations')
   async createCollaboration(
     @Param('id') id: string,
@@ -94,5 +145,47 @@ export class MissionsManagementController {
   ) {
     const actor = { id: context.personId } as Person;
     return this.reportsService.create(id, dto, actor);
+  }
+
+  @Patch(':id/reports/:reportId')
+  async updateReport(
+    @Param('id') id: string,
+    @Param('reportId') reportId: string,
+    @Body() dto: UpdateMissionReportDto,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.reportsService.update(id, reportId, dto, actor);
+  }
+
+  @Delete(':id/reports/:reportId')
+  async removeReport(
+    @Param('id') id: string,
+    @Param('reportId') reportId: string,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.reportsService.remove(id, reportId, actor);
+  }
+
+  @Patch(':id/collaborations/:collabId')
+  async updateCollaboration(
+    @Param('id') id: string,
+    @Param('collabId') collabId: string,
+    @Body() dto: UpdateMissionCollaborationDto,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.collabsService.update(id, collabId, dto, actor);
+  }
+
+  @Delete(':id/collaborations/:collabId')
+  async removeCollaboration(
+    @Param('id') id: string,
+    @Param('collabId') collabId: string,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.collabsService.remove(id, collabId, actor);
   }
 }

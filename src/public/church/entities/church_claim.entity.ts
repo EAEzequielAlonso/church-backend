@@ -41,7 +41,10 @@ export class ChurchClaim {
   status: ChurchClaimStatus;
 
   @Column({ type: 'text', nullable: true })
-  verificationNotes: string;
+  evidence: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  verificationNotes: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })
   verifiedAt: Date;

@@ -56,4 +56,7 @@ export class Notification {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column({ type: 'jsonb', nullable: true })
+  payload: Record<string, unknown> | null;
 }

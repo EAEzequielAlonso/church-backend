@@ -50,6 +50,10 @@ export class SmallGroupsService {
       actorPersonId: savedGroup.leaderId,
       metadata: {
         name: savedGroup.name,
+        meetingDay: savedGroup.meetingDay,
+        meetingTime: savedGroup.meetingTime,
+        city: savedGroup.city,
+        state: savedGroup.state,
       },
     });
 
@@ -148,7 +152,7 @@ export class SmallGroupsService {
   async findOne(id: string): Promise<SmallGroup> {
     const smallGroup = await this.smallGroupRepo.findOne({
       where: { id },
-      relations: ['leader', 'church', 'originMission'],
+      relations: ['leader', 'church', 'church.publicProfile', 'originMission'],
     });
 
     if (!smallGroup) {
@@ -162,7 +166,8 @@ export class SmallGroupsService {
     const qb = this.smallGroupRepo
       .createQueryBuilder('sg')
       .leftJoinAndSelect('sg.leader', 'leader')
-      .leftJoinAndSelect('sg.church', 'church');
+      .leftJoinAndSelect('sg.church', 'church')
+      .leftJoinAndSelect('church.publicProfile', 'publicProfile');
 
     if (filters.churchId) {
       qb.andWhere('sg.churchId = :churchId', { churchId: filters.churchId });

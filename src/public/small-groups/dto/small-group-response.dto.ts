@@ -7,9 +7,22 @@ export class SmallGroupResponseDto {
   name: string;
   description: string;
   status: string;
+  capacityStatus: string;
+  meetingDay: string;
+  meetingTime: string;
+  meetingFrequency: string;
+  contactPhone: string;
+  contactEmail: string;
+  contactUrl: string;
+  contactWhatsapp: string;
   country: string;
   state: string;
   city: string;
+  address: string;
+  postalCode: string;
+  latitude: number | null;
+  longitude: number | null;
+  geoPrecision: string;
   createdAt: Date;
   updatedAt: Date;
 
@@ -22,9 +35,22 @@ export class SmallGroupResponseDto {
     dto.name = entity.name;
     dto.description = entity.description;
     dto.status = entity.status;
+    dto.capacityStatus = entity.capacityStatus;
+    dto.meetingDay = entity.meetingDay;
+    dto.meetingTime = entity.meetingTime;
+    dto.meetingFrequency = entity.meetingFrequency;
+    dto.contactPhone = entity.contactPhone;
+    dto.contactEmail = entity.contactEmail;
+    dto.contactUrl = entity.contactUrl;
+    dto.contactWhatsapp = entity.contactWhatsapp;
     dto.country = entity.country;
     dto.state = entity.state;
     dto.city = entity.city;
+    dto.address = entity.address;
+    dto.postalCode = entity.postalCode;
+    dto.latitude = entity.latitude;
+    dto.longitude = entity.longitude;
+    dto.geoPrecision = entity.geoPrecision;
     dto.createdAt = entity.createdAt;
     dto.updatedAt = entity.updatedAt;
 
@@ -35,6 +61,7 @@ export class SmallGroupResponseDto {
         lastName: entity.leader.lastName,
         avatarUrl: entity.leader.avatarUrl,
         slug: entity.leader.slug,
+        isPublicProfileEnabled: entity.leader.isPublicProfileEnabled,
       };
     }
 

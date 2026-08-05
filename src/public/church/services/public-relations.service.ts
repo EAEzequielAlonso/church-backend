@@ -3,6 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ChurchOwnershipService } from './church-ownership.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Church } from '../../../core/churches/entities/church.entity';
@@ -27,6 +29,8 @@ export class PublicRelationsService {
     @InjectRepository(EcosystemHistory)
     private readonly historyRepo: Repository<EcosystemHistory>,
     @InjectRepository(Church) private readonly churches: Repository<Church>,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly ownershipService: ChurchOwnershipService,
   ) {}
 
   async create(personId: string, dto: CreatePublicRelationDto) {
@@ -57,40 +61,7 @@ export class PublicRelationsService {
         dto.relationType === PublicChurchRelationType.COMMUNITY_MEMBER ||
         dto.relationType === PublicChurchRelationType.REGULAR_VISITOR
       ) {
-        const previousRelations = await manager.find(PublicChurchRelation, {
-          where: [
-            {
-              personId,
-              relationType: PublicChurchRelationType.COMMUNITY_MEMBER,
-            },
-            {
-              personId,
-              relationType: PublicChurchRelationType.REGULAR_VISITOR,
-            },
-          ],
-          lock: { mode: 'pessimistic_write' },
-        });
-
-        if (previousRelations.length > 0) {
-          // Remove previous relations and log history
-          for (const prev of previousRelations) {
-            await manager.delete(PublicChurchRelation, { id: prev.id });
-            if (prev.churchId) {
-              await manager.save(
-                EcosystemHistory,
-                manager.create(EcosystemHistory, {
-                  personId,
-                  churchId: prev.churchId,
-                  eventType:
-                    prev.relationType ===
-                    PublicChurchRelationType.COMMUNITY_MEMBER
-                      ? EcosystemHistoryEvent.MEMBER_LEFT
-                      : EcosystemHistoryEvent.VISITOR_LEFT,
-                }),
-              );
-            }
-          }
-        }
+        await this.resolveExclusiveRelation(manager, personId);
       }
 
       let status = PublicChurchRelationStatus.PENDING;
@@ -142,8 +113,26 @@ export class PublicRelationsService {
       // Fetch with relations for returning DTO
       const finalRelation = await manager.findOne(PublicChurchRelation, {
         where: { id: savedRelation.id },
-        relations: ['church', 'church.publicProfile'],
+        relations: ['church', 'church.publicProfile', 'person'],
       });
+
+      // Notify admins if it's a pending request
+      if (status === PublicChurchRelationStatus.PENDING) {
+        const adminPersonIds = await this.ownershipService.getAdminsOfChurch(
+          dto.churchId,
+        );
+        if (adminPersonIds.length > 0) {
+          const requesterName = finalRelation.person
+            ? `${finalRelation.person.firstName} ${finalRelation.person.lastName}`.trim()
+            : 'Un usuario';
+          this.eventEmitter.emit('community.join.request', {
+            adminPersonIds,
+            churchName: finalRelation.church?.canonicalName || 'la iglesia',
+            requesterName,
+            relationType: dto.relationType,
+          });
+        }
+      }
 
       return this.toDto(finalRelation);
     });
@@ -182,6 +171,80 @@ export class PublicRelationsService {
     }
 
     return { deleted: true };
+  }
+
+  async assignAdminRelationTransactional(
+    manager: any,
+    personId: string,
+    churchId: string,
+  ) {
+    // 1. Resolve exclusivity rule
+    await this.resolveExclusiveRelation(manager, personId);
+
+    // 2. Create the new relation as MEMBER, APPROVED and Admin
+    const relation = manager.create(PublicChurchRelation, {
+      personId,
+      churchId,
+      relationType: PublicChurchRelationType.COMMUNITY_MEMBER,
+      isCurrentAdmin: true,
+      status: PublicChurchRelationStatus.APPROVED,
+    });
+    const savedRelation = await manager.save(PublicChurchRelation, relation);
+
+    // 3. Log history
+    await manager.save(
+      EcosystemHistory,
+      manager.create(EcosystemHistory, {
+        personId,
+        churchId,
+        eventType: EcosystemHistoryEvent.MEMBER_JOINED,
+      }),
+    );
+
+    return savedRelation;
+  }
+
+  public async resolveExclusiveRelation(
+    manager: any,
+    personId: string,
+    excludeId?: string,
+  ) {
+    const previousRelations = await manager.find(PublicChurchRelation, {
+      where: [
+        {
+          personId,
+          relationType: PublicChurchRelationType.COMMUNITY_MEMBER,
+        },
+        {
+          personId,
+          relationType: PublicChurchRelationType.REGULAR_VISITOR,
+        },
+      ],
+      lock: { mode: 'pessimistic_write' },
+    });
+
+    const toDelete = excludeId
+      ? previousRelations.filter((r) => r.id !== excludeId)
+      : previousRelations;
+
+    if (toDelete.length > 0) {
+      for (const prev of toDelete) {
+        await manager.delete(PublicChurchRelation, { id: prev.id });
+        if (prev.churchId) {
+          await manager.save(
+            EcosystemHistory,
+            manager.create(EcosystemHistory, {
+              personId,
+              churchId: prev.churchId,
+              eventType:
+                prev.relationType === PublicChurchRelationType.COMMUNITY_MEMBER
+                  ? EcosystemHistoryEvent.MEMBER_LEFT
+                  : EcosystemHistoryEvent.VISITOR_LEFT,
+            }),
+          );
+        }
+      }
+    }
   }
 
   private toDto(row: PublicChurchRelation): PublicRelationResponseDto & {

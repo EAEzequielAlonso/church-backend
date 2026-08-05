@@ -93,4 +93,29 @@ export class MissionsPolicies {
   ): Promise<boolean> {
     return this.canManageMission(actor, mission, isChurchAdmin);
   }
+
+  /**
+   * Un admin de la iglesia colaboradora o un líder de la misión pueden gestionar la colaboración.
+   */
+  async canManageCollaboration(
+    actor: Person,
+    mission: MissionProject,
+    collaboratorChurchId: string,
+  ): Promise<boolean> {
+    // Si es el líder de la misión o admin de la iglesia dueña, puede gestionarla.
+    if (await this.canManageMission(actor, mission)) {
+      return true;
+    }
+
+    // O si es admin de la iglesia que colabora
+    try {
+      await this.ownershipService.assertOwnsChurch(
+        actor.id,
+        collaboratorChurchId,
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }

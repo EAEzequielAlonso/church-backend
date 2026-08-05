@@ -49,6 +49,7 @@ import { UnreachedAreasAdminController } from './need/controllers/unreached-area
 import { MissionsModule } from './missions/missions.module';
 import { SmallGroupsModule } from './small-groups/small-groups.module';
 import { NeedEngagement } from './need/entities/need-engagement.entity';
+import { ChurchNeedSignalsListener } from './need/listeners/church-need-signals.listener';
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import { NeedEngagement } from './need/entities/need-engagement.entity';
     AcceptPersonalNeedSignalContactUseCase,
     RejectPersonalNeedSignalContactUseCase,
     GetNeedEngagementContactDetailsUseCase,
+    ChurchNeedSignalsListener,
   ],
   controllers: [
     PublicPeopleController,

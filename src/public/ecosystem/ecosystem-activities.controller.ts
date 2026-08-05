@@ -77,18 +77,30 @@ export class EcosystemActivitiesController {
             firstName: activity.actorPerson.firstName,
             lastName: activity.actorPerson.lastName,
             avatarUrl: activity.actorPerson.avatarUrl,
+            slug: activity.actorPerson.slug,
+            isPublicProfileEnabled: activity.actorPerson.isPublicProfileEnabled,
           }
         : null,
       actorChurch: activity.actorChurch
         ? {
             id: activity.actorChurch.id,
             name: activity.actorChurch.canonicalName,
+            slug: activity.actorChurch.publicProfile?.slug,
+            logoUrl: activity.actorChurch.publicProfile?.logoUrl,
+            coverUrl: activity.actorChurch.publicProfile?.coverUrl,
+            city: activity.actorChurch.publicProfile?.city,
+            state: activity.actorChurch.publicProfile?.state,
           }
         : null,
       relatedChurch: activity.relatedChurch
         ? {
             id: activity.relatedChurch.id,
             name: activity.relatedChurch.canonicalName,
+            slug: activity.relatedChurch.publicProfile?.slug,
+            logoUrl: activity.relatedChurch.publicProfile?.logoUrl,
+            coverUrl: activity.relatedChurch.publicProfile?.coverUrl,
+            city: activity.relatedChurch.publicProfile?.city,
+            state: activity.relatedChurch.publicProfile?.state,
           }
         : null,
       targetEntity: {

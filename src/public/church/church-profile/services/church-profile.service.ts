@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PersonSummaryDto } from 'src/common/dto/person-summary.dto';
 import { Repository } from 'typeorm';
 import { ChurchClaim } from 'src/public/church/entities/church_claim.entity';
 import { Person } from 'src/core/users/entities/person.entity';
@@ -41,7 +42,7 @@ export class ChurchProfileService {
       .createQueryBuilder('r')
       .select('r.relationType', 'type')
       .addSelect('COUNT(*)', 'count')
-      .where('r.churchId = :churchId', { churchId: profile.churchId })
+      .where('r.churchId = :churchId', { churchId: profile.church.id })
       .andWhere('r.status = :status', {
         status: PublicChurchRelationStatus.APPROVED,
       })
@@ -63,7 +64,7 @@ export class ChurchProfileService {
       .addSelect('p.lastName', 'lastName')
       .addSelect('p.avatarUrl', 'avatarUrl')
       .addSelect('r.ecclesialRole', 'role')
-      .where('r.churchId = :churchId', { churchId: profile.churchId })
+      .where('r.churchId = :churchId', { churchId: profile.church.id })
       .andWhere('r.status = :status', {
         status: PublicChurchRelationStatus.APPROVED,
       })
@@ -82,7 +83,8 @@ export class ChurchProfileService {
       .addSelect('p.lastName', 'lastName')
       .addSelect('c.status', 'status')
       .addSelect('c.createdAt', 'createdAt')
-      .where('c.churchId = :churchId', { churchId: profile.churchId })
+      .addSelect('c.claimantPersonId', 'claimantPersonId')
+      .where('c.churchId = :churchId', { churchId: profile.church.id })
       .andWhere('c.status = :status', { status: ChurchClaimStatus.PENDING })
       .getRawOne();
 
@@ -102,6 +104,7 @@ export class ChurchProfileService {
       relationId: null as string | null,
       relationType: null as PublicChurchRelationType | null,
       relationStatus: null as PublicChurchRelationStatus | null,
+      hasPendingClaim: false,
     };
 
     if (currentPersonId) {
@@ -109,7 +112,7 @@ export class ChurchProfileService {
         .createQueryBuilder('c')
         .select('c.verificationNotes', 'notes')
         .addSelect('c.createdAt', 'createdAt')
-        .where('c.churchId = :churchId', { churchId: profile.churchId })
+        .where('c.churchId = :churchId', { churchId: profile.church.id })
         .andWhere('c.claimantPersonId = :personId', {
           personId: currentPersonId,
         })
@@ -128,7 +131,7 @@ export class ChurchProfileService {
         where: { profileChurchId: profile.id, personId: currentPersonId },
       });
       const relation = await this.relations.findOne({
-        where: { churchId: profile.churchId, personId: currentPersonId },
+        where: { churchId: profile.church.id, personId: currentPersonId },
       });
 
       viewerContext = {
@@ -136,6 +139,9 @@ export class ChurchProfileService {
         relationId: relation?.id ?? null,
         relationType: relation?.relationType ?? null,
         relationStatus: relation?.status ?? null,
+        hasPendingClaim: pendingClaimQuery
+          ? pendingClaimQuery.claimantPersonId === currentPersonId
+          : false,
       };
     }
 
@@ -220,5 +226,49 @@ export class ChurchProfileService {
       state: profile.state,
       ctaLink: `/iglesias/${profile.slug}`,
     };
+  }
+
+  async getCommunity(slug: string, type: 'members' | 'visitors' | 'followers', limit = 10): Promise<PersonSummaryDto[]> {
+    const profile = await this.profiles.findOne({
+      where: { slug },
+      relations: ['church'],
+    });
+    if (!profile) return [];
+
+    let query: any;
+
+    if (type === 'followers') {
+      query = this.follows.createQueryBuilder('f')
+        .innerJoin(Person, 'p', 'p.id = CAST(f.personId AS UUID)')
+        .where('f.profileChurchId = :profileId', { profileId: profile.id })
+        .orderBy('f.followedAt', 'DESC');
+    } else {
+      const relationType = type === 'visitors' ? PublicChurchRelationType.REGULAR_VISITOR : PublicChurchRelationType.COMMUNITY_MEMBER;
+      query = this.relations.createQueryBuilder('r')
+        .innerJoin(Person, 'p', 'p.id = CAST(r.personId AS UUID)')
+        .where('r.churchId = :churchId', { churchId: profile.church.id })
+        .andWhere('r.status = :status', { status: PublicChurchRelationStatus.APPROVED })
+        .andWhere('r.relationType = :relationType', { relationType })
+        .orderBy('r.createdAt', 'DESC');
+    }
+
+    const people = await query
+      .select('p.id', 'id')
+      .addSelect('p.firstName', 'firstName')
+      .addSelect('p.lastName', 'lastName')
+      .addSelect('p.avatarUrl', 'avatarUrl')
+      .addSelect('p.slug', 'slug')
+      .addSelect('p.isPublicProfileEnabled', 'isPublicProfileEnabled')
+      .limit(limit)
+      .getRawMany();
+
+    return people.map(p => ({
+      id: p.id,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      avatarUrl: p.avatarUrl,
+      slug: p.slug,
+      isPublicProfileEnabled: p.isPublicProfileEnabled,
+    }));
   }
 }

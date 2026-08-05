@@ -54,7 +54,8 @@ export class EcosystemActivitiesService {
     const query = this.activityRepository
       .createQueryBuilder('activity')
       .leftJoinAndSelect('activity.actorPerson', 'actorPerson')
-      .leftJoinAndSelect('activity.actorChurch', 'actorChurch');
+      .leftJoinAndSelect('activity.actorChurch', 'actorChurch')
+      .leftJoinAndSelect('actorChurch.publicProfile', 'actorChurchPublicProfile');
     // Note: We NO LONGER join `relatedChurch` or other target entities here.
     // This allows the feed to scale to 40+ event types without 40+ JOINs.
 

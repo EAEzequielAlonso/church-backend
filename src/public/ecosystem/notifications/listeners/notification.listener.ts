@@ -47,8 +47,8 @@ export class NotificationListener {
         this.notificationRepo.create({
           userId: userId,
           type: NotificationType.CHURCH_CLAIM_APPROVED,
-          title: 'Solicitud Aprobada',
-          message: `Tu solicitud para administrar la iglesia ${payload.churchName} ha sido aprobada.`,
+          title: 'Solicitud de administración aprobada',
+          message: `Ahora podés administrar el perfil de ${payload.churchName}.`,
           read: false,
         }),
       );
@@ -57,8 +57,8 @@ export class NotificationListener {
     if (payload.email) {
       void this.emailService.sendNotificationEmail(
         payload.email,
-        'Solicitud Aprobada',
-        `Tu solicitud para administrar la iglesia ${payload.churchName} ha sido aprobada.`,
+        'Solicitud de administración aprobada',
+        `Ahora podés administrar el perfil de ${payload.churchName}.`,
       );
     }
   }
@@ -68,15 +68,18 @@ export class NotificationListener {
     recipientPersonId: string;
     email?: string;
     churchName: string;
+    notes: string;
   }) {
     const userId = await this.getUserIdByPersonId(payload.recipientPersonId);
+    const message = `Tu solicitud para administrar ${payload.churchName} fue rechazada.\nMotivo: ${payload.notes}`;
+
     if (userId) {
       await this.notificationRepo.save(
         this.notificationRepo.create({
           userId: userId,
           type: NotificationType.CHURCH_CLAIM_REJECTED,
-          title: 'Solicitud Rechazada',
-          message: `Tu solicitud para administrar la iglesia ${payload.churchName} ha sido rechazada.`,
+          title: 'Solicitud de administración rechazada',
+          message,
           read: false,
         }),
       );
@@ -85,8 +88,8 @@ export class NotificationListener {
     if (payload.email) {
       void this.emailService.sendNotificationEmail(
         payload.email,
-        'Solicitud Rechazada',
-        `Tu solicitud para administrar la iglesia ${payload.churchName} ha sido rechazada.`,
+        'Solicitud de administración rechazada',
+        message,
       );
     }
   }
@@ -173,7 +176,11 @@ export class NotificationListener {
         userId: userId,
         type: NotificationType.MISSION_NEED_CREATED,
         title: 'Nueva necesidad en la misión que apoyas',
-        message: `La misión ${payload.missionName} ha publicado una nueva necesidad de tipo: ${payload.needType}.`,
+        message: `La misión ${payload.missionName} ha publicado una nueva necesidad.`,
+        payload: {
+          missionName: payload.missionName,
+          needType: payload.needType,
+        },
         read: false,
       }),
     );
@@ -203,6 +210,120 @@ export class NotificationListener {
 
     if (notifications.length > 0) {
       await this.notificationRepo.save(notifications);
+    }
+  }
+
+  @OnEvent('community.join.request')
+  async handleCommunityJoinRequest(payload: {
+    adminPersonIds: string[];
+    churchName: string;
+    requesterName: string;
+    relationType: string;
+  }) {
+    const userIds = await this.getUserIdsByPersonIds(payload.adminPersonIds);
+    const notifications = userIds.map((userId) =>
+      this.notificationRepo.create({
+        userId,
+        type: NotificationType.COMMUNITY_JOIN_REQUEST,
+        title: 'Nueva solicitud de comunidad',
+        message: `${payload.requesterName} solicitó unirse a ${payload.churchName}.`,
+        payload: {
+          requesterName: payload.requesterName,
+          churchName: payload.churchName,
+          relationType: payload.relationType,
+        },
+        read: false,
+      }),
+    );
+
+    if (notifications.length > 0) {
+      await this.notificationRepo.save(notifications);
+    }
+  }
+
+  @OnEvent('community.join.approved')
+  async handleCommunityJoinApproved(payload: {
+    recipientPersonId: string;
+    churchName: string;
+    relationType: string;
+  }) {
+    const userId = await this.getUserIdByPersonId(payload.recipientPersonId);
+    if (userId) {
+      await this.notificationRepo.save(
+        this.notificationRepo.create({
+          userId,
+          type: NotificationType.COMMUNITY_JOIN_APPROVED,
+          title: 'Solicitud aprobada',
+          message: `Tu solicitud para unirte a ${payload.churchName} fue aprobada.`,
+          payload: {
+            churchName: payload.churchName,
+            relationType: payload.relationType,
+          },
+          read: false,
+        }),
+      );
+    }
+  }
+
+  @OnEvent('community.join.rejected')
+  async handleCommunityJoinRejected(payload: {
+    recipientPersonId: string;
+    churchName: string;
+  }) {
+    const userId = await this.getUserIdByPersonId(payload.recipientPersonId);
+    if (userId) {
+      await this.notificationRepo.save(
+        this.notificationRepo.create({
+          userId,
+          type: NotificationType.COMMUNITY_JOIN_REJECTED,
+          title: 'Solicitud no aprobada',
+          message: `Tu solicitud para unirte a ${payload.churchName} no fue aprobada.`,
+          read: false,
+        }),
+      );
+    }
+  }
+
+  @OnEvent('community.role.updated')
+  async handleCommunityRoleUpdated(payload: {
+    recipientPersonId: string;
+    churchName: string;
+    newRole: string;
+  }) {
+    const userId = await this.getUserIdByPersonId(payload.recipientPersonId);
+    if (userId) {
+      await this.notificationRepo.save(
+        this.notificationRepo.create({
+          userId,
+          type: NotificationType.ECCLESIAL_ROLE_UPDATED,
+          title: 'Rol actualizado',
+          message: `Tu rol eclesiástico en ${payload.churchName} fue actualizado.`,
+          payload: {
+            churchName: payload.churchName,
+            role: payload.newRole,
+          },
+          read: false,
+        }),
+      );
+    }
+  }
+
+  @OnEvent('community.relation.removed')
+  async handleCommunityRelationRemoved(payload: {
+    recipientPersonId: string;
+    churchName: string;
+  }) {
+    const userId = await this.getUserIdByPersonId(payload.recipientPersonId);
+    if (userId) {
+      await this.notificationRepo.save(
+        this.notificationRepo.create({
+          userId,
+          type: NotificationType.COMMUNITY_RELATION_REMOVED,
+          title: 'Removido de la comunidad',
+          message: `Fuiste removido de la comunidad de ${payload.churchName}.`,
+          read: false,
+        }),
+      );
     }
   }
 }

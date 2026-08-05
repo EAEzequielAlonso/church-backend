@@ -21,7 +21,7 @@ export class RejectChurchClaimUseCase {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async execute(claimId: string, notes: string | null) {
+  async execute(claimId: string, notes: string) {
     const claim = await this.claimsRepo.findOne({ where: { id: claimId } });
     if (!claim) throw new NotFoundException('Claim not found');
     if (claim.status !== ChurchClaimStatus.PENDING)
@@ -43,6 +43,7 @@ export class RejectChurchClaimUseCase {
       recipientPersonId: claim.claimantPersonId,
       email: person?.user?.email,
       churchName: church?.canonicalName || 'la iglesia',
+      notes,
     });
 
     return {

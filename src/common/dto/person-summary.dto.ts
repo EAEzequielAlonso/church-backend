@@ -4,4 +4,5 @@ export class PersonSummaryDto {
   lastName: string | null;
   avatarUrl: string | null;
   slug: string | null;
+  isPublicProfileEnabled?: boolean;
 }

@@ -2,7 +2,7 @@ import { Injectable, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PublicChurchRelation } from 'src/public/church/entities/public_church_relation.entity';
-import { PublicChurchRelationStatus } from 'src/public/enums/public.enums';
+import { PublicChurchRelationStatus, PublicChurchRelationType } from 'src/public/enums/public.enums';
 
 @Injectable()
 export class SmallGroupsPolicies {
@@ -34,20 +34,21 @@ export class SmallGroupsPolicies {
 
   /**
    * Verifica si una persona puede ser asignada como líder de un Small Group.
-   * Debe tener una relación activa y aprobada con la misma iglesia.
+   * Debe tener una relación activa de COMMUNITY_MEMBER con la misma iglesia.
    */
   async canAssignLeader(leaderId: string, churchId: string): Promise<void> {
     const relation = await this.relationRepo.findOne({
       where: {
         personId: leaderId,
         churchId,
+        relationType: PublicChurchRelationType.COMMUNITY_MEMBER,
         status: PublicChurchRelationStatus.APPROVED,
       },
     });
 
     if (!relation) {
       throw new ForbiddenException(
-        'The assigned leader does not have an active relation with this church.',
+        'The assigned leader must be an approved community member of this church.',
       );
     }
   }

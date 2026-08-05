@@ -1,34 +1,85 @@
 import { PersonSummaryDto } from '../../../common/dto/person-summary.dto';
 import { ChurchSummaryDto } from '../../../common/dto/church-summary.dto';
 import { MissionProject } from '../entities/mission-project.entity';
+import { MissionNeedResponseDto } from './mission-need-response.dto';
+import { MissionCollaborationResponseDto } from './mission-collaboration-response.dto';
+import { MissionReportResponseDto } from './mission-report-response.dto';
+import { GeoPrecision } from '../../ecosystem/enums/ecosystem.enums';
+import { MissionSourceType, MissionOutcomeType, MissionProjectStatus } from '../enums/missions.enums';
 
 export class MissionProjectResponseDto {
   id: string;
   title: string;
+  summary: string | null;
   description: string;
-  status: string;
-  country: string;
-  state: string;
-  city: string;
+  vision: string | null;
+  
+  // Ubicación
+  country: string | null;
+  state: string | null;
+  city: string | null;
+  address: string | null;
+  postalCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  geoPrecision: GeoPrecision;
+
+  // Origen y Destino
+  sourceEntityType: MissionSourceType;
+  sourceEntityId: string | null;
+  resultingChurchId: string | null;
+  outcomeType: MissionOutcomeType | null;
+
+  // Fechas y Estado
+  plannedStartDate: Date | null;
+  actualStartDate: Date | null;
   completedAt: Date | null;
-  outcomeType: string | null;
+  status: MissionProjectStatus;
+
+  // Timestamps
   createdAt: Date;
   updatedAt: Date;
 
+  // Relaciones Principales
   leader?: PersonSummaryDto | null;
   creatorChurch?: ChurchSummaryDto | null;
 
+  // Colecciones (Hijos)
+  needs?: MissionNeedResponseDto[];
+  collaborations?: MissionCollaborationResponseDto[];
+  reports?: MissionReportResponseDto[];
+
   static fromEntity(entity: MissionProject): MissionProjectResponseDto {
     const dto = new MissionProjectResponseDto();
+    
+    // Core
     dto.id = entity.id;
     dto.title = entity.title;
+    dto.summary = entity.summary ?? null;
     dto.description = entity.description;
+    dto.vision = entity.vision ?? null;
+
+    // Location
+    dto.country = entity.country ?? null;
+    dto.state = entity.state ?? null;
+    dto.city = entity.city ?? null;
+    dto.address = entity.address ?? null;
+    dto.postalCode = entity.postalCode ?? null;
+    dto.latitude = entity.latitude ?? null;
+    dto.longitude = entity.longitude ?? null;
+    dto.geoPrecision = entity.geoPrecision;
+
+    // Origin/Destination
+    dto.sourceEntityType = entity.sourceEntityType;
+    dto.sourceEntityId = entity.sourceEntityId ?? null;
+    dto.resultingChurchId = entity.resultingChurchId ?? null;
+    dto.outcomeType = entity.outcomeType ?? null;
+
+    // Dates and Status
+    dto.plannedStartDate = entity.plannedStartDate ?? null;
+    dto.actualStartDate = entity.actualStartDate ?? null;
+    dto.completedAt = entity.completedAt ?? null;
     dto.status = entity.status;
-    dto.country = entity.country;
-    dto.state = entity.state;
-    dto.city = entity.city;
-    dto.completedAt = entity.completedAt;
-    dto.outcomeType = entity.outcomeType;
     dto.createdAt = entity.createdAt;
     dto.updatedAt = entity.updatedAt;
 
@@ -54,8 +105,17 @@ export class MissionProjectResponseDto {
       };
     }
 
-    // Include other necessary fields if needed (like needs, collaborations)
-    // but the instruction specifically asked to remove full Person/Church.
+    if (entity.needs) {
+      dto.needs = entity.needs.map(n => MissionNeedResponseDto.fromEntity(n));
+    }
+
+    if (entity.collaborations) {
+      dto.collaborations = entity.collaborations.map(c => MissionCollaborationResponseDto.fromEntity(c));
+    }
+
+    if (entity.reports) {
+      dto.reports = entity.reports.map(r => MissionReportResponseDto.fromEntity(r));
+    }
 
     return dto;
   }

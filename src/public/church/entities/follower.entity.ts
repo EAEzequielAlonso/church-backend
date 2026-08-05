@@ -23,7 +23,7 @@ export class ChurchFollow {
   })
   @JoinColumn({ name: 'profile_church_id' })
   profileChurch: ChurchPublicProfile;
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', name: 'profile_church_id' })
   profileChurchId: string;
 
   @ManyToOne(() => Person, (person) => person.followedChurches, {
@@ -32,7 +32,7 @@ export class ChurchFollow {
   })
   @JoinColumn({ name: 'person_id' })
   person: Person;
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', name: 'person_id' })
   personId: string;
 
   @CreateDateColumn({

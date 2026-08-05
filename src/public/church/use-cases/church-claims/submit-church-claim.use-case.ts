@@ -12,7 +12,6 @@ import {
   EcosystemHistoryEvent,
 } from '../../../enums/public.enums';
 import { CreateChurchClaimDto } from '../../dto/church-claim/create-church-claim.dto';
-import { ChurchLifecycleService } from '../../church-profile/services/church-lifecycle.service';
 import { EcosystemHistory } from '../../../ecosystem/entities/ecosystem-history.entity';
 
 @Injectable()
@@ -23,7 +22,6 @@ export class SubmitChurchClaimUseCase {
     @InjectRepository(Church) private readonly churches: Repository<Church>,
     @InjectRepository(EcosystemHistory)
     private readonly historyRepo: Repository<EcosystemHistory>,
-    private readonly lifecycleService: ChurchLifecycleService,
   ) {}
 
   async execute(personId: string, dto: CreateChurchClaimDto) {
@@ -64,16 +62,10 @@ export class SubmitChurchClaimUseCase {
       churchId: dto.churchId,
       claimantPersonId: personId,
       status: ChurchClaimStatus.PENDING,
-      verificationNotes: dto.evidence ?? null,
+      evidence: dto.evidence ?? null,
+      verificationNotes: null,
     });
     const savedClaim = await this.claimsRepo.save(claim);
-
-    // Transition lifecycle to CLAIM_PENDING if it was previously DISCOVERED
-    try {
-      await this.lifecycleService.transitionState(dto.churchId);
-    } catch (e) {
-      // Ignored if profile does not exist yet
-    }
 
     await this.historyRepo.save(
       this.historyRepo.create({

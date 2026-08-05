@@ -22,7 +22,7 @@ import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
 import { RequirePermissions } from 'src/core/auth/decorators/require-permissions.decorator';
 import { AppPermission } from 'src/core/auth/authorization/permissions.enum';
 
-@Controller('small-groups')
+@Controller('public/small-groups')
 export class SmallGroupsController {
   constructor(private readonly smallGroupsService: SmallGroupsService) {}
 

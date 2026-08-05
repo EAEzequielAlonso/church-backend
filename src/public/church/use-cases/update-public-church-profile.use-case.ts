@@ -42,6 +42,10 @@ export class UpdatePublicChurchProfileUseCase {
     if (dto.city !== undefined) profile.city = dto.city;
     if (dto.state !== undefined) profile.state = dto.state;
     if (dto.country !== undefined) profile.country = dto.country;
+    if (dto.postalCode !== undefined) profile.postalCode = dto.postalCode;
+    if (dto.latitude !== undefined) profile.latitude = dto.latitude;
+    if (dto.longitude !== undefined) profile.longitude = dto.longitude;
+    if (dto.geoPrecision !== undefined && dto.geoPrecision !== null) profile.geoPrecision = dto.geoPrecision;
 
     // Social & Web Links
     if (dto.website !== undefined) profile.website = dto.website;

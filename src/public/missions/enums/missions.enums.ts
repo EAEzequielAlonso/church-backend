@@ -30,6 +30,7 @@ export enum MissionCollaborationStatus {
 export enum MissionProjectStatus {
   DRAFT = 'DRAFT',
   ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
 }

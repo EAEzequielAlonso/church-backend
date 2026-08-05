@@ -12,7 +12,7 @@ import { UpdateMissionProjectDto } from '../dto/update-mission-project.dto';
 import { CompleteMissionDto } from '../dto/complete-mission.dto';
 import { Person } from 'src/core/users/entities/person.entity';
 import { Church } from 'src/core/churches/entities/church.entity';
-import { ChurchNeedSignal } from '../../need/entities/church-need-signal.entity';
+
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
 import {
   EcosystemActivityType,
@@ -28,7 +28,7 @@ import {
   MissionSourceType,
   MissionCollaborationStatus,
 } from '../enums/missions.enums';
-import { NeedSignalStatus } from 'src/public/enums/public.enums';
+
 
 @Injectable()
 export class MissionsService {
@@ -37,8 +37,7 @@ export class MissionsService {
     private readonly missionsRepo: Repository<MissionProject>,
     @InjectRepository(Church)
     private readonly churchRepo: Repository<Church>,
-    @InjectRepository(ChurchNeedSignal)
-    private readonly churchNeedSignalRepo: Repository<ChurchNeedSignal>,
+
     @InjectRepository(ChurchPublicProfile)
     private readonly churchProfileRepo: Repository<ChurchPublicProfile>,
     private readonly policies: MissionsPolicies,
@@ -59,27 +58,48 @@ export class MissionsService {
 
     const mission = this.missionsRepo.create({
       ...dto,
-      status: MissionProjectStatus.DRAFT,
+      status: dto.status || MissionProjectStatus.DRAFT,
     });
 
     const savedMission = await this.missionsRepo.save(mission);
 
-    await this.activitiesService.logActivity({
-      actorPersonId: actor.id,
-      activityType: EcosystemActivityType.MISSION_CREATED,
-      entityId: savedMission.id,
-      entityType: EcosystemActivityEntityType.MISSION_PROJECT,
-      relatedChurchId: savedMission.creatorChurchId,
-    });
+    if (savedMission.status === MissionProjectStatus.ACTIVE) {
+      await this.activitiesService.logActivity({
+        actorPersonId: actor.id,
+        activityType: EcosystemActivityType.MISSION_CREATED,
+        entityId: savedMission.id,
+        entityType: EcosystemActivityEntityType.MISSION_PROJECT,
+        relatedChurchId: savedMission.creatorChurchId,
+        metadata: {
+          missionTitle: savedMission.title,
+          missionSummary: savedMission.summary,
+        },
+      });
+    }
 
     return savedMission;
   }
 
-  async findAllActive(): Promise<MissionProject[]> {
-    return this.missionsRepo.find({
+  async findAllActive(page: number = 1, limit: number = 12) {
+    const [data, total] = await this.missionsRepo.findAndCount({
       where: { status: MissionProjectStatus.ACTIVE },
       relations: ['creatorChurch', 'leader'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { createdAt: 'DESC' },
     });
+    return { data, total, page, limit };
+  }
+
+  async findAllByChurch(churchId: string, page: number = 1, limit: number = 12) {
+    const [data, total] = await this.missionsRepo.findAndCount({
+      where: { creatorChurchId: churchId },
+      relations: ['creatorChurch', 'leader'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { createdAt: 'DESC' },
+    });
+    return { data, total, page, limit };
   }
 
   async findOne(id: string): Promise<MissionProject> {
@@ -114,8 +134,49 @@ export class MissionsService {
       );
     }
 
+    const wasDraft = mission.status === MissionProjectStatus.DRAFT;
+    const previousStatus = mission.status;
+    
     this.missionsRepo.merge(mission, dto);
-    return this.missionsRepo.save(mission);
+    const savedMission = await this.missionsRepo.save(mission);
+
+    if (wasDraft && savedMission.status === MissionProjectStatus.ACTIVE) {
+      await this.activitiesService.logActivity({
+        actorPersonId: actor.id,
+        activityType: EcosystemActivityType.MISSION_CREATED,
+        entityId: savedMission.id,
+        entityType: EcosystemActivityEntityType.MISSION_PROJECT,
+        relatedChurchId: savedMission.creatorChurchId,
+        metadata: {
+          missionTitle: savedMission.title,
+          missionSummary: savedMission.summary,
+        },
+      });
+    } else if (previousStatus === MissionProjectStatus.ACTIVE && savedMission.status === MissionProjectStatus.PAUSED) {
+      await this.activitiesService.logActivity({
+        actorPersonId: actor.id,
+        activityType: EcosystemActivityType.MISSION_PAUSED,
+        entityId: savedMission.id,
+        entityType: EcosystemActivityEntityType.MISSION_PROJECT,
+        relatedChurchId: savedMission.creatorChurchId,
+        metadata: {
+          missionTitle: savedMission.title,
+        },
+      });
+    } else if (previousStatus === MissionProjectStatus.PAUSED && savedMission.status === MissionProjectStatus.ACTIVE) {
+      await this.activitiesService.logActivity({
+        actorPersonId: actor.id,
+        activityType: EcosystemActivityType.MISSION_RESUMED,
+        entityId: savedMission.id,
+        entityType: EcosystemActivityEntityType.MISSION_PROJECT,
+        relatedChurchId: savedMission.creatorChurchId,
+        metadata: {
+          missionTitle: savedMission.title,
+        },
+      });
+    }
+
+    return savedMission;
   }
 
   async completeMission(
@@ -155,11 +216,11 @@ export class MissionsService {
         saved.sourceEntityId
       ) {
         if (dto.resultingChurchId) {
-          await manager.update(
-            ChurchNeedSignal,
-            { id: saved.sourceEntityId },
-            { status: NeedSignalStatus.CLOSED },
-          );
+          this.eventEmitter.emit('church.need.signal.resolved', {
+            needSignalId: saved.sourceEntityId,
+            resultingChurchId: dto.resultingChurchId,
+            missionId: saved.id,
+          });
         }
       }
 
@@ -170,6 +231,10 @@ export class MissionsService {
           entityId: saved.id,
           entityType: EcosystemActivityEntityType.MISSION_PROJECT,
           relatedChurchId: saved.creatorChurchId,
+          metadata: {
+            missionTitle: saved.title,
+            outcomeType: saved.outcomeType,
+          },
         },
         manager,
       );
@@ -202,6 +267,9 @@ export class MissionsService {
       entityId: saved.id,
       entityType: EcosystemActivityEntityType.MISSION_PROJECT,
       relatedChurchId: saved.creatorChurchId,
+      metadata: {
+        missionTitle: saved.title,
+      },
     });
 
     const activeCollabs =
@@ -241,6 +309,10 @@ export class MissionsService {
       description: mission.description?.slice(0, 150) ?? null,
       city: mission.city,
       state: mission.state,
+      country: mission.country,
+      latitude: mission.latitude,
+      longitude: mission.longitude,
+      geoPrecision: mission.geoPrecision,
       ctaLink: `/missions/${mission.id}`,
     };
   }

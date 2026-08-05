@@ -10,7 +10,7 @@ import {
   IsUUID,
 } from 'class-validator';
 import { GeoPrecision } from 'src/public/ecosystem/enums/ecosystem.enums';
-import { MissionSourceType } from '../enums/missions.enums';
+import { MissionSourceType, MissionProjectStatus } from '../enums/missions.enums';
 
 export class CreateMissionProjectDto {
   @IsString()
@@ -83,4 +83,8 @@ export class CreateMissionProjectDto {
   @Type(() => Date)
   @IsOptional()
   plannedStartDate?: Date;
+
+  @IsEnum(MissionProjectStatus)
+  @IsOptional()
+  status?: MissionProjectStatus;
 }

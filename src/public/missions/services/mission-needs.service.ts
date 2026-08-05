@@ -1,13 +1,14 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MissionNeed } from '../entities/mission-need.entity';
 import { CreateMissionNeedDto } from '../dto/create-mission-need.dto';
+import { UpdateMissionNeedDto } from '../dto/update-mission-need.dto';
 import { Person } from 'src/core/users/entities/person.entity';
 import { MissionsPolicies } from '../policies/missions.policies';
 import { MissionsService } from './missions.service';
 import { ChurchPublicProfile } from '../../church/entities/church_public_profile.entity';
-import { MissionCollaborationStatus } from '../enums/missions.enums';
+import { MissionCollaborationStatus, MissionNeedStatus } from '../enums/missions.enums';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { In } from 'typeorm';
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
@@ -59,6 +60,11 @@ export class MissionNeedsService {
       entityId: saved.id,
       entityType: EcosystemActivityEntityType.MISSION_NEED,
       relatedChurchId: mission.creatorChurchId,
+      metadata: {
+        missionTitle: mission.title,
+        needTitle: saved.title,
+        needType: saved.type,
+      },
     });
 
     const activeCollabs =
@@ -86,5 +92,70 @@ export class MissionNeedsService {
     }
 
     return saved;
+  }
+
+  async update(
+    missionId: string,
+    needId: string,
+    dto: UpdateMissionNeedDto,
+    actor: Person,
+    isChurchAdmin?: boolean,
+  ): Promise<MissionNeed> {
+    const mission = await this.missionsService.findOne(missionId);
+
+    if (
+      !(await this.policies.canManageMission(actor, mission, isChurchAdmin))
+    ) {
+      throw new ForbiddenException(
+        'No tienes permiso para gestionar necesidades en esta misión',
+      );
+    }
+
+    const need = await this.needsRepo.findOne({ where: { id: needId, missionProjectId: missionId } });
+    if (!need) throw new NotFoundException('Need no encontrada');
+
+    const previousStatus = need.status;
+    this.needsRepo.merge(need, dto);
+    const saved = await this.needsRepo.save(need);
+
+    // Si cambió el estado a COMPLETED, emitir evento de Feed
+    if (previousStatus !== MissionNeedStatus.COMPLETED && saved.status === MissionNeedStatus.COMPLETED) {
+       await this.activitiesService.logActivity({
+        actorPersonId: actor.id,
+        activityType: EcosystemActivityType.MISSION_NEED_FULFILLED,
+        entityId: saved.id,
+        entityType: EcosystemActivityEntityType.MISSION_NEED,
+        relatedChurchId: mission.creatorChurchId,
+        metadata: {
+          missionTitle: mission.title,
+          needTitle: saved.title,
+          needType: saved.type,
+        },
+      });
+    }
+
+    return saved;
+  }
+
+  async remove(
+    missionId: string,
+    needId: string,
+    actor: Person,
+    isChurchAdmin?: boolean,
+  ): Promise<void> {
+    const mission = await this.missionsService.findOne(missionId);
+
+    if (
+      !(await this.policies.canManageMission(actor, mission, isChurchAdmin))
+    ) {
+      throw new ForbiddenException(
+        'No tienes permiso para gestionar necesidades en esta misión',
+      );
+    }
+
+    const need = await this.needsRepo.findOne({ where: { id: needId, missionProjectId: missionId } });
+    if (!need) throw new NotFoundException('Need no encontrada');
+
+    await this.needsRepo.remove(need);
   }
 }

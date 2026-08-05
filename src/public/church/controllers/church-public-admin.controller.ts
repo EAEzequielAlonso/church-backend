@@ -40,8 +40,21 @@ export class ChurchPublicAdminController {
   ) {
     return this.service.dashboard(this.personId(req), churchId);
   }
-  @Get('relations/pending') pending(@Req() req: any) {
-    return this.service.listPending(this.personId(req));
+  @Get('dashboard/:churchId/activity') activity(
+    @Req() req: any,
+    @Param('churchId') churchId: string,
+  ) {
+    return this.service.activity(this.personId(req), churchId);
+  }
+  @Get('relations/:churchId/pending') pending(
+    @Req() req: any,
+    @Param('churchId') churchId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const p = page ? parseInt(page, 10) : 1;
+    const l = limit ? parseInt(limit, 10) : 20;
+    return this.service.listPending(this.personId(req), churchId, p, l);
   }
   @Post('relations/:id/approve') approve(
     @Req() req: any,
@@ -61,11 +74,19 @@ export class ChurchPublicAdminController {
   @Get('relations/:churchId/community') community(
     @Req() req: any,
     @Param('churchId') churchId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
     @Query('type') type?: string,
   ) {
+    const p = page ? parseInt(page, 10) : 1;
+    const l = limit ? parseInt(limit, 10) : 20;
     return this.service.listCommunity(
       this.personId(req),
       churchId,
+      p,
+      l,
+      search,
       type as any,
     );
   }
@@ -80,6 +101,13 @@ export class ChurchPublicAdminController {
       dto.role,
     );
   }
+  @Get('church-profile/:churchId') getProfile(
+    @Req() req: any,
+    @Param('churchId') churchId: string,
+  ) {
+    return this.service.getProfileForAdmin(this.personId(req), churchId);
+  }
+
   @Patch('church-profile/:churchId') patch(
     @Req() req: any,
     @Param('churchId') churchId: string,
