@@ -5,7 +5,7 @@ import { MissionReport } from '../entities/mission-report.entity';
 import { CreateMissionReportDto } from '../dto/create-mission-report.dto';
 import { UpdateMissionReportDto } from '../dto/update-mission-report.dto';
 import { Person } from 'src/core/users/entities/person.entity';
-import { MissionsPolicies } from '../policies/missions.policies';
+import { MissionRules } from '../policies/mission.rules';
 import { MissionsService } from './missions.service';
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
 import {
@@ -13,15 +13,91 @@ import {
   EcosystemActivityEntityType,
 } from '../../ecosystem/enums/ecosystem.enums';
 
+import { PaginationQueryDto } from 'src/shared/dtos/pagination-query.dto';
+import { PaginatedResponseDto } from 'src/shared/dtos/paginated-response.dto';
+import { MissionReportQueryDto } from '../dto/mission-report-query.dto';
+import { MissionReportProductDto } from '../dto/mission-report-product.dto';
+
 @Injectable()
 export class MissionReportsService {
   constructor(
     @InjectRepository(MissionReport)
     private readonly reportsRepo: Repository<MissionReport>,
-    private readonly policies: MissionsPolicies,
+    private readonly missionRules: MissionRules,
     private readonly missionsService: MissionsService,
     private readonly activitiesService: EcosystemActivitiesService,
   ) {}
+
+  async findPublicReports(
+    missionId: string, 
+    query: MissionReportQueryDto,
+    actor?: Person
+  ): Promise<PaginatedResponseDto<MissionReportProductDto>> {
+    const { page = 1, limit = 12, sort = 'createdAt', order = 'DESC', search, category } = query;
+    
+    const where: any = { missionProjectId: missionId, isPublic: true };
+    if (category) where.category = category;
+    
+    // Si hubiese implementado search, se usaría ILike o similar aquí. Queda preparado el contrato.
+
+    const [data, total] = await this.reportsRepo.findAndCount({
+      where,
+      relations: ['author'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sort]: order },
+    });
+
+    const mission = await this.missionsService.findOne(missionId);
+    let isManager = false;
+    if (actor) {
+       try {
+         await this.missionRules.assertCanManage(actor, mission);
+         isManager = true;
+       } catch {
+         isManager = false;
+       }
+    }
+
+    const dtos = data.map(report => {
+      const actions = this.missionRules.getReportAllowedActions(actor?.id, mission, report, isManager);
+      return MissionReportProductDto.fromEntity(report, actions);
+    });
+
+    return new PaginatedResponseDto(dtos, total, page, limit);
+  }
+
+  async findManagementReports(
+    missionId: string, 
+    query: MissionReportQueryDto,
+    actor: Person,
+    isChurchAdmin?: boolean
+  ): Promise<PaginatedResponseDto<MissionReportProductDto>> {
+    const mission = await this.missionsService.findOne(missionId);
+    
+    // Solo un admin de la misión puede listar los reportes privados
+    await this.missionRules.assertCanManage(actor, mission, isChurchAdmin);
+
+    const { page = 1, limit = 12, sort = 'createdAt', order = 'DESC', search, category } = query;
+    
+    const where: any = { missionProjectId: missionId };
+    if (category) where.category = category;
+
+    const [data, total] = await this.reportsRepo.findAndCount({
+      where,
+      relations: ['author'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sort]: order },
+    });
+
+    const dtos = data.map(report => {
+      const actions = this.missionRules.getReportAllowedActions(actor.id, mission, report, true);
+      return MissionReportProductDto.fromEntity(report, actions);
+    });
+
+    return new PaginatedResponseDto(dtos, total, page, limit);
+  }
 
   async create(
     missionId: string,
@@ -31,11 +107,8 @@ export class MissionReportsService {
   ): Promise<MissionReport> {
     const mission = await this.missionsService.findOne(missionId);
 
-    if (!(await this.policies.canCreateReport(actor, mission, isChurchAdmin))) {
-      throw new ForbiddenException(
-        'No tienes permiso para crear reportes en esta misión',
-      );
-    }
+    await this.missionRules.assertCanManage(actor, mission, isChurchAdmin);
+    this.missionRules.assertCanAddReport(mission);
 
     const report = this.reportsRepo.create({
       ...dto,
@@ -74,11 +147,8 @@ export class MissionReportsService {
   ): Promise<MissionReport> {
     const mission = await this.missionsService.findOne(missionId);
 
-    if (!(await this.policies.canManageMission(actor, mission, isChurchAdmin))) {
-      throw new ForbiddenException(
-        'No tienes permiso para editar reportes en esta misión',
-      );
-    }
+    await this.missionRules.assertCanManage(actor, mission, isChurchAdmin);
+    this.missionRules.assertCanEdit(mission);
 
     const report = await this.reportsRepo.findOne({ where: { id: reportId, missionProjectId: missionId } });
     if (!report) throw new NotFoundException('Reporte no encontrado');
@@ -101,11 +171,8 @@ export class MissionReportsService {
   ): Promise<void> {
     const mission = await this.missionsService.findOne(missionId);
 
-    if (!(await this.policies.canManageMission(actor, mission, isChurchAdmin))) {
-      throw new ForbiddenException(
-        'No tienes permiso para eliminar reportes en esta misión',
-      );
-    }
+    await this.missionRules.assertCanManage(actor, mission, isChurchAdmin);
+    this.missionRules.assertCanEdit(mission);
 
     const report = await this.reportsRepo.findOne({ where: { id: reportId, missionProjectId: missionId } });
     if (!report) throw new NotFoundException('Reporte no encontrado');

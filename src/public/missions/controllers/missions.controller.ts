@@ -1,28 +1,38 @@
 import { Controller, Get, Param, NotFoundException, Query } from '@nestjs/common';
 import { MissionsService } from '../services/missions.service';
+import { MissionNeedsService } from '../services/mission-needs.service';
+import { MissionReportsService } from '../services/mission-reports.service';
+import { MissionCollaborationsService } from '../services/mission-collaborations.service';
 import { MissionProjectResponseDto } from '../dto/mission-response.dto';
+import { MissionNeedProductDto } from '../dto/mission-need-product.dto';
+import { MissionReportProductDto } from '../dto/mission-report-product.dto';
+import { MissionCollaborationProductDto } from '../dto/mission-collaboration-product.dto';
+import { PaginationQueryDto } from 'src/shared/dtos/pagination-query.dto';
+import { PaginatedResponseDto } from 'src/shared/dtos/paginated-response.dto';
+import { MissionNeedQueryDto } from '../dto/mission-need-query.dto';
+import { MissionReportQueryDto } from '../dto/mission-report-query.dto';
+import { MissionCollaborationQueryDto } from '../dto/mission-collaboration-query.dto';
+import { CurrentUser } from '../../../common/decorators';
+import { Person } from '../../../core/users/entities/person.entity';
 
 @Controller('public/missions')
 export class MissionsController {
-  constructor(private readonly missionsService: MissionsService) {}
+  constructor(
+    private readonly missionsService: MissionsService,
+    private readonly needsService: MissionNeedsService,
+    private readonly reportsService: MissionReportsService,
+    private readonly collabsService: MissionCollaborationsService,
+  ) {}
 
   @Get()
-  async findAll(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 12;
-    const result = await this.missionsService.findAllActive(pageNum, limitNum);
-    return {
-      data: result.data.map((m) => MissionProjectResponseDto.fromEntity(m)),
-      total: result.total,
-      page: result.page,
-      pageSize: result.limit,
-      totalPages: Math.ceil(result.total / result.limit),
-      hasNextPage: result.page < Math.ceil(result.total / result.limit),
-      hasPreviousPage: result.page > 1
-    };
+  async findAll(@Query() query: PaginationQueryDto) {
+    const result = await this.missionsService.findAllActive(query);
+    return new PaginatedResponseDto(
+      result.data.map((m) => MissionProjectResponseDto.fromEntity(m)),
+      result.total,
+      result.page,
+      result.pageSize
+    );
   }
 
   @Get(':id/map-summary')
@@ -34,7 +44,38 @@ export class MissionsController {
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    const mission = await this.missionsService.findOne(id);
+    const mission = await this.missionsService.getPublicMission(id);
     return MissionProjectResponseDto.fromEntity(mission);
   }
+
+  @Get(':id/needs')
+  async getNeeds(
+    @Param('id') id: string, 
+    @Query() query: MissionNeedQueryDto,
+    @CurrentUser() context?: any
+  ) {
+    const user = context ? ({ id: context.personId } as Person) : undefined;
+    return this.needsService.findPublicNeeds(id, query, user);
+  }
+
+  @Get(':id/reports')
+  async getReports(
+    @Param('id') id: string, 
+    @Query() query: MissionReportQueryDto,
+    @CurrentUser() context?: any
+  ) {
+    const user = context ? ({ id: context.personId } as Person) : undefined;
+    return this.reportsService.findPublicReports(id, query, user);
+  }
+
+  @Get(':id/collaborations')
+  async getCollaborations(
+    @Param('id') id: string, 
+    @Query() query: MissionCollaborationQueryDto,
+    @CurrentUser() context?: any
+  ) {
+    const user = context ? ({ id: context.personId } as Person) : undefined;
+    return this.collabsService.findPublicCollaborations(id, query, user);
+  }
 }
+

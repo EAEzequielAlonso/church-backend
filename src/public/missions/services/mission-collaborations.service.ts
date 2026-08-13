@@ -5,7 +5,7 @@ import { MissionCollaboration } from '../entities/mission-collaboration.entity';
 import { CreateMissionCollaborationDto } from '../dto/create-mission-collaboration.dto';
 import { UpdateMissionCollaborationDto } from '../dto/update-mission-collaboration.dto';
 import { Person } from 'src/core/users/entities/person.entity';
-import { MissionsPolicies } from '../policies/missions.policies';
+import { MissionRules } from '../policies/mission.rules';
 import { MissionsService } from './missions.service';
 import { MissionCollaborationStatus } from '../enums/missions.enums';
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
@@ -16,6 +16,12 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Church } from 'src/core/churches/entities/church.entity';
 
+import { PaginationQueryDto } from 'src/shared/dtos/pagination-query.dto';
+import { PaginatedResponseDto } from 'src/shared/dtos/paginated-response.dto';
+import { MissionCollaborationQueryDto } from '../dto/mission-collaboration-query.dto';
+import { MissionCollaborationProductDto } from '../dto/mission-collaboration-product.dto';
+import { MissionPermissions } from '../policies/mission.permissions';
+
 @Injectable()
 export class MissionCollaborationsService {
   constructor(
@@ -23,11 +29,99 @@ export class MissionCollaborationsService {
     private readonly collabsRepo: Repository<MissionCollaboration>,
     @InjectRepository(Church)
     private readonly churchRepo: Repository<Church>,
-    private readonly policies: MissionsPolicies,
+    private readonly missionRules: MissionRules,
     private readonly missionsService: MissionsService,
     private readonly activitiesService: EcosystemActivitiesService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
+
+  async findPublicCollaborations(
+    missionId: string, 
+    query: MissionCollaborationQueryDto,
+    actor?: Person
+  ): Promise<PaginatedResponseDto<MissionCollaborationProductDto>> {
+    const { page = 1, limit = 12, sort = 'createdAt', order = 'DESC', search, status } = query;
+    
+    const where: any = { missionProjectId: missionId };
+    if (status) where.status = status;
+    // Note: Publicly, we might only want to show ACTIVE or PENDING collaborations.
+    // If not filtered by user, we'll return what they ask. (Typically ACTIVE).
+
+    const [data, total] = await this.collabsRepo.findAndCount({
+      where,
+      relations: ['church', 'church.publicProfile'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sort]: order },
+    });
+
+    const mission = await this.missionsService.findOne(missionId);
+    let isManager = false;
+    if (actor) {
+       try {
+         await this.missionRules.assertCanManage(actor, mission);
+         isManager = true;
+       } catch {
+         isManager = false;
+       }
+    }
+
+    const dtos = await Promise.all(data.map(async collab => {
+      let isCollabChurchManager = false;
+      if (actor) {
+         try {
+           await this.missionRules.assertCanWithdrawCollaboration(actor, collab.churchId);
+           isCollabChurchManager = true;
+         } catch {
+           isCollabChurchManager = false;
+         }
+      }
+      const actions = this.missionRules.getCollaborationAllowedActions(actor?.id, mission, collab, isManager, isCollabChurchManager);
+      return MissionCollaborationProductDto.fromEntity(collab, actions);
+    }));
+
+    return new PaginatedResponseDto(dtos, total, page, limit);
+  }
+
+  async findManagementCollaborations(
+    missionId: string, 
+    query: MissionCollaborationQueryDto,
+    actor: Person,
+    isChurchAdmin?: boolean
+  ): Promise<PaginatedResponseDto<MissionCollaborationProductDto>> {
+    const mission = await this.missionsService.findOne(missionId);
+    await this.missionRules.assertCanManage(actor, mission, isChurchAdmin);
+
+    const { page = 1, limit = 12, sort = 'createdAt', order = 'DESC', search, status } = query;
+    
+    const where: any = { missionProjectId: missionId };
+    if (status) where.status = status;
+
+    const [data, total] = await this.collabsRepo.findAndCount({
+      where,
+      relations: ['church', 'church.publicProfile'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { [sort]: order },
+    });
+
+    const dtos = await Promise.all(data.map(async collab => {
+      // Si el actor puede ver esto es porque es isManager (Mission Admin).
+      // Puede que sea también Admin de la iglesia colaboradora, comprobemos:
+      let isCollabChurchManager = false;
+      try {
+        await this.missionRules.assertCanWithdrawCollaboration(actor, collab.churchId);
+        isCollabChurchManager = true;
+      } catch {
+        isCollabChurchManager = false;
+      }
+
+      const actions = this.missionRules.getCollaborationAllowedActions(actor.id, mission, collab, true, isCollabChurchManager);
+      return MissionCollaborationProductDto.fromEntity(collab, actions);
+    }));
+
+    return new PaginatedResponseDto(dtos, total, page, limit);
+  }
 
   async create(
     missionId: string,
@@ -36,11 +130,7 @@ export class MissionCollaborationsService {
   ): Promise<MissionCollaboration> {
     const mission = await this.missionsService.findOne(missionId);
 
-    if (!(await this.policies.canCollaborate(actor, mission, dto.churchId))) {
-      throw new ForbiddenException(
-        'No tienes permiso para colaborar en nombre de esa iglesia o la misión no está activa',
-      );
-    }
+    await this.missionRules.assertCanSubmitCollaboration(actor, mission, dto.churchId);
 
     const collab = this.collabsRepo.create({
       ...dto,
@@ -114,62 +204,123 @@ export class MissionCollaborationsService {
 
     if (!collab) throw new NotFoundException('Colaboración no encontrada');
 
-    if (!(await this.policies.canManageCollaboration(actor, mission, collab.churchId))) {
-      throw new ForbiddenException(
-        'No tienes permiso para gestionar esta colaboración',
-      );
+    await this.missionRules.assertCanManageCollaboration(actor, mission, collab.churchId);
+    this.missionRules.assertCanEdit(mission);
+
+    this.collabsRepo.merge(collab, dto);
+    return this.collabsRepo.save(collab);
+  }
+
+  async approveCollaboration(
+    missionId: string,
+    collabId: string,
+    actor: Person,
+  ): Promise<MissionCollaboration> {
+    const mission = await this.missionsService.findOne(missionId);
+    const collab = await this.collabsRepo.findOne({
+      where: { id: collabId, missionProjectId: missionId },
+      relations: ['church'],
+    });
+
+    if (!collab) throw new NotFoundException('Colaboración no encontrada');
+    if (collab.status !== MissionCollaborationStatus.PENDING) {
+      throw new ForbiddenException('La colaboración no está pendiente de aprobación');
     }
 
-    const previousStatus = collab.status;
-    this.collabsRepo.merge(collab, dto);
+    await this.missionRules.assertCanApproveCollaboration(actor, mission);
+
+    collab.status = MissionCollaborationStatus.ACTIVE;
     const saved = await this.collabsRepo.save(collab);
 
-    if (previousStatus !== MissionCollaborationStatus.ACTIVE && saved.status === MissionCollaborationStatus.ACTIVE) {
-      const supportTypes: string[] = [];
-      if (saved.prayerSupport) supportTypes.push('Oración');
-      if (saved.financialSupport) supportTypes.push('Financiera');
-      if (saved.volunteerSupport) supportTypes.push('Voluntarios');
-      if (saved.materialSupport) supportTypes.push('Material');
-      if (saved.logisticSupport) supportTypes.push('Logística');
+    const supportTypes: string[] = [];
+    if (saved.prayerSupport) supportTypes.push('Oración');
+    if (saved.financialSupport) supportTypes.push('Financiera');
+    if (saved.volunteerSupport) supportTypes.push('Voluntarios');
+    if (saved.materialSupport) supportTypes.push('Material');
+    if (saved.logisticSupport) supportTypes.push('Logística');
 
-      await this.activitiesService.logActivity({
-        actorPersonId: actor.id,
-        activityType: EcosystemActivityType.MISSION_JOINED,
-        entityId: saved.id,
-        entityType: EcosystemActivityEntityType.MISSION_COLLABORATION,
-        relatedChurchId: collab.churchId,
-        metadata: {
-          missionTitle: mission.title,
-          churchName: collab.church?.canonicalName || 'Una iglesia',
-          supportTypes,
-        },
+    await this.activitiesService.logActivity({
+      actorPersonId: actor.id,
+      activityType: EcosystemActivityType.MISSION_JOINED,
+      entityId: saved.id,
+      entityType: EcosystemActivityEntityType.MISSION_COLLABORATION,
+      relatedChurchId: collab.churchId,
+      metadata: {
+        missionTitle: mission.title,
+        churchName: collab.church?.canonicalName || 'Una iglesia',
+        supportTypes,
+      },
+    });
+
+    let recipientPersonId = mission.leaderId;
+
+    if (!recipientPersonId && mission.creatorChurchId) {
+      const creatorChurch = await this.churchRepo.findOne({
+        where: { id: mission.creatorChurchId },
+        relations: ['publicProfile'],
       });
 
-      let recipientPersonId = mission.leaderId;
-
-      if (!recipientPersonId && mission.creatorChurchId) {
-        const creatorChurch = await this.churchRepo.findOne({
-          where: { id: mission.creatorChurchId },
-          relations: ['publicProfile'],
-        });
-
-        if (creatorChurch && creatorChurch.publicProfile) {
-          recipientPersonId =
-            creatorChurch.publicProfile.claimerPersonId ||
-            creatorChurch.publicProfile.creatorPersonId;
-        }
+      if (creatorChurch && creatorChurch.publicProfile) {
+        recipientPersonId =
+          creatorChurch.publicProfile.claimerPersonId ||
+          creatorChurch.publicProfile.creatorPersonId;
       }
+    }
 
-      if (recipientPersonId) {
-        this.eventEmitter.emit('mission.collaboration.joined', {
-          recipientPersonId,
-          churchName: collab.church?.canonicalName || 'Una iglesia',
-          missionName: mission.title,
-        });
-      }
+    if (recipientPersonId) {
+      this.eventEmitter.emit('mission.collaboration.joined', {
+        recipientPersonId,
+        churchName: collab.church?.canonicalName || 'Una iglesia',
+        missionName: mission.title,
+      });
     }
 
     return saved;
+  }
+
+  async rejectCollaboration(
+    missionId: string,
+    collabId: string,
+    actor: Person,
+  ): Promise<MissionCollaboration> {
+    const mission = await this.missionsService.findOne(missionId);
+    const collab = await this.collabsRepo.findOne({
+      where: { id: collabId, missionProjectId: missionId },
+    });
+
+    if (!collab) throw new NotFoundException('Colaboración no encontrada');
+    if (collab.status !== MissionCollaborationStatus.PENDING) {
+      throw new ForbiddenException('La colaboración no está pendiente');
+    }
+
+    await this.missionRules.assertCanApproveCollaboration(actor, mission);
+
+    collab.status = MissionCollaborationStatus.REJECTED;
+    return this.collabsRepo.save(collab);
+  }
+
+  async withdrawCollaboration(
+    missionId: string,
+    collabId: string,
+    actor: Person,
+  ): Promise<MissionCollaboration> {
+    const mission = await this.missionsService.findOne(missionId);
+    const collab = await this.collabsRepo.findOne({
+      where: { id: collabId, missionProjectId: missionId },
+    });
+
+    if (!collab) throw new NotFoundException('Colaboración no encontrada');
+    if (
+      collab.status !== MissionCollaborationStatus.PENDING &&
+      collab.status !== MissionCollaborationStatus.ACTIVE
+    ) {
+      throw new ForbiddenException('No se puede retirar esta colaboración en su estado actual');
+    }
+
+    await this.missionRules.assertCanWithdrawCollaboration(actor, collab.churchId);
+
+    collab.status = MissionCollaborationStatus.WITHDRAWN;
+    return this.collabsRepo.save(collab);
   }
 
   async remove(
@@ -184,11 +335,8 @@ export class MissionCollaborationsService {
 
     if (!collab) throw new NotFoundException('Colaboración no encontrada');
 
-    if (!(await this.policies.canManageCollaboration(actor, mission, collab.churchId))) {
-      throw new ForbiddenException(
-        'No tienes permiso para eliminar esta colaboración',
-      );
-    }
+    await this.missionRules.assertCanManageCollaboration(actor, mission, collab.churchId);
+    this.missionRules.assertCanEdit(mission);
 
     await this.collabsRepo.remove(collab);
   }

@@ -35,6 +35,15 @@ export class MissionProjectResponseDto {
   actualStartDate: Date | null;
   completedAt: Date | null;
   status: MissionProjectStatus;
+  closureReason: string | null;
+
+  // Reuniones
+  meetingDay: string | null;
+  meetingFrequency: string | null;
+  meetingTime: string | null;
+  meetingTimezone: string | null;
+  meetingModality: string | null;
+  meetingAddress: string | null;
 
   // Timestamps
   createdAt: Date;
@@ -80,6 +89,16 @@ export class MissionProjectResponseDto {
     dto.actualStartDate = entity.actualStartDate ?? null;
     dto.completedAt = entity.completedAt ?? null;
     dto.status = entity.status;
+    dto.closureReason = entity.closureReason ?? null;
+
+    // Meetings
+    dto.meetingDay = entity.meetingDay ?? null;
+    dto.meetingFrequency = entity.meetingFrequency ?? null;
+    dto.meetingTime = entity.meetingTime ?? null;
+    dto.meetingTimezone = entity.meetingTimezone ?? null;
+    dto.meetingModality = entity.meetingModality ?? null;
+    dto.meetingAddress = entity.meetingAddress ?? null;
+
     dto.createdAt = entity.createdAt;
     dto.updatedAt = entity.updatedAt;
 

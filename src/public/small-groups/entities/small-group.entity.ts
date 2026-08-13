@@ -16,9 +16,8 @@ import { GeoPrecision } from 'src/public/ecosystem/enums/ecosystem.enums';
 import {
   SmallGroupStatus,
   GroupCapacityStatus,
-  MeetingFrequency,
-  DayOfWeek,
 } from '../enums/small-groups.enums';
+import { MeetingFrequency, DayOfWeek } from '../../../shared/enums/meetings.enums';
 
 @Entity('small_groups')
 @Index(['churchId'])

@@ -1,6 +1,7 @@
 import { Church } from 'src/core/churches/entities/church.entity';
 import { Person } from 'src/core/users/entities/person.entity';
 import { GeoPrecision } from 'src/public/ecosystem/enums/ecosystem.enums';
+import { DayOfWeek, MeetingFrequency, MeetingModality } from '../../../shared/enums/meetings.enums';
 import {
   Column,
   CreateDateColumn,
@@ -10,6 +11,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import {
   MissionOutcomeType,
@@ -110,6 +112,9 @@ export class MissionProject {
   })
   outcomeType: MissionOutcomeType;
 
+  @Column({ type: 'text', nullable: true })
+  closureReason: string;
+
   // ─── Fechas de Avance ─────────────────────────────
   @Column({ type: 'date', nullable: true })
   plannedStartDate: Date;
@@ -127,6 +132,25 @@ export class MissionProject {
     default: MissionProjectStatus.DRAFT,
   })
   status: MissionProjectStatus;
+
+  // ─── Reuniones (Meetings) ─────────────────────────
+  @Column({ type: 'enum', enum: DayOfWeek, nullable: true })
+  meetingDay: DayOfWeek;
+
+  @Column({ type: 'enum', enum: MeetingFrequency, nullable: true })
+  meetingFrequency: MeetingFrequency;
+
+  @Column({ type: 'time', nullable: true })
+  meetingTime: string;
+
+  @Column({ nullable: true })
+  meetingTimezone: string;
+
+  @Column({ type: 'enum', enum: MeetingModality, nullable: true })
+  meetingModality: MeetingModality;
+
+  @Column({ nullable: true })
+  meetingAddress: string;
 
   // ─── Colecciones ──────────────────────────────────
   @OneToMany(
@@ -153,4 +177,7 @@ export class MissionProject {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
 }

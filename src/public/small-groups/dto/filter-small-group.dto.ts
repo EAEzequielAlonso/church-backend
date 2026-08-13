@@ -6,7 +6,8 @@ import {
   IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { DayOfWeek, SmallGroupStatus } from '../enums/small-groups.enums';
+import { SmallGroupStatus } from '../enums/small-groups.enums';
+import { DayOfWeek } from '../../../shared/enums/meetings.enums';
 
 export class FilterSmallGroupDto {
   @IsOptional()

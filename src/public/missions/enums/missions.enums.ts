@@ -25,6 +25,7 @@ export enum MissionCollaborationStatus {
   ACTIVE = 'ACTIVE',
   PAUSED = 'PAUSED',
   WITHDRAWN = 'WITHDRAWN',
+  REJECTED = 'REJECTED',
 }
 
 export enum MissionProjectStatus {
@@ -53,4 +54,33 @@ export enum MissionReportCategory {
   CHURCH_PLANTING = 'CHURCH_PLANTING',
   CHALLENGE = 'CHALLENGE',
   OTHER = 'OTHER',
+}
+
+export enum MissionProjectAction {
+  EDIT = 'EDIT',
+  ACTIVATE = 'ACTIVATE',
+  PAUSE = 'PAUSE',
+  RESUME = 'RESUME',
+  COMPLETE = 'COMPLETE',
+  CANCEL = 'CANCEL',
+  DELETE = 'DELETE',
+}
+
+export enum MissionNeedAction {
+  EDIT = 'EDIT',
+  DELETE = 'DELETE',
+  FULFILL = 'FULFILL',
+}
+
+export enum MissionReportAction {
+  EDIT = 'EDIT',
+  DELETE = 'DELETE',
+}
+
+export enum MissionCollaborationAction {
+  EDIT = 'EDIT',
+  DELETE = 'DELETE',
+  APPROVE = 'APPROVE',
+  REJECT = 'REJECT',
+  WITHDRAW = 'WITHDRAW',
 }

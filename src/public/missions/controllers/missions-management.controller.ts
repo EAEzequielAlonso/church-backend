@@ -20,13 +20,21 @@ import { MissionReportsService } from '../services/mission-reports.service';
 import { CreateMissionProjectDto } from '../dto/create-mission-project.dto';
 import { UpdateMissionProjectDto } from '../dto/update-mission-project.dto';
 import { CompleteMissionDto } from '../dto/complete-mission.dto';
+import { CancelMissionDto } from '../dto/cancel-mission.dto';
 import { CreateMissionNeedDto } from '../dto/create-mission-need.dto';
 import { UpdateMissionNeedDto } from '../dto/update-mission-need.dto';
+import { FulfillMissionNeedDto } from '../dto/fulfill-mission-need.dto';
 import { CreateMissionCollaborationDto } from '../dto/create-mission-collaboration.dto';
 import { CreateMissionReportDto } from '../dto/create-mission-report.dto';
 import { UpdateMissionReportDto } from '../dto/update-mission-report.dto';
 import { UpdateMissionCollaborationDto } from '../dto/update-mission-collaboration.dto';
 import { MissionProjectResponseDto } from '../dto/mission-response.dto';
+import { MissionProjectStatus } from '../enums/missions.enums';
+import { PaginationQueryDto } from 'src/shared/dtos/pagination-query.dto';
+import { PaginatedResponseDto } from 'src/shared/dtos/paginated-response.dto';
+import { MissionNeedQueryDto } from '../dto/mission-need-query.dto';
+import { MissionReportQueryDto } from '../dto/mission-report-query.dto';
+import { MissionCollaborationQueryDto } from '../dto/mission-collaboration-query.dto';
 
 @Controller('missions-management')
 @UseGuards(JwtAuthGuard, SecurityContextGuard)
@@ -51,23 +59,21 @@ export class MissionsManagementController {
   async getChurchMissions(
     @Param('churchId') churchId: string,
     @CurrentUser() context: any,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query() query: PaginationQueryDto,
   ) {
     const actor = { id: context.personId } as Person;
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 12;
-    
-    const result = await this.missionsService.findAllByChurch(churchId, pageNum, limitNum);
-    return {
-      data: result.data.map((m) => MissionProjectResponseDto.fromEntity(m)),
-      total: result.total,
-      page: result.page,
-      pageSize: result.limit,
-      totalPages: Math.ceil(result.total / result.limit),
-      hasNextPage: result.page < Math.ceil(result.total / result.limit),
-      hasPreviousPage: result.page > 1
-    };
+    const result = await this.missionsService.findAllManagementByChurch(churchId, query, actor);
+    return result;
+  }
+
+
+  @Get(':id')
+  async getManagementMission(
+    @Param('id') id: string,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.missionsService.getManagementMission(id, actor);
   }
 
   @Patch(':id')
@@ -90,10 +96,71 @@ export class MissionsManagementController {
     return this.missionsService.completeMission(id, dto, actor);
   }
 
-  @Post(':id/cancel')
-  async cancelMission(@Param('id') id: string, @CurrentUser() context: any) {
+  @Delete(':id')
+  async removeMission(
+    @Param('id') id: string,
+    @CurrentUser() context: any,
+  ) {
     const actor = { id: context.personId } as Person;
-    return this.missionsService.cancelMission(id, actor);
+    return this.missionsService.remove(id, actor);
+  }
+
+  @Post(':id/cancel')
+  async cancelMission(
+    @Param('id') id: string,
+    @Body() dto: CancelMissionDto,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.missionsService.cancelMission(id, dto, actor);
+  }
+
+  @Post(':id/activate')
+  async activateMission(@Param('id') id: string, @CurrentUser() context: any) {
+    const actor = { id: context.personId } as Person;
+    return this.missionsService.changeStatus(id, MissionProjectStatus.ACTIVE, actor);
+  }
+
+  @Post(':id/pause')
+  async pauseMission(@Param('id') id: string, @CurrentUser() context: any) {
+    const actor = { id: context.personId } as Person;
+    return this.missionsService.changeStatus(id, MissionProjectStatus.PAUSED, actor);
+  }
+
+  @Post(':id/resume')
+  async resumeMission(@Param('id') id: string, @CurrentUser() context: any) {
+    const actor = { id: context.personId } as Person;
+    return this.missionsService.changeStatus(id, MissionProjectStatus.ACTIVE, actor);
+  }
+
+  @Get(':id/needs')
+  async getNeeds(
+    @Param('id') id: string,
+    @Query() query: MissionNeedQueryDto,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.needsService.findManagementNeeds(id, query, actor);
+  }
+
+  @Get(':id/reports')
+  async getReports(
+    @Param('id') id: string,
+    @Query() query: MissionReportQueryDto,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.reportsService.findManagementReports(id, query, actor);
+  }
+
+  @Get(':id/collaborations')
+  async getCollaborations(
+    @Param('id') id: string,
+    @Query() query: MissionCollaborationQueryDto,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.collabsService.findManagementCollaborations(id, query, actor);
   }
 
   @Post(':id/needs')
@@ -125,6 +192,17 @@ export class MissionsManagementController {
   ) {
     const actor = { id: context.personId } as Person;
     return this.needsService.remove(id, needId, actor);
+  }
+
+  @Post(':id/needs/:needId/fulfill')
+  async fulfillNeed(
+    @Param('id') id: string,
+    @Param('needId') needId: string,
+    @Body() dto: FulfillMissionNeedDto,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.needsService.fulfillNeed(id, needId, dto, actor);
   }
 
   @Post(':id/collaborations')
@@ -177,6 +255,36 @@ export class MissionsManagementController {
   ) {
     const actor = { id: context.personId } as Person;
     return this.collabsService.update(id, collabId, dto, actor);
+  }
+
+  @Post(':id/collaborations/:collabId/approve')
+  async approveCollaboration(
+    @Param('id') id: string,
+    @Param('collabId') collabId: string,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.collabsService.approveCollaboration(id, collabId, actor);
+  }
+
+  @Post(':id/collaborations/:collabId/reject')
+  async rejectCollaboration(
+    @Param('id') id: string,
+    @Param('collabId') collabId: string,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.collabsService.rejectCollaboration(id, collabId, actor);
+  }
+
+  @Post(':id/collaborations/:collabId/withdraw')
+  async withdrawCollaboration(
+    @Param('id') id: string,
+    @Param('collabId') collabId: string,
+    @CurrentUser() context: any,
+  ) {
+    const actor = { id: context.personId } as Person;
+    return this.collabsService.withdrawCollaboration(id, collabId, actor);
   }
 
   @Delete(':id/collaborations/:collabId')

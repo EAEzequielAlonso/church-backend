@@ -4,7 +4,13 @@ import { MissionProject } from './entities/mission-project.entity';
 import { MissionCollaboration } from './entities/mission-collaboration.entity';
 import { MissionNeed } from './entities/mission-need.entity';
 import { MissionReport } from './entities/mission-report.entity';
-import { MissionsPolicies } from './policies/missions.policies';
+import { MissionStatePolicy } from './policies/mission-state.policy';
+import { MissionPermissions } from './policies/mission.permissions';
+import { MissionRules } from './policies/mission.rules';
+import { MissionNeedsEvaluator } from './policies/mission-needs.evaluator';
+import { MissionReportsEvaluator } from './policies/mission-reports.evaluator';
+import { MissionCollaborationsEvaluator } from './policies/mission-collaborations.evaluator';
+import { MissionProjectEvaluator } from './policies/mission-project.evaluator';
 import { MissionsService } from './services/missions.service';
 import { MissionNeedsService } from './services/mission-needs.service';
 import { MissionCollaborationsService } from './services/mission-collaborations.service';
@@ -37,7 +43,13 @@ import { PublicChurchRelation } from '../church/entities/public_church_relation.
   ],
   controllers: [MissionsController, MissionsManagementController],
   providers: [
-    MissionsPolicies,
+    MissionStatePolicy,
+    MissionPermissions,
+    MissionNeedsEvaluator,
+    MissionReportsEvaluator,
+    MissionCollaborationsEvaluator,
+    MissionProjectEvaluator,
+    MissionRules,
     MissionsService,
     MissionNeedsService,
     MissionCollaborationsService,

@@ -2,11 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { Church } from 'src/core/churches/entities/church.entity';
 import { Person } from 'src/core/users/entities/person.entity';
 import { MissionProject } from '../entities/mission-project.entity';
-import { MissionProjectStatus } from '../enums/missions.enums';
 import { ChurchOwnershipService } from '../../church/services/church-ownership.service';
 
 @Injectable()
-export class MissionsPolicies {
+export class MissionPermissions {
   constructor(private readonly ownershipService: ChurchOwnershipService) {}
 
   /**
@@ -50,17 +49,13 @@ export class MissionsPolicies {
   }
 
   /**
-   * Solo un administrador de otra iglesia puede enviar una colaboración, y la misión debe estar activa.
+   * Solo un administrador de otra iglesia puede enviar una colaboración
+   * (La regla de que la misión debe estar activa se evalúa en MissionRules).
    */
   async canCollaborate(
     actor: Person,
-    mission: MissionProject,
     collaboratorChurchId: string,
   ): Promise<boolean> {
-    if (mission.status !== MissionProjectStatus.ACTIVE) {
-      return false;
-    }
-
     try {
       await this.ownershipService.assertOwnsChurch(
         actor.id,
@@ -70,28 +65,6 @@ export class MissionsPolicies {
     } catch {
       return false;
     }
-  }
-
-  /**
-   * Mismas reglas de manage: solo lider o admin.
-   */
-  async canCreateReport(
-    actor: Person,
-    mission: MissionProject,
-    isChurchAdmin?: boolean,
-  ): Promise<boolean> {
-    return this.canManageMission(actor, mission, isChurchAdmin);
-  }
-
-  /**
-   * Mismas reglas de manage, es una accion critica protegida.
-   */
-  async canCompleteMission(
-    actor: Person,
-    mission: MissionProject,
-    isChurchAdmin?: boolean,
-  ): Promise<boolean> {
-    return this.canManageMission(actor, mission, isChurchAdmin);
   }
 
   /**

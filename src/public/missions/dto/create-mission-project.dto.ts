@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 import { GeoPrecision } from 'src/public/ecosystem/enums/ecosystem.enums';
 import { MissionSourceType, MissionProjectStatus } from '../enums/missions.enums';
+import { DayOfWeek, MeetingFrequency, MeetingModality } from '../../../shared/enums/meetings.enums';
 
 export class CreateMissionProjectDto {
   @IsString()
@@ -87,4 +88,29 @@ export class CreateMissionProjectDto {
   @IsEnum(MissionProjectStatus)
   @IsOptional()
   status?: MissionProjectStatus;
+
+  // Reuniones (Opcionales)
+  @IsEnum(DayOfWeek)
+  @IsOptional()
+  meetingDay?: DayOfWeek;
+
+  @IsEnum(MeetingFrequency)
+  @IsOptional()
+  meetingFrequency?: MeetingFrequency;
+
+  @IsString()
+  @IsOptional()
+  meetingTime?: string;
+
+  @IsString()
+  @IsOptional()
+  meetingTimezone?: string;
+
+  @IsEnum(MeetingModality)
+  @IsOptional()
+  meetingModality?: MeetingModality;
+
+  @IsString()
+  @IsOptional()
+  meetingAddress?: string;
 }
