@@ -1,7 +1,11 @@
 import { Church } from 'src/core/churches/entities/church.entity';
 import { Person } from 'src/core/users/entities/person.entity';
 import { GeoPrecision } from 'src/public/ecosystem/enums/ecosystem.enums';
-import { DayOfWeek, MeetingFrequency, MeetingModality } from '../../../shared/enums/meetings.enums';
+import {
+  DayOfWeek,
+  MeetingFrequency,
+  MeetingModality,
+} from '../../../shared/enums/meetings.enums';
 import {
   Column,
   CreateDateColumn,

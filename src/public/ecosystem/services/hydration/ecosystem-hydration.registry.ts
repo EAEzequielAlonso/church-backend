@@ -1,8 +1,10 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { IEcosystemEntityHydrator } from './hydration.interface';
 import { ChurchHydrator } from './church.hydrator';
+import { NeedSignalHydrator } from './need-signal.hydrator';
 import { EcosystemActivityEntityType } from '../../enums/ecosystem.enums';
 import { EcosystemActivity } from '../../entities/ecosystem-activity.entity';
+import { ChurchNeedSignalHydrator } from './church-need-signal.hydrator';
 
 @Injectable()
 export class EcosystemHydrationRegistry implements OnModuleInit {
@@ -13,11 +15,15 @@ export class EcosystemHydrationRegistry implements OnModuleInit {
 
   constructor(
     private readonly churchHydrator: ChurchHydrator,
-    // Add future hydrators here (e.g. needSignalHydrator, missionHydrator, etc.)
+    private readonly needSignalHydrator: NeedSignalHydrator,
+    private readonly churchNeedSignalHydrator: ChurchNeedSignalHydrator,
+    // Add future hydrators here (e.g. missionHydrator, etc.)
   ) {}
 
   onModuleInit() {
     this.register(this.churchHydrator);
+    this.register(this.needSignalHydrator);
+    this.register(this.churchNeedSignalHydrator);
     // Register future hydrators here
   }
 

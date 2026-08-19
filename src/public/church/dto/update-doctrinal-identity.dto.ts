@@ -17,10 +17,20 @@ export class UpdateDoctrinalIdentityDto {
   @IsOptional() @IsBoolean() affirmsBodilyResurrection?: boolean;
   @IsOptional() @IsBoolean() affirmsSecondComing?: boolean;
 
-  @IsOptional() @IsEnum(ChurchGovernment) churchGovernment?: ChurchGovernment | null;
+  @IsOptional()
+  @IsEnum(ChurchGovernment)
+  churchGovernment?: ChurchGovernment | null;
   @IsOptional() @IsEnum(BaptismStance) baptismStance?: BaptismStance | null;
-  @IsOptional() @IsEnum(SpiritualGiftsStance) spiritualGiftsStance?: SpiritualGiftsStance | null;
-  @IsOptional() @IsEnum(EschatologyStance) eschatologyStance?: EschatologyStance | null;
-  @IsOptional() @IsEnum(GenderRolesStance) genderRolesStance?: GenderRolesStance | null;
-  @IsOptional() @IsEnum(LordsSupperStance) lordsSupperStance?: LordsSupperStance | null;
+  @IsOptional()
+  @IsEnum(SpiritualGiftsStance)
+  spiritualGiftsStance?: SpiritualGiftsStance | null;
+  @IsOptional()
+  @IsEnum(EschatologyStance)
+  eschatologyStance?: EschatologyStance | null;
+  @IsOptional()
+  @IsEnum(GenderRolesStance)
+  genderRolesStance?: GenderRolesStance | null;
+  @IsOptional()
+  @IsEnum(LordsSupperStance)
+  lordsSupperStance?: LordsSupperStance | null;
 }

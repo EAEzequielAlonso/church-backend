@@ -21,9 +21,11 @@ export interface VisibleContributions {
   churchesAdded: number;
   doctrinalOpinions: number;
   needSignalsCreated: number;
+  needSignalsSupported: number;
   unreachedAreasCreated: number;
   needInformationAdded: number;
   invitationsCompleted: number;
+  personalNeedsAssisted: number;
 }
 
 @Injectable()
@@ -73,6 +75,8 @@ export class EcosystemContributionsService {
         map.get(EcosystemContributionType.DOCTRINAL_OPINION_SUBMITTED) ?? 0,
       needSignalsCreated:
         map.get(EcosystemContributionType.CHURCH_NEED_SIGNAL_CREATED) ?? 0,
+      needSignalsSupported:
+        map.get(EcosystemContributionType.CHURCH_NEED_SIGNAL_SUPPORTED) ?? 0,
       unreachedAreasCreated:
         map.get(EcosystemContributionType.UNREACHED_AREA_CREATED) ?? 0,
       needInformationAdded:
@@ -82,6 +86,8 @@ export class EcosystemContributionsService {
         (map.get(EcosystemContributionType.CHURCH_ADMIN_INVITED) ?? 0) +
         (map.get(EcosystemContributionType.CHURCH_MEMBER_INVITED) ?? 0) +
         (map.get(EcosystemContributionType.NEED_SIGNAL_INVITED) ?? 0),
+      personalNeedsAssisted:
+        map.get(EcosystemContributionType.PERSONAL_NEED_ASSISTED) ?? 0,
     };
   }
 
@@ -104,9 +110,11 @@ export class EcosystemContributionsService {
         churchesAdded: 0,
         doctrinalOpinions: 0,
         needSignalsCreated: 0,
+        needSignalsSupported: 0,
         unreachedAreasCreated: 0,
         needInformationAdded: 0,
         invitationsCompleted: 0,
+        personalNeedsAssisted: 0,
       };
     }
 
@@ -126,6 +134,8 @@ export class EcosystemContributionsService {
         map.get(EcosystemContributionType.DOCTRINAL_OPINION_SUBMITTED) ?? 0,
       needSignalsCreated:
         map.get(EcosystemContributionType.CHURCH_NEED_SIGNAL_CREATED) ?? 0,
+      needSignalsSupported:
+        map.get(EcosystemContributionType.CHURCH_NEED_SIGNAL_SUPPORTED) ?? 0,
       unreachedAreasCreated:
         map.get(EcosystemContributionType.UNREACHED_AREA_CREATED) ?? 0,
       needInformationAdded:
@@ -135,6 +145,8 @@ export class EcosystemContributionsService {
         (map.get(EcosystemContributionType.CHURCH_ADMIN_INVITED) ?? 0) +
         (map.get(EcosystemContributionType.CHURCH_MEMBER_INVITED) ?? 0) +
         (map.get(EcosystemContributionType.NEED_SIGNAL_INVITED) ?? 0),
+      personalNeedsAssisted:
+        map.get(EcosystemContributionType.PERSONAL_NEED_ASSISTED) ?? 0,
     };
   }
 

@@ -19,14 +19,14 @@ export class MissionProductDto extends MissionProjectResponseDto {
     statistics: MissionStatisticsDto,
   ): MissionProductDto {
     const dto = new MissionProductDto();
-    
+
     // Copiar todas las propiedades del base DTO
     Object.assign(dto, responseDto);
-    
+
     // Asignar los agregados de producto
     dto.allowedActions = allowedActions;
     dto.statistics = statistics;
-    
+
     return dto;
   }
 }

@@ -17,7 +17,10 @@ import {
   SmallGroupStatus,
   GroupCapacityStatus,
 } from '../enums/small-groups.enums';
-import { MeetingFrequency, DayOfWeek } from '../../../shared/enums/meetings.enums';
+import {
+  MeetingFrequency,
+  DayOfWeek,
+} from '../../../shared/enums/meetings.enums';
 
 @Entity('small_groups')
 @Index(['churchId'])

@@ -8,7 +8,10 @@ import {
   Min,
   Max,
 } from 'class-validator';
-import { NeedSignalType } from 'src/public/enums/public.enums';
+import {
+  NeedSignalType,
+  NeedSignalCloseReason,
+} from 'src/public/enums/public.enums';
 
 export class CreateOrUpdateNeedSignalDto {
   @IsEnum(NeedSignalType)
@@ -36,4 +39,9 @@ export class CreateOrUpdateNeedSignalDto {
   @IsUrl()
   @IsOptional()
   contactUrl?: string;
+}
+
+export class CloseNeedSignalDto {
+  @IsEnum(NeedSignalCloseReason)
+  reason: NeedSignalCloseReason;
 }

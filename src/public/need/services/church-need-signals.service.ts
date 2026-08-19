@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { ChurchNeedSignal } from '../entities/church-need-signal.entity';
 import { NeedLocation } from '../entities/need-location.entity';
 import { ChurchNeedSignalSupport } from '../entities/church-need-signal-support.entity';
@@ -12,6 +12,10 @@ import { NeedInformation } from '../entities/need-information.entity';
 import { EcosystemContributionsService } from '../../ecosystem/services/ecosystem-contributions.service';
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
 import { CreateChurchNeedSignalDto } from '../dto/church-need-signals/create-church-need-signal.dto';
+import { ChurchNeedSignalResponseDto } from '../dto/church-need-signals/church-need-signal-response.dto';
+import { ChurchNeedSignalMapMarkerDto } from '../dto/church-need-signals/church-need-signal-map-marker.dto';
+import { EditChurchNeedSignalDto } from '../dto/church-need-signals/edit-church-need-signal.dto';
+import { UpdateChurchNeedSignalStatusDto } from '../dto/church-need-signals/update-church-need-signal-status.dto';
 import { AddNeedInformationDto } from '../dto/church-need-signals/add-need-information.dto';
 import {
   ChurchNeedSignalFilterDto,
@@ -25,7 +29,10 @@ import {
 } from '../../ecosystem/enums/ecosystem.enums';
 import { NeedInformationEntityType } from '../enums/need-signals.enum';
 import { GeoNormalizationUtil } from '../../ecosystem/geo/utils/geo-normalization.util';
-import { NeedSignalStatus } from 'src/public/enums/public.enums';
+import {
+  NeedSignalStatus,
+  NeedSignalCloseReason,
+} from 'src/public/enums/public.enums';
 
 @Injectable()
 export class ChurchNeedSignalsService {
@@ -106,6 +113,9 @@ export class ChurchNeedSignalsService {
           country: location.country,
           state: location.state,
           city: location.city,
+          metadata: {
+            note: dto.observation ?? null,
+          },
         },
         manager,
       );
@@ -115,36 +125,167 @@ export class ChurchNeedSignalsService {
   }
 
   async supportSignal(personId: string, signalId: string) {
+    return this.dataSource.transaction(async (manager) => {
+      const signal = await manager.findOne(ChurchNeedSignal, {
+        where: { id: signalId },
+      });
+      if (!signal) {
+        throw new NotFoundException('Church need signal not found');
+      }
+
+      if (signal.status !== NeedSignalStatus.OPEN) {
+        throw new ConflictException('You can only support open signals.');
+      }
+
+      const existingSupport = await manager.findOne(ChurchNeedSignalSupport, {
+        where: { churchNeedSignalId: signalId, personId },
+      });
+
+      if (existingSupport) {
+        throw new ConflictException('You have already supported this signal.');
+      }
+
+      const support = manager.create(ChurchNeedSignalSupport, {
+        churchNeedSignalId: signalId,
+        personId,
+      });
+
+      await manager.save(ChurchNeedSignalSupport, support);
+
+      await this.contributionsService.recordContribution({
+        actorPersonId: personId,
+        targetChurchId: null,
+        type: EcosystemContributionType.CHURCH_NEED_SIGNAL_SUPPORTED,
+        manager,
+      });
+
+      return support;
+    });
+  }
+
+  async editSignal(
+    personId: string,
+    signalId: string,
+    dto: EditChurchNeedSignalDto,
+  ) {
     const signal = await this.signalRepo.findOne({ where: { id: signalId } });
     if (!signal) {
       throw new NotFoundException('Church need signal not found');
     }
 
-    const existingSupport = await this.supportRepo.findOne({
-      where: { churchNeedSignalId: signalId, personId },
-    });
-
-    if (existingSupport) {
-      throw new ConflictException('You have already supported this signal.');
+    if (signal.personId !== personId) {
+      throw new ConflictException('You are not the creator of this signal');
     }
 
-    const support = this.supportRepo.create({
-      churchNeedSignalId: signalId,
-      personId,
-    });
-
-    await this.supportRepo.save(support);
-    return support;
+    signal.observation = dto.observation;
+    return this.signalRepo.save(signal);
   }
 
-  async listSignals(filterDto: ChurchNeedSignalFilterDto) {
-    const { country, state, city, sortBy, page = 1, limit = 10 } = filterDto;
+  async deleteSignal(personId: string, signalId: string) {
+    return this.dataSource.transaction(async (manager) => {
+      const signal = await manager.findOne(ChurchNeedSignal, {
+        where: { id: signalId },
+      });
+      if (!signal) {
+        throw new NotFoundException('Church need signal not found');
+      }
+
+      if (signal.personId !== personId) {
+        throw new ConflictException('You are not the creator of this signal');
+      }
+
+      // Check for third-party NeedInformation
+      const thirdPartyInfoCount = await manager
+        .createQueryBuilder(NeedInformation, 'info')
+        .where('info.entityType = :entityType', {
+          entityType: NeedInformationEntityType.CHURCH_NEED_SIGNAL,
+        })
+        .andWhere('info.entityId = :signalId', { signalId })
+        .andWhere('info.personId != :personId', { personId })
+        .getCount();
+
+      if (thirdPartyInfoCount > 0) {
+        throw new ConflictException(
+          'Cannot delete a signal that has information provided by other users. You can close it instead.',
+        );
+      }
+
+      // If safe, delete supports and info by creator
+      await manager.delete(ChurchNeedSignalSupport, {
+        churchNeedSignalId: signalId,
+      });
+      await manager.delete(NeedInformation, {
+        entityType: NeedInformationEntityType.CHURCH_NEED_SIGNAL,
+        entityId: signalId,
+      });
+      await manager.delete(ChurchNeedSignal, { id: signalId });
+
+      return { success: true };
+    });
+  }
+
+  async updateStatus(
+    personId: string,
+    signalId: string,
+    dto: UpdateChurchNeedSignalStatusDto,
+  ) {
+    const signal = await this.signalRepo.findOne({ where: { id: signalId } });
+    if (!signal) {
+      throw new NotFoundException('Church need signal not found');
+    }
+
+    if (signal.personId !== personId) {
+      throw new ConflictException('You are not the creator of this signal');
+    }
+
+    if (dto.status === NeedSignalStatus.CLOSED) {
+      // Manual close by creator is always TEMPORARY
+      signal.status = NeedSignalStatus.CLOSED;
+      signal.closeReason = NeedSignalCloseReason.TEMPORARY;
+    } else if (dto.status === NeedSignalStatus.OPEN) {
+      // Can only reopen if it was TEMPORARY
+      if (
+        signal.status !== NeedSignalStatus.CLOSED ||
+        signal.closeReason !== NeedSignalCloseReason.TEMPORARY
+      ) {
+        throw new ConflictException('This signal cannot be manually reopened.');
+      }
+      signal.status = NeedSignalStatus.OPEN;
+      signal.closeReason = null;
+    }
+
+    return this.signalRepo.save(signal);
+  }
+
+  async listSignals(filterDto: ChurchNeedSignalFilterDto, personId?: string) {
+    const { country, state, city, sortBy, page = 1, limit = 10, creatorId, status } = filterDto;
 
     const query = this.signalRepo
       .createQueryBuilder('signal')
       .leftJoinAndSelect('signal.needLocation', 'location')
-      .leftJoinAndSelect('signal.person', 'creator')
-      .where('signal.status = :status', { status: NeedSignalStatus.OPEN });
+      .leftJoinAndSelect('signal.person', 'creator');
+
+    if (status) {
+      if (status !== 'ALL') {
+        query.andWhere('signal.status = :status', { status });
+      }
+    } else {
+      query.andWhere('signal.status = :status', { status: NeedSignalStatus.OPEN });
+    }
+
+    if (creatorId) {
+      if (creatorId === 'me') {
+        if (personId) {
+          query.andWhere('signal.personId = :creatorId', { creatorId: personId });
+        } else {
+          // Si envían 'me' pero no están autenticados, forzamos un resultado vacío
+          // en lugar de causar un error TypeORM inyectando la cadena literal "me".
+          query.andWhere('1 = 0');
+        }
+      } else {
+        query.andWhere('signal.personId = :creatorId', { creatorId });
+      }
+    }
 
     if (country) query.andWhere('location.country = :country', { country });
     if (state) query.andWhere('location.state = :state', { state });
@@ -160,8 +301,6 @@ export class ChurchNeedSignalsService {
     if (sortBy === ChurchNeedSignalSortBy.DATE_DESC) {
       query.orderBy('signal.createdAt', 'DESC');
     } else if (sortBy === ChurchNeedSignalSortBy.SUPPORTS_DESC) {
-      // For supports desc, typeorm relation count ordering is tricky in loadRelationCountAndMap
-      // We will add a select for it
       query
         .addSelect((subQuery) => {
           return subQuery
@@ -170,6 +309,8 @@ export class ChurchNeedSignalsService {
             .where('support.churchNeedSignalId = signal.id');
         }, 'supports_count')
         .orderBy('supports_count', 'DESC');
+    } else {
+      query.orderBy('signal.createdAt', 'DESC');
     }
 
     query.skip((page - 1) * limit);
@@ -177,8 +318,55 @@ export class ChurchNeedSignalsService {
 
     const [items, total] = await query.getManyAndCount();
 
+    const supportedSignalIds = new Set<string>();
+    const signalIdsWithThirdPartyInfo = new Set<string>();
+
+    if (items.length > 0) {
+      const signalIds = items.map((i) => i.id);
+
+      if (personId) {
+        const supports = await this.supportRepo.find({
+          where: {
+            personId,
+            churchNeedSignalId: In(signalIds),
+          },
+        });
+        supports.forEach((s) => supportedSignalIds.add(s.churchNeedSignalId));
+      }
+
+      // We need to know if the creator can delete it (hasThirdPartyInfo)
+      // Actually, list doesn't strictly need hasThirdPartyInfo because HATEOAS handles DELETE mostly on detail,
+      // but if the list shows actions, we should provide it.
+      // To avoid massive queries, maybe we only query it if personId matches creatorId.
+      const myCreatedSignalIds = items
+        .filter((i) => i.personId === personId)
+        .map((i) => i.id);
+
+      if (myCreatedSignalIds.length > 0) {
+        const infos = await this.infoRepo
+          .createQueryBuilder('info')
+          .select('info.entityId')
+          .where('info.entityType = :entityType', {
+            entityType: NeedInformationEntityType.CHURCH_NEED_SIGNAL,
+          })
+          .andWhere('info.entityId IN (:...ids)', { ids: myCreatedSignalIds })
+          .andWhere('info.personId != :personId', { personId })
+          .getRawMany();
+
+        infos.forEach((i) => signalIdsWithThirdPartyInfo.add(i.info_entityId));
+      }
+    }
+
+    const enhancedItems = items.map((item) => {
+      (item as any).hasSupported = supportedSignalIds.has(item.id);
+      (item as any).hasThirdPartyInfo = signalIdsWithThirdPartyInfo.has(
+        item.id,
+      );
+      return item;
+    });
+
     return {
-      items,
+      items: enhancedItems,
       total,
       page,
       limit,
@@ -186,7 +374,7 @@ export class ChurchNeedSignalsService {
     };
   }
 
-  async getSignalDetail(signalId: string) {
+  async getSignalDetail(signalId: string, personId?: string) {
     const signal = await this.signalRepo
       .createQueryBuilder('signal')
       .leftJoinAndSelect('signal.needLocation', 'location')
@@ -202,6 +390,27 @@ export class ChurchNeedSignalsService {
       where: { churchNeedSignalId: signalId },
     });
 
+    let hasSupported = false;
+    let hasThirdPartyInfo = false;
+
+    if (personId) {
+      const support = await this.supportRepo.findOne({
+        where: { churchNeedSignalId: signalId, personId },
+      });
+      hasSupported = !!support;
+    }
+
+    const thirdPartyInfoCount = await this.infoRepo
+      .createQueryBuilder('info')
+      .where('info.entityType = :entityType', {
+        entityType: NeedInformationEntityType.CHURCH_NEED_SIGNAL,
+      })
+      .andWhere('info.entityId = :signalId', { signalId })
+      .andWhere('info.personId != :creatorId', { creatorId: signal.personId })
+      .getCount();
+
+    hasThirdPartyInfo = thirdPartyInfoCount > 0;
+
     const recentInfo = await this.infoRepo.find({
       where: {
         entityType: NeedInformationEntityType.CHURCH_NEED_SIGNAL,
@@ -215,6 +424,8 @@ export class ChurchNeedSignalsService {
       ...signal,
       supportCount,
       recentInformation: recentInfo,
+      hasSupported,
+      hasThirdPartyInfo,
     };
   }
 
@@ -256,11 +467,18 @@ export class ChurchNeedSignalsService {
         {
           actorPersonId: personId,
           activityType: EcosystemActivityType.NEED_INFORMATION_ADDED,
-          entityId: info.id,
+          entityId: signal.id,
           entityType: EcosystemActivityEntityType.CHURCH_NEED_SIGNAL,
           country: signal.needLocation.country,
           state: signal.needLocation.state,
           city: signal.needLocation.city,
+          metadata: {
+            signalId: signal.id,
+            infoId: info.id,
+            category: dto.category,
+            title: dto.title ?? null,
+            contentSnippet: dto.content ? dto.content.substring(0, 150) : null,
+          },
         },
         manager,
       );
@@ -297,6 +515,42 @@ export class ChurchNeedSignalsService {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  async mapMarkers(): Promise<ChurchNeedSignalMapMarkerDto[]> {
+    // Optimized query: Select explicitly only what's needed for the map
+    // We group by to count supports dynamically without fetching all entities
+    const rawSignals = await this.signalRepo
+      .createQueryBuilder('signal')
+      .innerJoin('signal.needLocation', 'location')
+      .leftJoin('signal.supports', 'support')
+      .where('signal.status = :status', { status: NeedSignalStatus.OPEN })
+      .select([
+        'signal.id AS id',
+        'location.latitude AS "latitude"',
+        'location.longitude AS "longitude"',
+        'location.city AS city',
+        'location.state AS state',
+        'location.country AS country',
+        'COUNT(support.id) AS "supportCount"'
+      ])
+      .groupBy('signal.id')
+      .addGroupBy('location.latitude')
+      .addGroupBy('location.longitude')
+      .addGroupBy('location.city')
+      .addGroupBy('location.state')
+      .addGroupBy('location.country')
+      .getRawMany();
+
+    return rawSignals.map(row => ({
+      id: row.id,
+      latitude: Number(row.latitude),
+      longitude: Number(row.longitude),
+      city: row.city,
+      state: row.state,
+      country: row.country,
+      supportCount: Number(row.supportcount || row.supportCount || 0)
+    }));
   }
 
   async mapSummary(id: string) {

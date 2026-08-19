@@ -75,4 +75,9 @@ export class EcosystemActivity {
   // --- TIEMPO ---
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
+
+  // --- RUNTIME HYDRATION ---
+  // Not persisted in DB, populated dynamically by Hydration Services
+  liveEntityStatus?: string;
+  isHistorical?: boolean;
 }

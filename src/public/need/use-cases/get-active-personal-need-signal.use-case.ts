@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NeedSignal } from '../entities/need-signal.entity';
-import { NeedSignalStatus } from '../../enums/public.enums';
 
 @Injectable()
 export class GetActivePersonalNeedSignalUseCase {
@@ -13,7 +12,7 @@ export class GetActivePersonalNeedSignalUseCase {
 
   async execute(personId: string): Promise<NeedSignal | null> {
     const signal = await this.needSignalRepository.findOne({
-      where: { personId, status: NeedSignalStatus.OPEN },
+      where: { personId },
       relations: ['needLocation'],
       order: { createdAt: 'DESC' },
     });

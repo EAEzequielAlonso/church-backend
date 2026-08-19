@@ -16,7 +16,9 @@ export class MissionCollaborationResponseDto {
 
   church?: ChurchSummaryDto | null;
 
-  static fromEntity(entity: MissionCollaboration): MissionCollaborationResponseDto {
+  static fromEntity(
+    entity: MissionCollaboration,
+  ): MissionCollaborationResponseDto {
     const dto = new MissionCollaborationResponseDto();
     dto.id = entity.id;
     dto.missionProjectId = entity.missionProjectId;

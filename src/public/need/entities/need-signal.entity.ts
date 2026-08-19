@@ -4,21 +4,22 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
 import { Person } from 'src/core/users/entities/person.entity';
 import { NeedLocation } from './need-location.entity';
-import { NeedSignalStatus } from 'src/public/enums/public.enums';
+import {
+  NeedSignalStatus,
+  NeedSignalCloseReason,
+} from 'src/public/enums/public.enums';
 
 @Entity('need_signals')
-@Index(['personId', 'status'])
 export class NeedSignal {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ unique: true })
   personId: string;
 
   @ManyToOne(() => Person, { nullable: false, onDelete: 'CASCADE' })
@@ -38,6 +39,13 @@ export class NeedSignal {
     default: NeedSignalStatus.OPEN,
   })
   status: NeedSignalStatus;
+
+  @Column({
+    type: 'enum',
+    enum: NeedSignalCloseReason,
+    nullable: true,
+  })
+  closeReason: NeedSignalCloseReason;
 
   @Column({ type: 'int', default: 1 })
   impactedPeopleCount: number;

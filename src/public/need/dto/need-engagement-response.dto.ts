@@ -4,6 +4,7 @@ import { AnonymizationUtil } from '../utils/anonymization.util';
 
 export class NeedEngagementResponseDto {
   id: string;
+  entityId: string;
   status: NeedEngagementStatus;
   createdAt: Date;
   notes: string;
@@ -12,6 +13,7 @@ export class NeedEngagementResponseDto {
   static fromEntity(engagement: NeedEngagement): NeedEngagementResponseDto {
     const dto = new NeedEngagementResponseDto();
     dto.id = engagement.id;
+    dto.entityId = engagement.entityId;
     dto.status = engagement.status;
     dto.createdAt = engagement.createdAt;
     dto.notes = engagement.notes;

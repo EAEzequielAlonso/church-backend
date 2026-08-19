@@ -106,6 +106,9 @@ export class EcosystemActivitiesController {
       targetEntity: {
         id: activity.entityId,
         type: activity.entityType,
+        liveStatus: activity.liveEntityStatus,
+        liveCloseReason: (activity as any).liveEntityCloseReason,
+        isHistorical: activity.isHistorical,
         // Since we don't eager load every possible polymorphic target entity,
         // the frontend will use this reference. If we wanted to enrich further,
         // we would need a dedicated resolver or data loader here.

@@ -42,7 +42,9 @@ export class UpdatePublicChurchProfileDto {
   @IsOptional() @IsString() facebook?: string | null;
   @IsOptional() @IsString() youtube?: string | null;
 
-  @IsOptional() @IsEnum(ChurchDenomination) denomination?: ChurchDenomination | null;
+  @IsOptional()
+  @IsEnum(ChurchDenomination)
+  denomination?: ChurchDenomination | null;
 
   @IsOptional()
   @IsArray()

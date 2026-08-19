@@ -65,19 +65,29 @@ export class ChurchPublicAdminService {
       })),
       doctrinalIdentity: profile.doctrinalIdentity
         ? {
-            affirmsScriptureAuthority: profile.doctrinalIdentity.affirmsScriptureAuthority,
+            affirmsScriptureAuthority:
+              profile.doctrinalIdentity.affirmsScriptureAuthority,
             affirmsTrinity: profile.doctrinalIdentity.affirmsTrinity,
-            affirmsDeityOfChrist: profile.doctrinalIdentity.affirmsDeityOfChrist,
-            affirmsHumanityOfChrist: profile.doctrinalIdentity.affirmsHumanityOfChrist,
-            affirmsSalvationByGrace: profile.doctrinalIdentity.affirmsSalvationByGrace,
-            affirmsBodilyResurrection: profile.doctrinalIdentity.affirmsBodilyResurrection,
+            affirmsDeityOfChrist:
+              profile.doctrinalIdentity.affirmsDeityOfChrist,
+            affirmsHumanityOfChrist:
+              profile.doctrinalIdentity.affirmsHumanityOfChrist,
+            affirmsSalvationByGrace:
+              profile.doctrinalIdentity.affirmsSalvationByGrace,
+            affirmsBodilyResurrection:
+              profile.doctrinalIdentity.affirmsBodilyResurrection,
             affirmsSecondComing: profile.doctrinalIdentity.affirmsSecondComing,
-            churchGovernment: profile.doctrinalIdentity.churchGovernment ?? null,
+            churchGovernment:
+              profile.doctrinalIdentity.churchGovernment ?? null,
             baptismStance: profile.doctrinalIdentity.baptismStance ?? null,
-            spiritualGiftsStance: profile.doctrinalIdentity.spiritualGiftsStance ?? null,
-            eschatologyStance: profile.doctrinalIdentity.eschatologyStance ?? null,
-            genderRolesStance: profile.doctrinalIdentity.genderRolesStance ?? null,
-            lordsSupperStance: profile.doctrinalIdentity.lordsSupperStance ?? null,
+            spiritualGiftsStance:
+              profile.doctrinalIdentity.spiritualGiftsStance ?? null,
+            eschatologyStance:
+              profile.doctrinalIdentity.eschatologyStance ?? null,
+            genderRolesStance:
+              profile.doctrinalIdentity.genderRolesStance ?? null,
+            lordsSupperStance:
+              profile.doctrinalIdentity.lordsSupperStance ?? null,
           }
         : null,
     };

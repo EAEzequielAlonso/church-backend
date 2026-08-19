@@ -11,6 +11,7 @@ import { User } from './entities/user.entity';
 import { Person } from './entities/person.entity';
 import * as bcrypt from 'bcrypt';
 import { SystemRole } from '../../common/enums';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { UserWorkspaceDto } from './dto/user-workspace.dto';
 import { ChurchPublicProfile } from 'src/public/church/entities/church_public_profile.entity';
@@ -24,6 +25,7 @@ export class UsersService implements OnApplicationBootstrap {
     @InjectRepository(Person) private personRepository: Repository<Person>,
     @InjectRepository(ChurchPublicProfile)
     private churchProfileRepository: Repository<ChurchPublicProfile>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async getWorkspaces(personId: string): Promise<UserWorkspaceDto[]> {
@@ -156,6 +158,10 @@ export class UsersService implements OnApplicationBootstrap {
       if (data.nationality !== undefined)
         user.person.nationality = data.nationality;
       if (data.address !== undefined) user.person.address = data.address;
+      const oldCountry = user.person.country;
+      const oldState = user.person.state;
+      const oldCity = user.person.city;
+
       if (data.city !== undefined) user.person.city = data.city;
       if (data.state !== undefined) user.person.state = data.state;
       if (data.postalCode !== undefined)
@@ -171,6 +177,25 @@ export class UsersService implements OnApplicationBootstrap {
         user.person.isPublicProfileEnabled = data.isPublicProfileEnabled;
 
       await this.personRepository.save(user.person);
+
+      const addressChanged =
+        oldCountry !== user.person.country ||
+        oldState !== user.person.state ||
+        oldCity !== user.person.city;
+
+      if (
+        addressChanged &&
+        user.person.country &&
+        user.person.state &&
+        user.person.city
+      ) {
+        this.eventEmitter.emit('user.profile.address.updated', {
+          personId: user.person.id,
+          country: user.person.country,
+          state: user.person.state,
+          city: user.person.city,
+        });
+      }
     }
 
     return this.userRepository.save(user);

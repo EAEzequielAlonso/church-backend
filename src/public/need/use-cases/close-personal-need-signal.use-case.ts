@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NeedSignal } from '../entities/need-signal.entity';
 import { NeedEngagement } from '../entities/need-engagement.entity';
-import { NeedSignalStatus } from '../../enums/public.enums';
+import {
+  NeedSignalStatus,
+  NeedSignalCloseReason,
+} from '../../enums/public.enums';
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
 import {
   EcosystemActivityType,
@@ -25,7 +28,11 @@ export class ClosePersonalNeedSignalUseCase {
     private readonly activitiesService: EcosystemActivitiesService,
   ) {}
 
-  async execute(personId: string, id: string): Promise<NeedSignal> {
+  async execute(
+    personId: string,
+    id: string,
+    reason: NeedSignalCloseReason,
+  ): Promise<NeedSignal> {
     const signal = await this.needSignalRepository.findOne({
       where: { id, personId }, // Domain rule: Only owner can close
       relations: ['needLocation'],
@@ -38,27 +45,34 @@ export class ClosePersonalNeedSignalUseCase {
     }
 
     signal.status = NeedSignalStatus.CLOSED;
+    signal.closeReason = reason;
     const savedSignal = await this.needSignalRepository.save(signal);
 
-    const engagement = this.needEngagementRepository.create({
-      entityType: NeedEntityType.PERSONAL_NEED,
-      entityId: savedSignal.id,
-      personId,
-      type: NeedEngagementType.RESOLVED,
-      status: NeedEngagementStatus.COMPLETED,
-      notes: 'Resolvió su propia necesidad.',
-    });
-    await this.needEngagementRepository.save(engagement);
+    const isResolved = reason === NeedSignalCloseReason.RESOLVED;
 
-    await this.activitiesService.logActivity({
-      actorPersonId: personId,
-      activityType: EcosystemActivityType.NEED_SIGNAL_RESOLVED,
-      entityId: savedSignal.id,
-      entityType: EcosystemActivityEntityType.NEED_SIGNAL,
-      country: savedSignal.needLocation?.country,
-      state: savedSignal.needLocation?.state,
-      city: savedSignal.needLocation?.city,
-    });
+    if (isResolved) {
+      const engagement = this.needEngagementRepository.create({
+        entityType: NeedEntityType.PERSONAL_NEED,
+        entityId: savedSignal.id,
+        personId,
+        type: NeedEngagementType.RESOLVED,
+        status: NeedEngagementStatus.COMPLETED,
+        notes: 'Resolvió su propia necesidad.',
+      });
+      await this.needEngagementRepository.save(engagement);
+    }
+
+    if (isResolved) {
+      await this.activitiesService.logActivity({
+        actorPersonId: personId,
+        activityType: EcosystemActivityType.NEED_SIGNAL_RESOLVED,
+        entityId: savedSignal.id,
+        entityType: EcosystemActivityEntityType.NEED_SIGNAL,
+        country: savedSignal.needLocation?.country,
+        state: savedSignal.needLocation?.state,
+        city: savedSignal.needLocation?.city,
+      });
+    }
 
     return savedSignal;
   }

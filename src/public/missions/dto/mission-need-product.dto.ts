@@ -1,5 +1,9 @@
 import { MissionNeed } from '../entities/mission-need.entity';
-import { MissionNeedStatus, MissionNeedType, MissionNeedAction } from '../enums/missions.enums';
+import {
+  MissionNeedStatus,
+  MissionNeedType,
+  MissionNeedAction,
+} from '../enums/missions.enums';
 
 export class MissionNeedProductDto {
   id: string;
@@ -23,7 +27,10 @@ export class MissionNeedProductDto {
   // HATEOAS
   allowedActions: MissionNeedAction[];
 
-  static fromEntity(need: MissionNeed, allowedActions: MissionNeedAction[] = []): MissionNeedProductDto {
+  static fromEntity(
+    need: MissionNeed,
+    allowedActions: MissionNeedAction[] = [],
+  ): MissionNeedProductDto {
     const dto = new MissionNeedProductDto();
     dto.id = need.id;
     dto.missionProjectId = need.missionProjectId;
@@ -40,11 +47,13 @@ export class MissionNeedProductDto {
     // Explicit relations mappings
     if (need.fulfilledByChurch) {
       dto.fulfilledByChurchName = need.fulfilledByChurch.canonicalName;
-      dto.fulfilledByChurchLogoUrl = need.fulfilledByChurch.publicProfile?.logoUrl || null;
+      dto.fulfilledByChurchLogoUrl =
+        need.fulfilledByChurch.publicProfile?.logoUrl || null;
     }
-    
+
     if (need.fulfilledByPerson) {
-      dto.fulfilledByPersonName = `${need.fulfilledByPerson.firstName} ${need.fulfilledByPerson.lastName}`.trim();
+      dto.fulfilledByPersonName =
+        `${need.fulfilledByPerson.firstName} ${need.fulfilledByPerson.lastName}`.trim();
       dto.fulfilledByPersonAvatarUrl = need.fulfilledByPerson.avatarUrl || null;
     }
 

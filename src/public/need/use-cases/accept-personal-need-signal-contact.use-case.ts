@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NeedEngagement } from '../entities/need-engagement.entity';
@@ -30,6 +31,7 @@ export class AcceptPersonalNeedSignalContactUseCase {
     private readonly needSignalRepository: Repository<NeedSignal>,
     private readonly activitiesService: EcosystemActivitiesService,
     private readonly contributionsService: EcosystemContributionsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(ownerPersonId: string, engagementId: string): Promise<void> {
@@ -78,15 +80,12 @@ export class AcceptPersonalNeedSignalContactUseCase {
       city: signal.needLocation?.city,
       metadata: {
         needSignalId: signal.id,
-        needLocationId: signal.needLocationId,
+        locationId: signal.needLocationId,
         recipientPersonId: signal.personId,
         supporterPersonId: engagement.personId,
-        recipientShortName: signal.person
-          ? AnonymizationUtil.anonymizeName(
-              signal.person.firstName,
-              signal.person.lastName,
-            )
-          : 'Anónimo',
+        ownerFirstName: signal.person?.firstName,
+        ownerLastName: signal.person?.lastName,
+        ownerAvatarUrl: signal.person?.avatarUrl,
         status: 'ACCEPTED',
       },
     });
@@ -102,6 +101,14 @@ export class AcceptPersonalNeedSignalContactUseCase {
         state: signal.needLocation?.state,
         country: signal.needLocation?.country,
       },
+    });
+
+    this.eventEmitter.emit('need-signal.contact.accepted', {
+      recipientPersonId: engagement.personId,
+      ownerName: signal.person?.firstName
+        ? `${signal.person.firstName} ${signal.person.lastName}`
+        : 'Alguien',
+      needTitle: signal.note?.substring(0, 50) || 'una necesidad',
     });
   }
 }

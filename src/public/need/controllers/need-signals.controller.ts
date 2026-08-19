@@ -8,7 +8,6 @@ import {
   Patch,
   Param,
   Get,
-  Query,
   NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../core/auth/guards/jwt-auth.guard';
@@ -18,8 +17,6 @@ import { CreateOrUpdatePersonalNeedSignalUseCase } from '../use-cases/create-or-
 import { ClosePersonalNeedSignalUseCase } from '../use-cases/close-personal-need-signal.use-case';
 import { GetActivePersonalNeedSignalUseCase } from '../use-cases/get-active-personal-need-signal.use-case';
 import { RecordNeedSignalContactAttemptUseCase } from '../use-cases/record-need-signal-contact-attempt.use-case';
-import { AddNeedSignalInformationUseCase } from '../use-cases/add-need-signal-information.use-case';
-import { ListNeedSignalInformationUseCase } from '../use-cases/list-need-signal-information.use-case';
 import { GetNeedSignalMapSummaryUseCase } from '../use-cases/get-need-signal-map-summary.use-case';
 import { GetLocationPublicNeedSignalsUseCase } from '../use-cases/get-location-public-need-signals.use-case';
 import { ListReceivedContactRequestsUseCase } from '../use-cases/list-received-contact-requests.use-case';
@@ -27,10 +24,12 @@ import { ListSentContactRequestsUseCase } from '../use-cases/list-sent-contact-r
 import { AcceptPersonalNeedSignalContactUseCase } from '../use-cases/accept-personal-need-signal-contact.use-case';
 import { RejectPersonalNeedSignalContactUseCase } from '../use-cases/reject-personal-need-signal-contact.use-case';
 import { GetNeedEngagementContactDetailsUseCase } from '../use-cases/get-need-engagement-contact-details.use-case';
-import { CreateOrUpdateNeedSignalDto } from '../dto/need-signal.dto';
-import { AddNeedInformationDto } from '../dto/church-need-signals/add-need-information.dto';
-import { InformationFilterDto } from '../dto/church-need-signals/information-filter.dto';
+import {
+  CreateOrUpdateNeedSignalDto,
+  CloseNeedSignalDto,
+} from '../dto/need-signal.dto';
 import { NeedSignalResponseDto } from '../dto/need-signal-response.dto';
+import { NeedSignalsEvaluator } from '../policies/need-signals.evaluator';
 
 @Controller('public/need-signals')
 export class NeedSignalsController {
@@ -40,8 +39,6 @@ export class NeedSignalsController {
     private readonly closePersonalNeedSignalUseCase: ClosePersonalNeedSignalUseCase,
     private readonly getActivePersonalNeedSignalUseCase: GetActivePersonalNeedSignalUseCase,
     private readonly recordNeedSignalContactAttemptUseCase: RecordNeedSignalContactAttemptUseCase,
-    private readonly addNeedSignalInformationUseCase: AddNeedSignalInformationUseCase,
-    private readonly listNeedSignalInformationUseCase: ListNeedSignalInformationUseCase,
     private readonly getNeedSignalMapSummaryUseCase: GetNeedSignalMapSummaryUseCase,
     private readonly getLocationPublicNeedSignalsUseCase: GetLocationPublicNeedSignalsUseCase,
     private readonly listReceivedContactRequestsUseCase: ListReceivedContactRequestsUseCase,
@@ -49,6 +46,7 @@ export class NeedSignalsController {
     private readonly acceptPersonalNeedSignalContactUseCase: AcceptPersonalNeedSignalContactUseCase,
     private readonly rejectPersonalNeedSignalContactUseCase: RejectPersonalNeedSignalContactUseCase,
     private readonly getNeedEngagementContactDetailsUseCase: GetNeedEngagementContactDetailsUseCase,
+    private readonly needSignalsEvaluator: NeedSignalsEvaluator,
   ) {}
 
   @Post()
@@ -59,15 +57,34 @@ export class NeedSignalsController {
   ) {
     const personId = req.user?.personId;
     if (!personId) throw new UnauthorizedException('Missing person context');
-    return this.createOrUpdatePersonalNeedSignalUseCase.execute(personId, dto);
+    const entity = await this.createOrUpdatePersonalNeedSignalUseCase.execute(
+      personId,
+      dto,
+    );
+    const allowedActions = this.needSignalsEvaluator.getAllowedActions(entity, {
+      actorId: personId,
+    });
+    return NeedSignalResponseDto.fromEntity(entity, allowedActions);
   }
 
   @Patch(':id/close')
   @UseGuards(JwtAuthGuard)
-  async closeSignal(@Req() req: any, @Param('id') id: string) {
+  async closeSignal(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: CloseNeedSignalDto,
+  ) {
     const personId = req.user?.personId;
     if (!personId) throw new UnauthorizedException('Missing person context');
-    return this.closePersonalNeedSignalUseCase.execute(personId, id);
+    const entity = await this.closePersonalNeedSignalUseCase.execute(
+      personId,
+      id,
+      body.reason,
+    );
+    const allowedActions = this.needSignalsEvaluator.getAllowedActions(entity, {
+      actorId: personId,
+    });
+    return NeedSignalResponseDto.fromEntity(entity, allowedActions);
   }
 
   @Post(':id/contact')
@@ -94,7 +111,15 @@ export class NeedSignalsController {
 
     const activeSignal =
       await this.getActivePersonalNeedSignalUseCase.execute(personId);
-    return activeSignal ? NeedSignalResponseDto.fromEntity(activeSignal) : null;
+
+    if (!activeSignal) return null;
+
+    const allowedActions = this.needSignalsEvaluator.getAllowedActions(
+      activeSignal,
+      { actorId: personId },
+    );
+
+    return NeedSignalResponseDto.fromEntity(activeSignal, allowedActions);
   }
 
   @Get('me/received-contact-requests')
@@ -178,25 +203,5 @@ export class NeedSignalsController {
     const result = await this.getNeedSignalMapSummaryUseCase.execute(id);
     if (!result) throw new NotFoundException('Need Signal not found');
     return result;
-  }
-
-  @Post(':id/information')
-  @UseGuards(JwtAuthGuard)
-  async addInformation(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body() dto: AddNeedInformationDto,
-  ) {
-    const personId = req.user?.personId;
-    if (!personId) throw new UnauthorizedException('Missing person context');
-    return this.addNeedSignalInformationUseCase.execute(personId, id, dto);
-  }
-
-  @Get(':id/information')
-  async listInformation(
-    @Param('id') id: string,
-    @Query() filterDto: InformationFilterDto,
-  ) {
-    return this.listNeedSignalInformationUseCase.execute(id, filterDto);
   }
 }

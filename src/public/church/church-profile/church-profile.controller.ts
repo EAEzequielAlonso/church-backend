@@ -38,7 +38,11 @@ export class ChurchProfileController {
     @Query('limit') limit?: string,
   ) {
     const parsedLimit = limit ? parseInt(limit, 10) : 10;
-    const result = await this.service.getCommunity(slug, type || 'members', parsedLimit);
+    const result = await this.service.getCommunity(
+      slug,
+      type || 'members',
+      parsedLimit,
+    );
     if (!result) throw new NotFoundException('Church not found');
     return result;
   }

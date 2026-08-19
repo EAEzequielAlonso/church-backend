@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MissionReport } from '../entities/mission-report.entity';
@@ -13,7 +13,6 @@ import {
   EcosystemActivityEntityType,
 } from '../../ecosystem/enums/ecosystem.enums';
 
-import { PaginationQueryDto } from 'src/shared/dtos/pagination-query.dto';
 import { PaginatedResponseDto } from 'src/shared/dtos/paginated-response.dto';
 import { MissionReportQueryDto } from '../dto/mission-report-query.dto';
 import { MissionReportProductDto } from '../dto/mission-report-product.dto';
@@ -29,15 +28,21 @@ export class MissionReportsService {
   ) {}
 
   async findPublicReports(
-    missionId: string, 
+    missionId: string,
     query: MissionReportQueryDto,
-    actor?: Person
+    actor?: Person,
   ): Promise<PaginatedResponseDto<MissionReportProductDto>> {
-    const { page = 1, limit = 12, sort = 'createdAt', order = 'DESC', search, category } = query;
-    
+    const {
+      page = 1,
+      limit = 12,
+      sort = 'createdAt',
+      order = 'DESC',
+      category,
+    } = query;
+
     const where: any = { missionProjectId: missionId, isPublic: true };
     if (category) where.category = category;
-    
+
     // Si hubiese implementado search, se usaría ILike o similar aquí. Queda preparado el contrato.
 
     const [data, total] = await this.reportsRepo.findAndCount({
@@ -51,16 +56,21 @@ export class MissionReportsService {
     const mission = await this.missionsService.findOne(missionId);
     let isManager = false;
     if (actor) {
-       try {
-         await this.missionRules.assertCanManage(actor, mission);
-         isManager = true;
-       } catch {
-         isManager = false;
-       }
+      try {
+        await this.missionRules.assertCanManage(actor, mission);
+        isManager = true;
+      } catch {
+        isManager = false;
+      }
     }
 
-    const dtos = data.map(report => {
-      const actions = this.missionRules.getReportAllowedActions(actor?.id, mission, report, isManager);
+    const dtos = data.map((report) => {
+      const actions = this.missionRules.getReportAllowedActions(
+        actor?.id,
+        mission,
+        report,
+        isManager,
+      );
       return MissionReportProductDto.fromEntity(report, actions);
     });
 
@@ -68,18 +78,24 @@ export class MissionReportsService {
   }
 
   async findManagementReports(
-    missionId: string, 
+    missionId: string,
     query: MissionReportQueryDto,
     actor: Person,
-    isChurchAdmin?: boolean
+    isChurchAdmin?: boolean,
   ): Promise<PaginatedResponseDto<MissionReportProductDto>> {
     const mission = await this.missionsService.findOne(missionId);
-    
+
     // Solo un admin de la misión puede listar los reportes privados
     await this.missionRules.assertCanManage(actor, mission, isChurchAdmin);
 
-    const { page = 1, limit = 12, sort = 'createdAt', order = 'DESC', search, category } = query;
-    
+    const {
+      page = 1,
+      limit = 12,
+      sort = 'createdAt',
+      order = 'DESC',
+      category,
+    } = query;
+
     const where: any = { missionProjectId: missionId };
     if (category) where.category = category;
 
@@ -91,8 +107,13 @@ export class MissionReportsService {
       order: { [sort]: order },
     });
 
-    const dtos = data.map(report => {
-      const actions = this.missionRules.getReportAllowedActions(actor.id, mission, report, true);
+    const dtos = data.map((report) => {
+      const actions = this.missionRules.getReportAllowedActions(
+        actor.id,
+        mission,
+        report,
+        true,
+      );
       return MissionReportProductDto.fromEntity(report, actions);
     });
 
@@ -126,6 +147,7 @@ export class MissionReportsService {
         entityType: EcosystemActivityEntityType.MISSION_PROJECT,
         relatedChurchId: mission.creatorChurchId,
         metadata: {
+          missionProjectId: mission.id,
           missionTitle: mission.title,
           reportTitle: saved.title,
           reportCategory: saved.category,
@@ -150,8 +172,12 @@ export class MissionReportsService {
     await this.missionRules.assertCanManage(actor, mission, isChurchAdmin);
     this.missionRules.assertCanEdit(mission);
 
-    const report = await this.reportsRepo.findOne({ where: { id: reportId, missionProjectId: missionId } });
+    const report = await this.reportsRepo.findOne({
+      where: { id: reportId, missionProjectId: missionId },
+    });
     if (!report) throw new NotFoundException('Reporte no encontrado');
+
+    const wasPublic = report.isPublic;
 
     this.reportsRepo.merge(report, dto);
     const saved = await this.reportsRepo.save(report);
@@ -159,6 +185,12 @@ export class MissionReportsService {
     // TODO: Si el reporte pasa a isPublic=true y antes era false, deberíamos emitir evento.
     // Por simplicidad en la fase actual, asumiremos que editar un reporte no re-emite al ecosistema a menos que sea algo mayor,
     // pero como el feed reacciona a MISSION_UPDATE_POSTED, no queremos duplicar spam.
+    if (wasPublic && !saved.isPublic) {
+      await this.activitiesService.deleteActivitiesByEntity(
+        EcosystemActivityEntityType.MISSION_PROJECT,
+        saved.id,
+      );
+    }
 
     return saved;
   }
@@ -174,8 +206,17 @@ export class MissionReportsService {
     await this.missionRules.assertCanManage(actor, mission, isChurchAdmin);
     this.missionRules.assertCanEdit(mission);
 
-    const report = await this.reportsRepo.findOne({ where: { id: reportId, missionProjectId: missionId } });
+    const report = await this.reportsRepo.findOne({
+      where: { id: reportId, missionProjectId: missionId },
+    });
     if (!report) throw new NotFoundException('Reporte no encontrado');
+
+    if (report.isPublic) {
+      await this.activitiesService.deleteActivitiesByEntity(
+        EcosystemActivityEntityType.MISSION_PROJECT,
+        report.id,
+      );
+    }
 
     await this.reportsRepo.remove(report);
   }

@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NeedEngagement } from '../entities/need-engagement.entity';
@@ -20,6 +21,7 @@ export class RejectPersonalNeedSignalContactUseCase {
     private readonly needEngagementRepository: Repository<NeedEngagement>,
     @InjectRepository(NeedSignal)
     private readonly needSignalRepository: Repository<NeedSignal>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(ownerPersonId: string, engagementId: string): Promise<void> {
@@ -53,5 +55,9 @@ export class RejectPersonalNeedSignalContactUseCase {
 
     engagement.status = NeedEngagementStatus.REJECTED;
     await this.needEngagementRepository.save(engagement);
+
+    this.eventEmitter.emit('need-signal.contact.rejected', {
+      recipientPersonId: engagement.personId,
+    });
   }
 }

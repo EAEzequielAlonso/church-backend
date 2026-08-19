@@ -44,6 +44,11 @@ export enum NeedSignalStatus {
   CLOSED = 'CLOSED',
 }
 
+export enum NeedSignalCloseReason {
+  TEMPORARY = 'TEMPORARY',
+  RESOLVED = 'RESOLVED',
+}
+
 export enum NeedSignalType {
   CHURCH_PLANT_NEEDED = 'CHURCH_PLANT_NEEDED',
 }

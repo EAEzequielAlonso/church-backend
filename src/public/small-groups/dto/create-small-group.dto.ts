@@ -8,8 +8,14 @@ import {
   Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { SmallGroupStatus, GroupCapacityStatus } from '../enums/small-groups.enums';
-import { MeetingFrequency, DayOfWeek } from '../../../shared/enums/meetings.enums';
+import {
+  SmallGroupStatus,
+  GroupCapacityStatus,
+} from '../enums/small-groups.enums';
+import {
+  MeetingFrequency,
+  DayOfWeek,
+} from '../../../shared/enums/meetings.enums';
 import { GeoPrecision } from 'src/public/ecosystem/enums/ecosystem.enums';
 
 export class CreateSmallGroupDto {

@@ -26,6 +26,7 @@ export enum MissionCollaborationStatus {
   PAUSED = 'PAUSED',
   WITHDRAWN = 'WITHDRAWN',
   REJECTED = 'REJECTED',
+  REVOKED = 'REVOKED',
 }
 
 export enum MissionProjectStatus {
@@ -83,4 +84,5 @@ export enum MissionCollaborationAction {
   APPROVE = 'APPROVE',
   REJECT = 'REJECT',
   WITHDRAW = 'WITHDRAW',
+  REVOKE = 'REVOKE',
 }

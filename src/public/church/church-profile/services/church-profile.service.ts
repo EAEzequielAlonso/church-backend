@@ -228,7 +228,11 @@ export class ChurchProfileService {
     };
   }
 
-  async getCommunity(slug: string, type: 'members' | 'visitors' | 'followers', limit = 10): Promise<PersonSummaryDto[]> {
+  async getCommunity(
+    slug: string,
+    type: 'members' | 'visitors' | 'followers',
+    limit = 10,
+  ): Promise<PersonSummaryDto[]> {
     const profile = await this.profiles.findOne({
       where: { slug },
       relations: ['church'],
@@ -238,16 +242,23 @@ export class ChurchProfileService {
     let query: any;
 
     if (type === 'followers') {
-      query = this.follows.createQueryBuilder('f')
+      query = this.follows
+        .createQueryBuilder('f')
         .innerJoin(Person, 'p', 'p.id = CAST(f.personId AS UUID)')
         .where('f.profileChurchId = :profileId', { profileId: profile.id })
         .orderBy('f.followedAt', 'DESC');
     } else {
-      const relationType = type === 'visitors' ? PublicChurchRelationType.REGULAR_VISITOR : PublicChurchRelationType.COMMUNITY_MEMBER;
-      query = this.relations.createQueryBuilder('r')
+      const relationType =
+        type === 'visitors'
+          ? PublicChurchRelationType.REGULAR_VISITOR
+          : PublicChurchRelationType.COMMUNITY_MEMBER;
+      query = this.relations
+        .createQueryBuilder('r')
         .innerJoin(Person, 'p', 'p.id = CAST(r.personId AS UUID)')
         .where('r.churchId = :churchId', { churchId: profile.church.id })
-        .andWhere('r.status = :status', { status: PublicChurchRelationStatus.APPROVED })
+        .andWhere('r.status = :status', {
+          status: PublicChurchRelationStatus.APPROVED,
+        })
         .andWhere('r.relationType = :relationType', { relationType })
         .orderBy('r.createdAt', 'DESC');
     }
@@ -262,7 +273,7 @@ export class ChurchProfileService {
       .limit(limit)
       .getRawMany();
 
-    return people.map(p => ({
+    return people.map((p) => ({
       id: p.id,
       firstName: p.firstName,
       lastName: p.lastName,

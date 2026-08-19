@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { MissionProject } from '../entities/mission-project.entity';
 import { Person } from 'src/core/users/entities/person.entity';
 import { MissionProjectStatus } from '../enums/missions.enums';
@@ -16,7 +20,12 @@ import { MissionNeedsEvaluator } from './mission-needs.evaluator';
 import { MissionReportsEvaluator } from './mission-reports.evaluator';
 import { MissionCollaborationsEvaluator } from './mission-collaborations.evaluator';
 import { MissionProjectEvaluator } from './mission-project.evaluator';
-import { MissionNeedAction, MissionReportAction, MissionCollaborationAction, MissionProjectAction } from '../enums/missions.enums';
+import {
+  MissionNeedAction,
+  MissionReportAction,
+  MissionCollaborationAction,
+  MissionProjectAction,
+} from '../enums/missions.enums';
 import { MissionNeed } from '../entities/mission-need.entity';
 import { MissionReport } from '../entities/mission-report.entity';
 import { MissionCollaboration } from '../entities/mission-collaboration.entity';
@@ -35,13 +44,15 @@ export class MissionRules {
   /**
    * Determina si el actor tiene permiso para crear una misión.
    */
-  async assertCanCreate(
-    actor: Person,
-    targetChurchId: string,
-  ): Promise<void> {
-    const canCreate = await this.permissions.canCreateMission(actor, targetChurchId);
+  async assertCanCreate(actor: Person, targetChurchId: string): Promise<void> {
+    const canCreate = await this.permissions.canCreateMission(
+      actor,
+      targetChurchId,
+    );
     if (!canCreate) {
-      throw new ForbiddenException('No tienes permiso para crear misiones en esta iglesia');
+      throw new ForbiddenException(
+        'No tienes permiso para crear misiones en esta iglesia',
+      );
     }
   }
 
@@ -53,9 +64,15 @@ export class MissionRules {
     mission: MissionProject,
     isChurchAdmin?: boolean,
   ): Promise<boolean> {
-    const canManage = await this.permissions.canManageMission(actor, mission, isChurchAdmin);
+    const canManage = await this.permissions.canManageMission(
+      actor,
+      mission,
+      isChurchAdmin,
+    );
     if (!canManage) {
-      throw new ForbiddenException('No tienes permiso para gestionar esta misión');
+      throw new ForbiddenException(
+        'No tienes permiso para gestionar esta misión',
+      );
     }
     return true; // Used to help determine context later if needed
   }
@@ -68,16 +85,26 @@ export class MissionRules {
     mission: MissionProject,
     isChurchAdmin?: boolean,
   ): Promise<void> {
-    const canDelete = await this.permissions.canManageMission(actor, mission, isChurchAdmin);
+    const canDelete = await this.permissions.canManageMission(
+      actor,
+      mission,
+      isChurchAdmin,
+    );
     if (!canDelete) {
-      throw new ForbiddenException('No tienes permiso para eliminar esta misión');
+      throw new ForbiddenException(
+        'No tienes permiso para eliminar esta misión',
+      );
     }
   }
-  
+
   /**
    * Solo evalua el permiso (booleano), útil para HATEOAS
    */
-  async canManage(actor: Person, mission: MissionProject, isChurchAdmin?: boolean): Promise<boolean> {
+  async canManage(
+    actor: Person,
+    mission: MissionProject,
+    isChurchAdmin?: boolean,
+  ): Promise<boolean> {
     return this.permissions.canManageMission(actor, mission, isChurchAdmin);
   }
 
@@ -155,10 +182,15 @@ export class MissionRules {
     collaboratorChurchId: string,
   ): Promise<void> {
     this.assertCanReceiveCollaboration(mission);
-    
-    const hasPermission = await this.permissions.canCollaborate(actor, collaboratorChurchId);
+
+    const hasPermission = await this.permissions.canCollaborate(
+      actor,
+      collaboratorChurchId,
+    );
     if (!hasPermission) {
-      throw new ForbiddenException('No tienes permiso para colaborar en nombre de esta iglesia');
+      throw new ForbiddenException(
+        'No tienes permiso para colaborar en nombre de esta iglesia',
+      );
     }
   }
 
@@ -176,7 +208,9 @@ export class MissionRules {
       collaboratorChurchId,
     );
     if (!hasPermission) {
-      throw new ForbiddenException('No tienes permiso para gestionar esta colaboración');
+      throw new ForbiddenException(
+        'No tienes permiso para gestionar esta colaboración',
+      );
     }
   }
 
@@ -200,28 +234,63 @@ export class MissionRules {
     actor: Person,
     collaboratorChurchId: string,
   ): Promise<void> {
-    const hasPermission = await this.permissions.canCollaborate(actor, collaboratorChurchId);
+    const hasPermission = await this.permissions.canCollaborate(
+      actor,
+      collaboratorChurchId,
+    );
     if (!hasPermission) {
-      throw new ForbiddenException('No tienes permiso para retirar esta colaboración');
+      throw new ForbiddenException(
+        'No tienes permiso para retirar esta colaboración',
+      );
     }
   }
 
   // ─── Evaluación de Acciones Permitidas (HATEOAS) ──────────────────────────
 
-  getProjectAllowedActions(mission: MissionProject, isMissionManager: boolean): MissionProjectAction[] {
-    return this.projectEvaluator.getAllowedActions(mission, { isMissionManager });
+  getProjectAllowedActions(
+    mission: MissionProject,
+    isMissionManager: boolean,
+  ): MissionProjectAction[] {
+    return this.projectEvaluator.getAllowedActions(mission, {
+      isMissionManager,
+    });
   }
 
-  getNeedAllowedActions(actorId: string | undefined, mission: MissionProject, need: MissionNeed, isMissionManager: boolean): MissionNeedAction[] {
-    return this.needsEvaluator.getAllowedActions(mission, need, { actorId, isMissionManager });
+  getNeedAllowedActions(
+    actorId: string | undefined,
+    mission: MissionProject,
+    need: MissionNeed,
+    isMissionManager: boolean,
+  ): MissionNeedAction[] {
+    return this.needsEvaluator.getAllowedActions(mission, need, {
+      actorId,
+      isMissionManager,
+    });
   }
 
-  getReportAllowedActions(actorId: string | undefined, mission: MissionProject, report: MissionReport, isMissionManager: boolean): MissionReportAction[] {
-    return this.reportsEvaluator.getAllowedActions(mission, report, { actorId, isMissionManager });
+  getReportAllowedActions(
+    actorId: string | undefined,
+    mission: MissionProject,
+    report: MissionReport,
+    isMissionManager: boolean,
+  ): MissionReportAction[] {
+    return this.reportsEvaluator.getAllowedActions(mission, report, {
+      actorId,
+      isMissionManager,
+    });
   }
 
-  getCollaborationAllowedActions(actorId: string | undefined, mission: MissionProject, collab: MissionCollaboration, isMissionManager: boolean, isCollabChurchManager: boolean): MissionCollaborationAction[] {
-    return this.collabsEvaluator.getAllowedActions(mission, collab, { actorId, isMissionManager, isCollabChurchManager });
+  getCollaborationAllowedActions(
+    actorId: string | undefined,
+    mission: MissionProject,
+    collab: MissionCollaboration,
+    isMissionManager: boolean,
+    isCollabChurchManager: boolean,
+  ): MissionCollaborationAction[] {
+    return this.collabsEvaluator.getAllowedActions(mission, collab, {
+      actorId,
+      isMissionManager,
+      isCollabChurchManager,
+    });
   }
 }
-

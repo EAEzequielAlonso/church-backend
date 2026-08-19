@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { MissionProject } from '../entities/mission-project.entity';
-import { MissionProjectAction, MissionProjectStatus } from '../enums/missions.enums';
+import {
+  MissionProjectAction,
+  MissionProjectStatus,
+} from '../enums/missions.enums';
 import { MISSION_EDITABLE_STATES } from './mission.constants';
 
 interface MissionEvaluatorContext {
@@ -33,7 +36,7 @@ export class MissionProjectEvaluator {
         actions.push(MissionProjectAction.ACTIVATE);
         actions.push(MissionProjectAction.DELETE);
         break;
-      
+
       case MissionProjectStatus.ACTIVE:
         actions.push(MissionProjectAction.PAUSE);
         actions.push(MissionProjectAction.COMPLETE);

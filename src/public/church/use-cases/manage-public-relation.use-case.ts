@@ -90,16 +90,19 @@ export class ManagePublicRelationUseCase {
         );
 
         if (row.relationType === PublicChurchRelationType.COMMUNITY_MEMBER) {
-          await this.activitiesService.logActivity({
-            actorPersonId: row.personId,
-            relatedChurchId: row.churchId,
-            activityType: EcosystemActivityType.MEMBER_JOINED,
-            entityId: row.personId,
-            entityType: EcosystemActivityEntityType.PERSON,
-            country: church?.publicProfile?.country,
-            state: church?.publicProfile?.state,
-            city: church?.publicProfile?.city,
-          }, manager);
+          await this.activitiesService.logActivity(
+            {
+              actorPersonId: row.personId,
+              relatedChurchId: row.churchId,
+              activityType: EcosystemActivityType.MEMBER_JOINED,
+              entityId: row.personId,
+              entityType: EcosystemActivityEntityType.PERSON,
+              country: church?.publicProfile?.country,
+              state: church?.publicProfile?.state,
+              city: church?.publicProfile?.city,
+            },
+            manager,
+          );
         }
 
         this.eventEmitter.emit('community.join.approved', {
@@ -234,7 +237,7 @@ export class ManagePublicRelationUseCase {
       await this.responsibilities.assertPersonHasNoActiveResponsibilities(
         manager,
         row.personId,
-        row.churchId
+        row.churchId,
       );
 
       // 2. Obtener church por separado para la notificacion

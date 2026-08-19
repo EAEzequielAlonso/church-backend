@@ -57,3 +57,18 @@ export enum UnreachedAreaStatus {
   OPEN = 'OPEN',
   REACHED = 'REACHED',
 }
+
+export enum NeedSignalAction {
+  EDIT = 'EDIT',
+  CLOSE = 'CLOSE',
+  REOPEN = 'REOPEN',
+}
+
+export enum ChurchNeedSignalAction {
+  EDIT = 'EDIT',
+  DELETE = 'DELETE',
+  CLOSE = 'CLOSE',
+  REOPEN = 'REOPEN',
+  SUPPORT = 'SUPPORT',
+  ADD_INFO = 'ADD_INFO',
+}

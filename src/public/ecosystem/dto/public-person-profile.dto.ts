@@ -11,6 +11,7 @@ export interface VisibleContributionsDto {
   churchesAdded: number;
   doctrinalOpinions: number;
   needSignalsCreated: number;
+  needSignalsSupported: number;
   unreachedAreasCreated: number;
   needInformationAdded: number;
   invitationsCompleted: number;

@@ -2,7 +2,10 @@ import { Injectable, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PublicChurchRelation } from 'src/public/church/entities/public_church_relation.entity';
-import { PublicChurchRelationStatus, PublicChurchRelationType } from 'src/public/enums/public.enums';
+import {
+  PublicChurchRelationStatus,
+  PublicChurchRelationType,
+} from 'src/public/enums/public.enums';
 
 @Injectable()
 export class SmallGroupsPolicies {

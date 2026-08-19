@@ -16,17 +16,13 @@ export const MISSION_EDITABLE_STATES = [
   MissionProjectStatus.PAUSED,
 ];
 
-export const MISSION_ALLOWS_NEEDS_STATES = [
-  MissionProjectStatus.ACTIVE,
-];
+export const MISSION_ALLOWS_NEEDS_STATES = [MissionProjectStatus.ACTIVE];
 
 export const MISSION_ALLOWS_NEED_FULFILLMENT_STATES = [
   MissionProjectStatus.ACTIVE,
 ];
 
-export const MISSION_ALLOWS_REPORTS_STATES = [
-  MissionProjectStatus.ACTIVE,
-];
+export const MISSION_ALLOWS_REPORTS_STATES = [MissionProjectStatus.ACTIVE];
 
 export const MISSION_ALLOWS_COLLABORATION_STATES = [
   MissionProjectStatus.ACTIVE,

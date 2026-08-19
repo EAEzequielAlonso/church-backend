@@ -9,4 +9,3 @@ export enum GroupCapacityStatus {
   LIMITED = 'LIMITED',
   FULL = 'FULL',
 }
-

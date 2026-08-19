@@ -18,7 +18,10 @@ export class MissionStatePolicy {
       return; // No hay cambio
     }
 
-    const validTransitions: Record<MissionProjectStatus, MissionProjectStatus[]> = {
+    const validTransitions: Record<
+      MissionProjectStatus,
+      MissionProjectStatus[]
+    > = {
       [MissionProjectStatus.DRAFT]: [MissionProjectStatus.ACTIVE],
       [MissionProjectStatus.ACTIVE]: [
         MissionProjectStatus.PAUSED,

@@ -142,6 +142,64 @@ export class NotificationListener {
     }
   }
 
+  @OnEvent('need-signal.contact.accepted')
+  async handleNeedSignalContactAccepted(payload: {
+    recipientPersonId: string;
+    ownerName: string;
+    needTitle: string;
+  }) {
+    const userId = await this.getUserIdByPersonId(payload.recipientPersonId);
+    if (userId) {
+      await this.notificationRepo.save(
+        this.notificationRepo.create({
+          userId: userId,
+          type: NotificationType.NEED_SIGNAL_CONTACT_ACCEPTED,
+          title: 'Solicitud de contacto aceptada',
+          message: `${payload.ownerName} ha aceptado tu solicitud para: ${payload.needTitle}. Ya puedes ver sus datos de contacto.`,
+          read: false,
+        }),
+      );
+    }
+  }
+
+  @OnEvent('need-signal.contact.rejected')
+  async handleNeedSignalContactRejected(payload: {
+    recipientPersonId: string;
+  }) {
+    const userId = await this.getUserIdByPersonId(payload.recipientPersonId);
+    if (userId) {
+      await this.notificationRepo.save(
+        this.notificationRepo.create({
+          userId: userId,
+          type: NotificationType.NEED_SIGNAL_CONTACT_REJECTED,
+          title: 'Solicitud de contacto rechazada',
+          message: `Tu solicitud de contacto no ha sido aceptada en esta ocasión. Agradecemos tu disposición.`,
+          read: false,
+        }),
+      );
+    }
+  }
+
+  @OnEvent('mission.collaboration.requested')
+  async handleMissionCollaborationRequested(payload: {
+    recipientPersonId: string;
+    churchName: string;
+    missionName: string;
+  }) {
+    const userId = await this.getUserIdByPersonId(payload.recipientPersonId);
+    if (userId) {
+      await this.notificationRepo.save(
+        this.notificationRepo.create({
+          userId: userId, // Mission leader or mission creator
+          type: NotificationType.MISSION_COLLABORATION_REQUESTED,
+          title: 'Nueva solicitud de colaboración',
+          message: `Una iglesia solicitó colaborar con tu misión ${payload.missionName}.`,
+          read: false,
+        }),
+      );
+    }
+  }
+
   @OnEvent('mission.collaboration.joined')
   async handleMissionCollaborationJoined(payload: {
     recipientPersonId: string;
@@ -152,10 +210,68 @@ export class NotificationListener {
     if (userId) {
       await this.notificationRepo.save(
         this.notificationRepo.create({
-          userId: userId, // Mision leader or mission creator
+          userId: userId, // Church admin
           type: NotificationType.MISSION_COLLABORATION_JOINED,
-          title: 'Nueva colaboración en tu misión',
-          message: `La iglesia ${payload.churchName} se ha unido a tu misión: ${payload.missionName}.`,
+          title: 'Solicitud aprobada',
+          message: `Tu solicitud para colaborar con la misión ${payload.missionName} ha sido aprobada.`,
+          read: false,
+        }),
+      );
+    }
+  }
+
+  @OnEvent('mission.collaboration.rejected')
+  async handleMissionCollaborationRejected(payload: {
+    recipientPersonId: string;
+    missionName: string;
+  }) {
+    const userId = await this.getUserIdByPersonId(payload.recipientPersonId);
+    if (userId) {
+      await this.notificationRepo.save(
+        this.notificationRepo.create({
+          userId: userId, // Church admin
+          type: NotificationType.MISSION_COLLABORATION_REJECTED,
+          title: 'Solicitud rechazada',
+          message: `Tu solicitud para colaborar con la misión ${payload.missionName} fue rechazada.`,
+          read: false,
+        }),
+      );
+    }
+  }
+
+  @OnEvent('mission.collaboration.withdrawn')
+  async handleMissionCollaborationWithdrawn(payload: {
+    recipientPersonId: string;
+    churchName: string;
+    missionName: string;
+  }) {
+    const userId = await this.getUserIdByPersonId(payload.recipientPersonId);
+    if (userId) {
+      await this.notificationRepo.save(
+        this.notificationRepo.create({
+          userId: userId, // Mission admin
+          type: NotificationType.MISSION_COLLABORATION_WITHDRAWN,
+          title: 'Colaboración retirada',
+          message: `La iglesia ${payload.churchName} dejó de colaborar con tu misión ${payload.missionName}.`,
+          read: false,
+        }),
+      );
+    }
+  }
+
+  @OnEvent('mission.collaboration.revoked')
+  async handleMissionCollaborationRevoked(payload: {
+    recipientPersonId: string;
+    missionName: string;
+  }) {
+    const userId = await this.getUserIdByPersonId(payload.recipientPersonId);
+    if (userId) {
+      await this.notificationRepo.save(
+        this.notificationRepo.create({
+          userId: userId, // Church admin
+          type: NotificationType.MISSION_COLLABORATION_REVOKED,
+          title: 'Colaboración finalizada',
+          message: `La misión ${payload.missionName} finalizó la colaboración con tu iglesia.`,
           read: false,
         }),
       );

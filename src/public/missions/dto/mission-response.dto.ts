@@ -5,7 +5,11 @@ import { MissionNeedResponseDto } from './mission-need-response.dto';
 import { MissionCollaborationResponseDto } from './mission-collaboration-response.dto';
 import { MissionReportResponseDto } from './mission-report-response.dto';
 import { GeoPrecision } from '../../ecosystem/enums/ecosystem.enums';
-import { MissionSourceType, MissionOutcomeType, MissionProjectStatus } from '../enums/missions.enums';
+import {
+  MissionSourceType,
+  MissionOutcomeType,
+  MissionProjectStatus,
+} from '../enums/missions.enums';
 
 export class MissionProjectResponseDto {
   id: string;
@@ -13,7 +17,7 @@ export class MissionProjectResponseDto {
   summary: string | null;
   description: string;
   vision: string | null;
-  
+
   // Ubicación
   country: string | null;
   state: string | null;
@@ -60,7 +64,7 @@ export class MissionProjectResponseDto {
 
   static fromEntity(entity: MissionProject): MissionProjectResponseDto {
     const dto = new MissionProjectResponseDto();
-    
+
     // Core
     dto.id = entity.id;
     dto.title = entity.title;
@@ -125,15 +129,19 @@ export class MissionProjectResponseDto {
     }
 
     if (entity.needs) {
-      dto.needs = entity.needs.map(n => MissionNeedResponseDto.fromEntity(n));
+      dto.needs = entity.needs.map((n) => MissionNeedResponseDto.fromEntity(n));
     }
 
     if (entity.collaborations) {
-      dto.collaborations = entity.collaborations.map(c => MissionCollaborationResponseDto.fromEntity(c));
+      dto.collaborations = entity.collaborations.map((c) =>
+        MissionCollaborationResponseDto.fromEntity(c),
+      );
     }
 
     if (entity.reports) {
-      dto.reports = entity.reports.map(r => MissionReportResponseDto.fromEntity(r));
+      dto.reports = entity.reports.map((r) =>
+        MissionReportResponseDto.fromEntity(r),
+      );
     }
 
     return dto;

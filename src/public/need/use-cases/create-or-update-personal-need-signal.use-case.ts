@@ -83,30 +83,56 @@ export class CreateOrUpdatePersonalNeedSignalUseCase {
       }
     }
 
-    // Regla de dominio: Un usuario solo puede tener UNA Personal Need Signal activa.
-    const existingOpenSignal = await this.needSignalRepository.findOne({
-      where: { personId, status: NeedSignalStatus.OPEN },
+    // Regla de dominio: Un usuario solo puede tener UNA Personal Need Signal activa o inactiva en total.
+    const existingSignal = await this.needSignalRepository.findOne({
+      where: { personId },
     });
 
-    if (existingOpenSignal) {
+    if (existingSignal) {
       // Regla de dominio: Si el usuario cambia de ciudad, migrar la señal automáticamente.
-      if (existingOpenSignal.needLocationId !== needLocation.id) {
-        existingOpenSignal.needLocationId = needLocation.id;
+      if (existingSignal.needLocationId !== needLocation.id) {
+        existingSignal.needLocationId = needLocation.id;
       }
 
-      Object.assign(existingOpenSignal, {
-        note: dto.note ?? existingOpenSignal.note,
+      // Si estaba cerrada, la reactivamos a OPEN y limpiamos el motivo de cierre.
+      if (existingSignal.status === NeedSignalStatus.CLOSED) {
+        existingSignal.status = NeedSignalStatus.OPEN;
+        existingSignal.closeReason = null;
+      }
+
+      Object.assign(existingSignal, {
+        note: dto.note ?? existingSignal.note,
         impactedPeopleCount:
-          dto.impactedPeopleCount ?? existingOpenSignal.impactedPeopleCount,
+          dto.impactedPeopleCount ?? existingSignal.impactedPeopleCount,
         contactEmail: dto.contactEmail,
         contactPhone: dto.contactPhone,
         contactUrl: dto.contactUrl,
       });
 
-      return this.needSignalRepository.save(existingOpenSignal);
+      const updatedSignal =
+        await this.needSignalRepository.save(existingSignal);
+
+      // Actividad en el ecosistema (crear o actualizar)
+      await this.activitiesService.logActivity({
+        actorPersonId: personId,
+        activityType: EcosystemActivityType.NEED_SIGNAL_CREATED,
+        entityId: updatedSignal.id,
+        entityType: EcosystemActivityEntityType.NEED_SIGNAL,
+        country: needLocation.country,
+        state: needLocation.state,
+        city: needLocation.city,
+        metadata: {
+          noteText: dto.note,
+          city: needLocation.city,
+          state: needLocation.state,
+          locationId: needLocation.id,
+        },
+      });
+
+      return updatedSignal;
     }
 
-    // Creación de una nueva NeedSignal (si no existe una activa)
+    // Creación de una nueva NeedSignal (si no existe NINGUNA)
     const newSignal = this.needSignalRepository.create({
       personId, // Regla de dominio: siempre pertenece al usuario autenticado.
       needLocationId: needLocation.id,
@@ -133,6 +159,7 @@ export class CreateOrUpdatePersonalNeedSignalUseCase {
         noteText: dto.note,
         city: needLocation.city,
         state: needLocation.state,
+        locationId: needLocation.id,
       },
     });
 

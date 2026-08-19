@@ -1,5 +1,7 @@
 import { NeedSignal } from '../entities/need-signal.entity';
 
+import { NeedSignalAction } from './../enums/need-signals.enum';
+
 export class NeedSignalResponseDto {
   id: string;
   note: string | null;
@@ -14,8 +16,12 @@ export class NeedSignalResponseDto {
   updatedAt: Date;
 
   location?: any | null;
+  allowedActions: NeedSignalAction[];
 
-  static fromEntity(entity: NeedSignal): NeedSignalResponseDto {
+  static fromEntity(
+    entity: NeedSignal,
+    allowedActions: NeedSignalAction[] = [],
+  ): NeedSignalResponseDto {
     const dto = new NeedSignalResponseDto();
     dto.id = entity.id;
     dto.note = entity.note;
@@ -30,6 +36,8 @@ export class NeedSignalResponseDto {
     if (entity.needLocation) {
       dto.location = entity.needLocation;
     }
+
+    dto.allowedActions = allowedActions;
 
     return dto;
   }

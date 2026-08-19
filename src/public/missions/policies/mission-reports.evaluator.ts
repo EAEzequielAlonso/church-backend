@@ -14,12 +14,15 @@ export class MissionReportsEvaluator {
   getAllowedActions(
     mission: MissionProject,
     report: MissionReport,
-    context: ReportEvaluationContext
+    context: ReportEvaluationContext,
   ): MissionReportAction[] {
     const actions: MissionReportAction[] = [];
     if (!context.actorId) return actions;
 
-    if (context.isMissionManager && MISSION_EDITABLE_STATES.includes(mission.status)) {
+    if (
+      context.isMissionManager &&
+      MISSION_EDITABLE_STATES.includes(mission.status)
+    ) {
       actions.push(MissionReportAction.EDIT);
       actions.push(MissionReportAction.DELETE);
     }

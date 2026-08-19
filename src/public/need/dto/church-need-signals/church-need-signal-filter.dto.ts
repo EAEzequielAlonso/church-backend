@@ -23,6 +23,14 @@ export class ChurchNeedSignalFilterDto {
   @IsOptional()
   sortBy?: ChurchNeedSignalSortBy = ChurchNeedSignalSortBy.DATE_DESC;
 
+  @IsString()
+  @IsOptional()
+  creatorId?: string;
+
+  @IsString()
+  @IsOptional()
+  status?: string;
+
   @Type(() => Number)
   @IsNumber()
   @Min(1)

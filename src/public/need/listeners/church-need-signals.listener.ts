@@ -3,7 +3,10 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChurchNeedSignal } from '../entities/church-need-signal.entity';
-import { NeedSignalStatus } from 'src/public/enums/public.enums';
+import {
+  NeedSignalStatus,
+  NeedSignalCloseReason,
+} from 'src/public/enums/public.enums';
 
 @Injectable()
 export class ChurchNeedSignalsListener {
@@ -20,15 +23,23 @@ export class ChurchNeedSignalsListener {
     resultingChurchId: string;
     missionId: string;
   }) {
-    this.logger.log(`Resolving ChurchNeedSignal ${payload.needSignalId} due to mission ${payload.missionId} completion`);
-    
+    this.logger.log(
+      `Resolving ChurchNeedSignal ${payload.needSignalId} due to mission ${payload.missionId} completion`,
+    );
+
     try {
       await this.churchNeedSignalRepo.update(
         { id: payload.needSignalId },
-        { status: NeedSignalStatus.CLOSED },
+        {
+          status: NeedSignalStatus.CLOSED,
+          closeReason: NeedSignalCloseReason.RESOLVED,
+        },
       );
     } catch (error) {
-      this.logger.error(`Error resolving ChurchNeedSignal ${payload.needSignalId}`, error.stack);
+      this.logger.error(
+        `Error resolving ChurchNeedSignal ${payload.needSignalId}`,
+        error.stack,
+      );
     }
   }
 }

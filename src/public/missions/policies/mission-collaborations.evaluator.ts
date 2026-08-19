@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { MissionCollaborationAction, MissionCollaborationStatus } from '../enums/missions.enums';
+import {
+  MissionCollaborationAction,
+  MissionCollaborationStatus,
+} from '../enums/missions.enums';
 import { MissionProject } from '../entities/mission-project.entity';
 import { MissionCollaboration } from '../entities/mission-collaboration.entity';
 import { MISSION_EDITABLE_STATES } from './mission.constants';
@@ -15,7 +18,7 @@ export class MissionCollaborationsEvaluator {
   getAllowedActions(
     mission: MissionProject,
     collab: MissionCollaboration,
-    context: CollaborationEvaluationContext
+    context: CollaborationEvaluationContext,
   ): MissionCollaborationAction[] {
     const actions: MissionCollaborationAction[] = [];
     if (!context.actorId) return actions;
@@ -28,13 +31,23 @@ export class MissionCollaborationsEvaluator {
         actions.push(MissionCollaborationAction.APPROVE);
         actions.push(MissionCollaborationAction.REJECT);
       }
+      if (collab.status === MissionCollaborationStatus.ACTIVE) {
+        actions.push(MissionCollaborationAction.REVOKE);
+      }
     }
 
-    if (context.isCollabChurchManager && (collab.status === MissionCollaborationStatus.PENDING || collab.status === MissionCollaborationStatus.ACTIVE)) {
+    if (
+      context.isCollabChurchManager &&
+      (collab.status === MissionCollaborationStatus.PENDING ||
+        collab.status === MissionCollaborationStatus.ACTIVE)
+    ) {
       actions.push(MissionCollaborationAction.WITHDRAW);
     }
 
-    if ((context.isMissionManager || context.isCollabChurchManager) && missionIsEditable) {
+    if (
+      (context.isMissionManager || context.isCollabChurchManager) &&
+      missionIsEditable
+    ) {
       actions.push(MissionCollaborationAction.EDIT);
     }
 

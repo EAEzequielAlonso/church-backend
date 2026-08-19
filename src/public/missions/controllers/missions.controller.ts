@@ -1,4 +1,10 @@
-import { Controller, Get, Param, NotFoundException, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  NotFoundException,
+  Query,
+} from '@nestjs/common';
 import { MissionsService } from '../services/missions.service';
 import { MissionNeedsService } from '../services/mission-needs.service';
 import { MissionReportsService } from '../services/mission-reports.service';
@@ -31,7 +37,7 @@ export class MissionsController {
       result.data.map((m) => MissionProjectResponseDto.fromEntity(m)),
       result.total,
       result.page,
-      result.pageSize
+      result.pageSize,
     );
   }
 
@@ -50,9 +56,9 @@ export class MissionsController {
 
   @Get(':id/needs')
   async getNeeds(
-    @Param('id') id: string, 
+    @Param('id') id: string,
     @Query() query: MissionNeedQueryDto,
-    @CurrentUser() context?: any
+    @CurrentUser() context?: any,
   ) {
     const user = context ? ({ id: context.personId } as Person) : undefined;
     return this.needsService.findPublicNeeds(id, query, user);
@@ -60,9 +66,9 @@ export class MissionsController {
 
   @Get(':id/reports')
   async getReports(
-    @Param('id') id: string, 
+    @Param('id') id: string,
     @Query() query: MissionReportQueryDto,
-    @CurrentUser() context?: any
+    @CurrentUser() context?: any,
   ) {
     const user = context ? ({ id: context.personId } as Person) : undefined;
     return this.reportsService.findPublicReports(id, query, user);
@@ -70,12 +76,11 @@ export class MissionsController {
 
   @Get(':id/collaborations')
   async getCollaborations(
-    @Param('id') id: string, 
+    @Param('id') id: string,
     @Query() query: MissionCollaborationQueryDto,
-    @CurrentUser() context?: any
+    @CurrentUser() context?: any,
   ) {
     const user = context ? ({ id: context.personId } as Person) : undefined;
     return this.collabsService.findPublicCollaborations(id, query, user);
   }
 }
-
