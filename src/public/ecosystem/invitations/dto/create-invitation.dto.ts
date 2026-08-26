@@ -19,8 +19,8 @@ export class CreateInvitationDto {
     description: 'Email de la persona invitada',
   })
   @IsEmail()
-  @IsNotEmpty()
-  invitedEmail: string;
+  @IsOptional()
+  invitedEmail?: string;
 
   @ApiProperty({
     description: 'ID de la iglesia (si aplica al tipo de invitación)',

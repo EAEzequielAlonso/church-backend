@@ -72,3 +72,9 @@ export enum ChurchNeedSignalAction {
   SUPPORT = 'SUPPORT',
   ADD_INFO = 'ADD_INFO',
 }
+
+export enum UnreachedAreaAction {
+  EDIT = 'EDIT',
+  CHANGE_STATUS = 'CHANGE_STATUS',
+  ADD_INFO = 'ADD_INFO',
+}

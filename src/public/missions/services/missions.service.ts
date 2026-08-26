@@ -17,6 +17,10 @@ import { PaginationQueryDto } from 'src/shared/dtos/pagination-query.dto';
 import { PaginatedResponseDto } from 'src/shared/dtos/paginated-response.dto';
 import { MissionProductDto } from '../dto/mission-product.dto';
 import { MissionProjectResponseDto } from '../dto/mission-response.dto';
+import { MissionMapMarkerDto } from '../dto/mission-map-marker.dto';
+import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
+import { MapLayerResponseDto } from 'src/shared/dtos/map-layer-response.dto';
+import { MapFilterUtil } from 'src/shared/utils/map-filter.util';
 
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
 import {
@@ -482,6 +486,50 @@ export class MissionsService {
     }
 
     return saved;
+  }
+
+  async mapMarkers(
+    viewport: MapViewportDto,
+  ): Promise<MapLayerResponseDto<MissionMapMarkerDto>> {
+    const qb = this.missionsRepo
+      .createQueryBuilder('mission')
+      .where('mission.status = :status', {
+        status: MissionProjectStatus.ACTIVE,
+      })
+      .andWhere(
+        'mission.latitude IS NOT NULL AND mission.longitude IS NOT NULL',
+      )
+      .select([
+        'mission.id AS id',
+        'mission.title AS title',
+        'mission.latitude AS latitude',
+        'mission.longitude AS longitude',
+        'mission.city AS city',
+        'mission.state AS state',
+        'mission.country AS country',
+      ]);
+
+    MapFilterUtil.applyViewportFilter(
+      qb,
+      viewport,
+      'mission.latitude',
+      'mission.longitude',
+    );
+
+    return MapFilterUtil.getPaginatedRawMapResults(
+      qb,
+      200,
+      (row) =>
+        new MissionMapMarkerDto({
+          id: row.id,
+          title: row.title,
+          latitude: Number(row.latitude),
+          longitude: Number(row.longitude),
+          city: row.city,
+          state: row.state,
+          country: row.country,
+        }),
+    );
   }
 
   async mapSummary(id: string) {

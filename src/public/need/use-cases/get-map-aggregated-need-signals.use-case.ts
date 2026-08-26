@@ -1,78 +1,58 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { NeedLocation } from '../entities/need-location.entity';
 import { NeedSignal } from '../entities/need-signal.entity';
 import { NeedSignalStatus } from 'src/public/enums/public.enums';
-
-export interface NeedSignalMapClusterDto {
-  id: string;
-  country: string;
-  state: string;
-  city: string;
-  latitude: number;
-  longitude: number;
-  totalSignals: number;
-  totalImpacted: number;
-  verifiedChurchesCount: number;
-}
+import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
+import { MapLayerResponseDto } from 'src/shared/dtos/map-layer-response.dto';
+import { MapFilterUtil } from 'src/shared/utils/map-filter.util';
+import { NeedSignalMapMarkerDto } from '../dto/need-signal-map-marker.dto';
 
 @Injectable()
 export class GetMapAggregatedNeedSignalsUseCase {
   constructor(
-    @InjectRepository(NeedLocation)
-    private readonly needLocationRepository: Repository<NeedLocation>,
     @InjectRepository(NeedSignal)
     private readonly needSignalRepository: Repository<NeedSignal>,
   ) {}
 
-  async execute(): Promise<NeedSignalMapClusterDto[]> {
-    // Para optimizar en el futuro, esto debería hacerse con un query builder y un GROUP BY
-    // o hidratado desde Redis, pero por ahora conservamos la lógica adaptándola
-    // a la estricta protección de PII.
-    const locations = await this.needLocationRepository.find();
+  async execute(
+    viewport: MapViewportDto,
+  ): Promise<MapLayerResponseDto<NeedSignalMapMarkerDto>> {
+    // Zoom limit: Personal signals are too many, don't show on continental zoom
+    if (viewport.zoom !== undefined && viewport.zoom < 7) {
+      return new MapLayerResponseDto([], false);
+    }
 
-    const signals = await this.needSignalRepository.find({
-      where: { status: NeedSignalStatus.OPEN },
-    });
+    const qb = this.needSignalRepository
+      .createQueryBuilder('signal')
+      .innerJoinAndSelect('signal.needLocation', 'location')
+      .where('signal.status = :status', { status: NeedSignalStatus.OPEN });
 
-    const verifiedChurches = await this.needSignalRepository.manager
-      .getRepository('church_public_profiles')
-      .find({
-        where: { isVerified: true },
-      });
+    MapFilterUtil.applyViewportFilter(
+      qb,
+      viewport,
+      'location.latitude',
+      'location.longitude',
+    );
 
-    const result = locations
-      .map((loc) => {
-        const locationSignals = signals.filter(
-          (s) => s.needLocationId === loc.id,
-        );
-        if (locationSignals.length === 0) return null;
+    return MapFilterUtil.getPaginatedMapResults(
+      qb,
+      200,
+      (signal: NeedSignal) => {
+        // Jittering logic: Add an offset of ~300m to avoid pinpointing exact houses
+        // Also helps spread out markers if they share the exact same NeedLocation (city center)
+        // 0.003 degrees is roughly 300 meters
+        const randomOffsetLat = (Math.random() - 0.5) * 0.006;
+        const randomOffsetLng = (Math.random() - 0.5) * 0.006;
 
-        const totalImpacted = locationSignals.reduce(
-          (acc, s) => acc + s.impactedPeopleCount,
-          0,
-        );
-
-        // Usamos el location actual que tiene city en formato normalizado
-        const verifiedChurchesCount = verifiedChurches.filter(
-          (c) => (c as any).geoCity === loc.city,
-        ).length;
-
-        return {
-          id: loc.id,
-          country: loc.country,
-          state: loc.state,
-          city: loc.city,
-          latitude: loc.latitude,
-          longitude: loc.longitude,
-          totalSignals: locationSignals.length,
-          totalImpacted: totalImpacted,
-          verifiedChurchesCount: verifiedChurchesCount,
-        };
-      })
-      .filter((loc) => loc !== null);
-
-    return result as NeedSignalMapClusterDto[];
+        return new NeedSignalMapMarkerDto({
+          id: signal.id,
+          needLocationId: signal.needLocationId,
+          latitude: Number(signal.needLocation.latitude) + randomOffsetLat,
+          longitude: Number(signal.needLocation.longitude) + randomOffsetLng,
+          status: signal.status,
+        });
+      },
+    );
   }
 }

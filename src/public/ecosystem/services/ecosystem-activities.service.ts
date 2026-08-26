@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, EntityManager } from 'typeorm';
+import { Repository, EntityManager, Brackets, SelectQueryBuilder } from 'typeorm';
 import { EcosystemActivityEntityType } from '../enums/ecosystem.enums';
 import { EcosystemActivity } from '../entities/ecosystem-activity.entity';
 import { LogEcosystemActivityDto } from '../dto/log-ecosystem-activity.dto';
@@ -36,12 +36,10 @@ export class EcosystemActivitiesService {
     }
   }
 
-  async getActivities(
+  private buildBaseQuery(
     queryDto: GetEcosystemActivitiesDto,
-  ): Promise<EcosystemActivity[]> {
+  ): SelectQueryBuilder<EcosystemActivity> {
     const {
-      limit = 20,
-      offset = 0,
       country,
       state,
       city,
@@ -59,8 +57,6 @@ export class EcosystemActivitiesService {
         'actorChurch.publicProfile',
         'actorChurchPublicProfile',
       );
-    // Note: We NO LONGER join `relatedChurch` or other target entities here.
-    // This allows the feed to scale to 40+ event types without 40+ JOINs.
 
     if (country) query.andWhere('activity.country = :country', { country });
     if (state) query.andWhere('activity.state = :state', { state });
@@ -89,15 +85,59 @@ export class EcosystemActivitiesService {
       });
     }
 
+    return query;
+  }
+
+  async getActivities(
+    queryDto: GetEcosystemActivitiesDto,
+  ): Promise<EcosystemActivity[]> {
+    const { limit = 20, offset = 0 } = queryDto;
+    const query = this.buildBaseQuery(queryDto);
+
     query.orderBy('activity.createdAt', 'DESC');
     query.take(limit);
     query.skip(offset);
 
     const activities = await query.getMany();
-
-    // Batch Hydration: Delegate to the specific entity hydrators
     await this.hydrationRegistry.hydrateActivities(activities);
+    return activities;
+  }
 
+  async getMissionActivities(
+    missionId: string,
+    queryDto: GetEcosystemActivitiesDto,
+  ): Promise<EcosystemActivity[]> {
+    const { limit = 20, offset = 0 } = queryDto;
+    const query = this.buildBaseQuery(queryDto);
+
+    query.andWhere(
+      new Brackets((qb) => {
+        qb.where(
+          'activity.entityType = :missionProjectType AND activity.entityId = :missionId',
+          {
+            missionProjectType: EcosystemActivityEntityType.MISSION_PROJECT,
+            missionId,
+          },
+        ).orWhere(
+          "activity.entityType IN (:...relatedTypes) AND activity.metadata->>'missionProjectId' = :missionIdText",
+          {
+            relatedTypes: [
+              EcosystemActivityEntityType.MISSION_NEED,
+              EcosystemActivityEntityType.MISSION_COLLABORATION,
+              EcosystemActivityEntityType.MISSION_REPORT,
+            ],
+            missionIdText: String(missionId),
+          },
+        );
+      }),
+    );
+
+    query.orderBy('activity.createdAt', 'DESC');
+    query.take(limit);
+    query.skip(offset);
+
+    const activities = await query.getMany();
+    await this.hydrationRegistry.hydrateActivities(activities);
     return activities;
   }
 

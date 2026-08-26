@@ -64,7 +64,7 @@ export class Invitation {
   @JoinColumn({ name: 'targetChurchId' })
   targetChurch: Church;
 
-  @Column()
+  @Column({ nullable: true })
   invitedEmail: string;
 
   @Column({ unique: true })

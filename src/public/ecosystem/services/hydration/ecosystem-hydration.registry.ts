@@ -5,6 +5,8 @@ import { NeedSignalHydrator } from './need-signal.hydrator';
 import { EcosystemActivityEntityType } from '../../enums/ecosystem.enums';
 import { EcosystemActivity } from '../../entities/ecosystem-activity.entity';
 import { ChurchNeedSignalHydrator } from './church-need-signal.hydrator';
+import { UnreachedAreaHydrator } from './unreached-area.hydrator';
+import { MissionReportHydrator } from './mission-report.hydrator';
 
 @Injectable()
 export class EcosystemHydrationRegistry implements OnModuleInit {
@@ -17,6 +19,8 @@ export class EcosystemHydrationRegistry implements OnModuleInit {
     private readonly churchHydrator: ChurchHydrator,
     private readonly needSignalHydrator: NeedSignalHydrator,
     private readonly churchNeedSignalHydrator: ChurchNeedSignalHydrator,
+    private readonly unreachedAreaHydrator: UnreachedAreaHydrator,
+    private readonly missionReportHydrator: MissionReportHydrator,
     // Add future hydrators here (e.g. missionHydrator, etc.)
   ) {}
 
@@ -24,6 +28,8 @@ export class EcosystemHydrationRegistry implements OnModuleInit {
     this.register(this.churchHydrator);
     this.register(this.needSignalHydrator);
     this.register(this.churchNeedSignalHydrator);
+    this.register(this.unreachedAreaHydrator);
+    this.register(this.missionReportHydrator);
     // Register future hydrators here
   }
 

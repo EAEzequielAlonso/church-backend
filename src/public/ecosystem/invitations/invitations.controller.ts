@@ -40,6 +40,19 @@ export class InvitationsController {
     return { message: 'Registro e invitación procesados con éxito' };
   }
 
+  @Post(':token/accept')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Aceptar una invitación siendo un usuario existente (Requiere JWT)',
+  })
+  async acceptInvitation(@Request() req, @Param('token') token: string) {
+    const userId = req.user.id;
+    await this.invitationsService.acceptInvitation(userId, token);
+    return { message: 'Invitación aceptada con éxito' };
+  }
+
   @Post(':id/resend')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

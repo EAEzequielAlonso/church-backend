@@ -8,7 +8,9 @@ import { ChurchesModule } from './core/churches/churches.module';
 import { NotificationsModule } from './public/ecosystem/notifications/notifications.module';
 import { AdminModule } from './core/admin-app/admin.module';
 import { FeedbackModule } from './core/feedback/feedback.module';
+import { DonationsModule } from './core/donations/donations.module';
 import { PublicModule } from './public/public.module';
+import { StorageModule } from './core/storage/storage.module';
 
 import configuration from './config/configuration';
 import { MemoryMonitorService } from './common/memory-monitor.service';
@@ -37,7 +39,9 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     NotificationsModule,
     AdminModule,
     FeedbackModule,
+    DonationsModule,
     PublicModule,
+    StorageModule,
   ],
   providers: [MemoryMonitorService],
 })

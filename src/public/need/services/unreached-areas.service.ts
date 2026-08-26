@@ -25,9 +25,13 @@ import {
 import { CreateUnreachedAreaDto } from '../dto/unreached-areas/create-unreached-area.dto';
 import { UpdateUnreachedAreaDto } from '../dto/unreached-areas/update-unreached-area.dto';
 import { UnreachedAreaFilterDto } from '../dto/unreached-areas/unreached-area-filter.dto';
+import { UnreachedAreaMapMarkerDto } from '../dto/unreached-areas/unreached-area-map-marker.dto';
 import { UpdateUnreachedAreaStatusDto } from '../dto/unreached-areas/update-unreached-area-status.dto';
 import { AddNeedInformationDto } from '../dto/church-need-signals/add-need-information.dto';
 import { InformationFilterDto } from '../dto/church-need-signals/information-filter.dto';
+import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
+import { MapLayerResponseDto } from 'src/shared/dtos/map-layer-response.dto';
+import { MapFilterUtil } from 'src/shared/utils/map-filter.util';
 
 @Injectable()
 export class UnreachedAreasService {
@@ -42,6 +46,46 @@ export class UnreachedAreasService {
     private readonly activitiesService: EcosystemActivitiesService,
     private readonly geoService: GeoService,
   ) {}
+
+  async mapMarkers(
+    viewport: MapViewportDto,
+  ): Promise<MapLayerResponseDto<UnreachedAreaMapMarkerDto>> {
+    // Zoom limit: Continental overview might not show local areas
+    if (viewport.zoom !== undefined && viewport.zoom < 5) {
+      return new MapLayerResponseDto([], false);
+    }
+
+    const qb = this.unreachedAreaRepository
+      .createQueryBuilder('area')
+      .innerJoin('area.needLocation', 'location')
+      .where('area.status = :status', { status: UnreachedAreaStatus.OPEN })
+      .select([
+        'area.id AS id',
+        'area.title AS title',
+        'location.latitude AS "latitude"',
+        'location.longitude AS "longitude"',
+        'location.city AS city',
+        'location.state AS state',
+        'location.country AS country',
+      ]);
+
+    MapFilterUtil.applyViewportFilter(
+      qb,
+      viewport,
+      'location.latitude',
+      'location.longitude',
+    );
+
+    return MapFilterUtil.getPaginatedRawMapResults(qb, 200, (row) => ({
+      id: row.id,
+      title: row.title,
+      latitude: Number(row.latitude),
+      longitude: Number(row.longitude),
+      city: row.city,
+      state: row.state,
+      country: row.country,
+    }));
+  }
 
   async create(
     personId: string,
@@ -351,7 +395,12 @@ export class UnreachedAreasService {
       state: area.needLocation?.state,
       city: area.needLocation?.city,
       metadata: {
+        unreachedAreaId: area.id,
+        infoId: savedInfo.id,
         category: dto.category,
+        title: dto.title ?? null,
+        contentSnippet: dto.content ? dto.content.substring(0, 150) : null,
+        areaTitle: area.title,
       },
     });
 
@@ -393,9 +442,9 @@ export class UnreachedAreasService {
           : null,
       })),
       total,
+      totalPages: Math.ceil(total / limit),
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -412,7 +461,7 @@ export class UnreachedAreasService {
       description: area.description?.slice(0, 150) ?? null,
       city: area.needLocation?.city,
       state: area.needLocation?.state,
-      ctaLink: `/unreached-areas/${area.id}`,
+      ctaLink: `/network/unreached/${area.id}`,
     };
   }
 }

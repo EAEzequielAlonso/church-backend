@@ -1,4 +1,4 @@
-export enum SystemRole {
+﻿export enum SystemRole {
   ADMIN_APP = 'ADMIN_APP',
   USER = 'USER',
 }
@@ -89,8 +89,8 @@ export enum CounselingStatus {
 
 export enum FollowUpStatus {
   VISITOR = 'VISITOR', // Visitante frecuente
-  PROSPECT = 'PROSPECT', // Listo para membresía
-  ARCHIVED = 'ARCHIVED', // Ya no viene más
+  PROSPECT = 'PROSPECT', // Listo para membresÃ­a
+  ARCHIVED = 'ARCHIVED', // Ya no viene mÃ¡s
 }
 
 export enum WeekDay {
@@ -184,7 +184,7 @@ export enum CalendarEventType {
   FOLLOW_UP = 'FOLLOW_UP',
   COURSE = 'COURSE',
   ACTIVITY = 'ACTIVITY',
-  SERVICE = 'SERVICE', // Representa un Culto o Reunión principal
+  SERVICE = 'SERVICE', // Representa un Culto o ReuniÃ³n principal
   OTHER = 'OTHER',
 }
 
@@ -236,4 +236,11 @@ export enum MembershipStatus {
   DECEASED = 'DECEASED',
   DISCIPLINED = 'DISCIPLINED',
   EXCOMMUNICATED = 'EXCOMMUNICATED',
+}
+
+export enum DonationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
 }

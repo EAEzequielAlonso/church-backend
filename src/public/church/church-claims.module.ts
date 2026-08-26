@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Church } from '../../core/churches/entities/church.entity';
 import { ChurchClaim } from './entities/church_claim.entity';
@@ -29,7 +29,7 @@ import { Person } from '../../core/users/entities/person.entity';
     ChurchProfileModule,
     EcosystemContributionsModule,
     EcosystemActivitiesModule,
-    PublicRelationsModule,
+    forwardRef(() => PublicRelationsModule),
   ],
   controllers: [ChurchClaimsController, ChurchClaimsAdminController],
   providers: [
@@ -38,6 +38,6 @@ import { Person } from '../../core/users/entities/person.entity';
     ApproveChurchClaimUseCase,
     RejectChurchClaimUseCase,
   ],
-  exports: [ChurchClaimsService],
+  exports: [ChurchClaimsService, SubmitChurchClaimUseCase],
 })
 export class ChurchClaimsModule {}

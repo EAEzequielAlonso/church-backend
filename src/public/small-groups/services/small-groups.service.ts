@@ -18,6 +18,10 @@ import {
 } from 'src/public/ecosystem/enums/ecosystem.enums';
 
 import { SmallGroupsPolicies } from './small-groups.policies';
+import { SmallGroupMapMarkerDto } from '../dto/small-group-map-marker.dto';
+import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
+import { MapLayerResponseDto } from 'src/shared/dtos/map-layer-response.dto';
+import { MapFilterUtil } from 'src/shared/utils/map-filter.util';
 
 @Injectable()
 export class SmallGroupsService {
@@ -218,5 +222,45 @@ export class SmallGroupsService {
       state: smallGroup.state,
       ctaLink: `/small-groups/${smallGroup.id}`,
     };
+  }
+
+  async mapMarkers(
+    viewport: MapViewportDto,
+  ): Promise<MapLayerResponseDto<SmallGroupMapMarkerDto>> {
+    const qb = this.smallGroupRepo
+      .createQueryBuilder('sg')
+      .where('sg.status = :status', { status: SmallGroupStatus.ACTIVE })
+      .andWhere('sg.latitude IS NOT NULL AND sg.longitude IS NOT NULL')
+      .select([
+        'sg.id AS id',
+        'sg.name AS name',
+        'sg.latitude AS latitude',
+        'sg.longitude AS longitude',
+        'sg.city AS city',
+        'sg.state AS state',
+        'sg.country AS country',
+      ]);
+
+    MapFilterUtil.applyViewportFilter(
+      qb,
+      viewport,
+      'sg.latitude',
+      'sg.longitude',
+    );
+
+    return MapFilterUtil.getPaginatedRawMapResults(
+      qb,
+      200,
+      (row) =>
+        new SmallGroupMapMarkerDto({
+          id: row.id,
+          name: row.name,
+          latitude: Number(row.latitude),
+          longitude: Number(row.longitude),
+          city: row.city,
+          state: row.state,
+          country: row.country,
+        }),
+    );
   }
 }

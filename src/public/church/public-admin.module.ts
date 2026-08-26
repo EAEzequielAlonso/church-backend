@@ -11,6 +11,7 @@ import { UpdatePublicChurchProfileUseCase } from './use-cases/update-public-chur
 
 import { EcosystemContributionsModule } from '../ecosystem/ecosystem-contributions.module';
 import { EcosystemActivitiesModule } from '../ecosystem/ecosystem-activities.module';
+import { StorageModule } from '../../core/storage/storage.module';
 import { ChurchPublicProfile } from './entities/church_public_profile.entity';
 import { ChurchFollow } from './entities/follower.entity';
 import { PublicChurchRelation } from './entities/public_church_relation.entity';
@@ -33,6 +34,7 @@ import { PublicRelationsService } from './services/public-relations.service';
     ]),
     EcosystemContributionsModule,
     EcosystemActivitiesModule,
+    StorageModule,
   ],
   controllers: [ChurchPublicAdminController],
   providers: [

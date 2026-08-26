@@ -3,6 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChurchPublicProfile } from 'src/public/church/entities/church_public_profile.entity';
 import { ChurchDirectoryQueryDto } from '../dto/church-directory-query.dto';
+import { ChurchMapMarkerDto } from '../dto/church-map-marker.dto';
+import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
+import { MapLayerResponseDto } from 'src/shared/dtos/map-layer-response.dto';
+import { MapFilterUtil } from 'src/shared/utils/map-filter.util';
 
 @Injectable()
 export class ChurchDirectoryService {
@@ -67,5 +71,51 @@ export class ChurchDirectoryService {
       })),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  async mapMarkers(
+    viewport: MapViewportDto,
+  ): Promise<MapLayerResponseDto<ChurchMapMarkerDto>> {
+    const qb = this.repo
+      .createQueryBuilder('p')
+      .innerJoin('p.church', 'c')
+      .where('p.latitude IS NOT NULL AND p.longitude IS NOT NULL')
+      .select([
+        'p.churchId AS id',
+        'c.canonicalName AS name',
+        'p.slug AS slug',
+        'p.logoUrl AS "logoUrl"',
+        'p.latitude AS latitude',
+        'p.longitude AS longitude',
+        'p.city AS city',
+        'p.state AS state',
+        'p.country AS country',
+        'p.isVerified AS "isVerified"',
+      ]);
+
+    MapFilterUtil.applyViewportFilter(
+      qb,
+      viewport,
+      'p.latitude',
+      'p.longitude',
+    );
+
+    return MapFilterUtil.getPaginatedRawMapResults(
+      qb,
+      200,
+      (row) =>
+        new ChurchMapMarkerDto({
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          logoUrl: row.logoUrl,
+          latitude: Number(row.latitude),
+          longitude: Number(row.longitude),
+          city: row.city,
+          state: row.state,
+          country: row.country,
+          isVerified: row.isVerified,
+        }),
+    );
   }
 }

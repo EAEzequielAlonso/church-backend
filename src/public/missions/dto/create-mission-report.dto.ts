@@ -4,8 +4,11 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { MissionReportCategory } from '../enums/missions.enums';
+import { MediaItemDto } from './media-item.dto';
 
 export class CreateMissionReportDto {
   @IsEnum(MissionReportCategory)
@@ -18,9 +21,10 @@ export class CreateMissionReportDto {
   content: string;
 
   @IsArray()
-  @IsString({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => MediaItemDto)
   @IsOptional()
-  attachments?: string[];
+  media?: MediaItemDto[];
 
   @IsBoolean()
   @IsOptional()

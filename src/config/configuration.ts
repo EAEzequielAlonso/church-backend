@@ -19,7 +19,7 @@ export const getDatabaseConfig = (): TypeOrmModuleOptions => ({
   autoLoadEntities: true,
   logging: false, // Set to true to debug queries
   synchronize: true,
-  //dropSchema: true,
+  dropSchema: true,
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   migrationsRun: false,
   extra: {
@@ -34,4 +34,12 @@ export const getDatabaseConfig = (): TypeOrmModuleOptions => ({
 
 export default () => ({
   database: getDatabaseConfig(),
+  backendPublicUrl: process.env.BACKEND_PUBLIC_URL,
+  r2: {
+    accountId: process.env.R2_ACCOUNT_ID,
+    accessKeyId: process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    bucketName: process.env.R2_BUCKET_NAME,
+    publicUrl: process.env.R2_PUBLIC_URL,
+  },
 });

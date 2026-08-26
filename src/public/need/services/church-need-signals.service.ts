@@ -33,6 +33,9 @@ import {
   NeedSignalStatus,
   NeedSignalCloseReason,
 } from 'src/public/enums/public.enums';
+import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
+import { MapLayerResponseDto } from 'src/shared/dtos/map-layer-response.dto';
+import { MapFilterUtil } from 'src/shared/utils/map-filter.util';
 
 @Injectable()
 export class ChurchNeedSignalsService {
@@ -258,7 +261,16 @@ export class ChurchNeedSignalsService {
   }
 
   async listSignals(filterDto: ChurchNeedSignalFilterDto, personId?: string) {
-    const { country, state, city, sortBy, page = 1, limit = 10, creatorId, status } = filterDto;
+    const {
+      country,
+      state,
+      city,
+      sortBy,
+      page = 1,
+      limit = 10,
+      creatorId,
+      status,
+    } = filterDto;
 
     const query = this.signalRepo
       .createQueryBuilder('signal')
@@ -270,13 +282,17 @@ export class ChurchNeedSignalsService {
         query.andWhere('signal.status = :status', { status });
       }
     } else {
-      query.andWhere('signal.status = :status', { status: NeedSignalStatus.OPEN });
+      query.andWhere('signal.status = :status', {
+        status: NeedSignalStatus.OPEN,
+      });
     }
 
     if (creatorId) {
       if (creatorId === 'me') {
         if (personId) {
-          query.andWhere('signal.personId = :creatorId', { creatorId: personId });
+          query.andWhere('signal.personId = :creatorId', {
+            creatorId: personId,
+          });
         } else {
           // Si envían 'me' pero no están autenticados, forzamos un resultado vacío
           // en lugar de causar un error TypeORM inyectando la cadena literal "me".
@@ -517,10 +533,15 @@ export class ChurchNeedSignalsService {
     };
   }
 
-  async mapMarkers(): Promise<ChurchNeedSignalMapMarkerDto[]> {
-    // Optimized query: Select explicitly only what's needed for the map
-    // We group by to count supports dynamically without fetching all entities
-    const rawSignals = await this.signalRepo
+  async mapMarkers(
+    viewport: MapViewportDto,
+  ): Promise<MapLayerResponseDto<ChurchNeedSignalMapMarkerDto>> {
+    // Zoom limit: Continental overview might not show regional needs
+    if (viewport.zoom !== undefined && viewport.zoom < 5) {
+      return new MapLayerResponseDto([], false);
+    }
+
+    const qb = this.signalRepo
       .createQueryBuilder('signal')
       .innerJoin('signal.needLocation', 'location')
       .leftJoin('signal.supports', 'support')
@@ -532,24 +553,30 @@ export class ChurchNeedSignalsService {
         'location.city AS city',
         'location.state AS state',
         'location.country AS country',
-        'COUNT(support.id) AS "supportCount"'
+        'COUNT(support.id) AS "supportCount"',
       ])
       .groupBy('signal.id')
       .addGroupBy('location.latitude')
       .addGroupBy('location.longitude')
       .addGroupBy('location.city')
       .addGroupBy('location.state')
-      .addGroupBy('location.country')
-      .getRawMany();
+      .addGroupBy('location.country');
 
-    return rawSignals.map(row => ({
+    MapFilterUtil.applyViewportFilter(
+      qb,
+      viewport,
+      'location.latitude',
+      'location.longitude',
+    );
+
+    return MapFilterUtil.getPaginatedRawMapResults(qb, 200, (row) => ({
       id: row.id,
       latitude: Number(row.latitude),
       longitude: Number(row.longitude),
       city: row.city,
       state: row.state,
       country: row.country,
-      supportCount: Number(row.supportcount || row.supportCount || 0)
+      supportCount: Number(row.supportcount || row.supportCount || 0),
     }));
   }
 

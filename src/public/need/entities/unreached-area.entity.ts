@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   JoinColumn,
   Index,
-  OneToOne,
+  ManyToOne,
 } from 'typeorm';
 import { Person } from 'src/core/users/entities/person.entity';
 import { NeedLocation } from './need-location.entity';
@@ -23,7 +23,7 @@ export class UnreachedArea {
   @Column({ type: 'uuid' })
   reporterPersonId: string;
 
-  @OneToOne(() => Person, { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => Person, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'reporterPersonId' })
   reporterPerson: Person;
 
@@ -36,7 +36,7 @@ export class UnreachedArea {
   @Column({ type: 'uuid' })
   needLocationId: string;
 
-  @OneToOne(() => NeedLocation, { nullable: false, onDelete: 'RESTRICT' })
+  @ManyToOne(() => NeedLocation, { nullable: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'needLocationId' })
   needLocation: NeedLocation;
 

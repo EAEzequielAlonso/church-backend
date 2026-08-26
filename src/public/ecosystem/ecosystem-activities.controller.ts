@@ -60,6 +60,19 @@ export class EcosystemActivitiesController {
     return activities.map(this.mapToResponse);
   }
 
+  @Get('mission/:missionId')
+  @ApiOperation({ summary: 'Get specific mission ecosystem activity feed' })
+  async getMissionFeed(
+    @Param('missionId') missionId: string,
+    @Query() query: GetEcosystemActivitiesDto,
+  ) {
+    const activities = await this.activitiesService.getMissionActivities(
+      missionId,
+      query,
+    );
+    return activities.map(this.mapToResponse);
+  }
+
   private mapToResponse(activity: EcosystemActivity) {
     return {
       id: activity.id,
@@ -108,6 +121,7 @@ export class EcosystemActivitiesController {
         type: activity.entityType,
         liveStatus: activity.liveEntityStatus,
         liveCloseReason: (activity as any).liveEntityCloseReason,
+        liveMissionReport: (activity as any).liveMissionReport,
         isHistorical: activity.isHistorical,
         // Since we don't eager load every possible polymorphic target entity,
         // the frontend will use this reference. If we wanted to enrich further,

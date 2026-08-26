@@ -20,6 +20,7 @@ import { MissionReportQueryDto } from '../dto/mission-report-query.dto';
 import { MissionCollaborationQueryDto } from '../dto/mission-collaboration-query.dto';
 import { CurrentUser } from '../../../common/decorators';
 import { Person } from '../../../core/users/entities/person.entity';
+import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
 
 @Controller('public/missions')
 export class MissionsController {
@@ -39,6 +40,11 @@ export class MissionsController {
       result.page,
       result.pageSize,
     );
+  }
+
+  @Get('map')
+  async mapMarkers(@Query() viewport: MapViewportDto) {
+    return this.missionsService.mapMarkers(viewport);
   }
 
   @Get(':id/map-summary')

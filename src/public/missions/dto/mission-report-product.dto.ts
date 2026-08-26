@@ -11,7 +11,7 @@ export class MissionReportProductDto {
   category: MissionReportCategory;
   title: string;
   content: string;
-  attachments: string[];
+  media: { id: string; url: string; order: number; observation?: string }[];
   isPublic: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -34,7 +34,13 @@ export class MissionReportProductDto {
     dto.category = report.category;
     dto.title = report.title;
     dto.content = report.content;
-    dto.attachments = report.attachments || [];
+    dto.media =
+      report.media?.map((m) => ({
+        id: m.id,
+        url: m.url,
+        order: m.order,
+        observation: m.observation,
+      })) || [];
     dto.isPublic = report.isPublic;
     dto.createdAt = report.createdAt;
     dto.updatedAt = report.updatedAt;

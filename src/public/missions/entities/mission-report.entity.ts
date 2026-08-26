@@ -6,11 +6,13 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { MissionReportCategory } from '../enums/missions.enums';
 import { MissionProject } from './mission-project.entity';
+import { MissionReportMedia } from './mission-report-media.entity';
 
 @Entity('mission_reports')
 @Index(['missionProjectId', 'createdAt'])
@@ -50,8 +52,11 @@ export class MissionReport {
   @Column('text')
   content: string;
 
-  @Column({ type: 'text', array: true, default: [] })
-  attachments: string[];
+  @OneToMany(() => MissionReportMedia, (media) => media.missionReport, {
+    cascade: true,
+    orphanedRowAction: 'delete',
+  })
+  media: MissionReportMedia[];
 
   // ─── Visibilidad ───────────────────────────────────
   @Column({ default: true })

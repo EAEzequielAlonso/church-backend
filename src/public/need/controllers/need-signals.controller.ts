@@ -8,6 +8,7 @@ import {
   Patch,
   Param,
   Get,
+  Query,
   NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../core/auth/guards/jwt-auth.guard';
@@ -30,6 +31,7 @@ import {
 } from '../dto/need-signal.dto';
 import { NeedSignalResponseDto } from '../dto/need-signal-response.dto';
 import { NeedSignalsEvaluator } from '../policies/need-signals.evaluator';
+import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
 
 @Controller('public/need-signals')
 export class NeedSignalsController {
@@ -181,8 +183,8 @@ export class NeedSignalsController {
   }
 
   @Get('map')
-  async getMapSignals() {
-    return this.getMapAggregatedNeedSignalsUseCase.execute();
+  async getMapSignals(@Query() viewport: MapViewportDto) {
+    return this.getMapAggregatedNeedSignalsUseCase.execute(viewport);
   }
 
   @Get('location/:locationId')

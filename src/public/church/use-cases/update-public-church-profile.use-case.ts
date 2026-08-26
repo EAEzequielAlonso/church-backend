@@ -1,4 +1,4 @@
-import { NotFoundException, Injectable } from '@nestjs/common';
+import { NotFoundException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PublicServiceSchedule } from '../entities/public-service-schedule.entity';
@@ -7,9 +7,12 @@ import { UpdatePublicChurchProfileDto } from '../dto/update-public-church-profil
 import { ChurchOwnershipService } from '../services/church-ownership.service';
 import { ChurchPublicProfile } from '../entities/church_public_profile.entity';
 import { ChurchDoctrinalIdentity } from '../entities/church-doctrinal-identity.entity';
+import { StorageService } from '../../../core/storage/storage.service';
 
 @Injectable()
 export class UpdatePublicChurchProfileUseCase {
+  private readonly logger = new Logger(UpdatePublicChurchProfileUseCase.name);
+
   constructor(
     @InjectRepository(ChurchPublicProfile)
     private readonly profiles: Repository<ChurchPublicProfile>,
@@ -19,6 +22,7 @@ export class UpdatePublicChurchProfileUseCase {
     @InjectRepository(PublicServiceSchedule)
     private readonly schedules: Repository<PublicServiceSchedule>,
     private readonly ownership: ChurchOwnershipService,
+    private readonly storageService: StorageService,
   ) {}
 
   async execute(
@@ -57,13 +61,43 @@ export class UpdatePublicChurchProfileUseCase {
     // Contact & Identity
     if (dto.contactEmail !== undefined) profile.contactEmail = dto.contactEmail;
     if (dto.contactPhone !== undefined) profile.contactPhone = dto.contactPhone;
-    if (dto.logoUrl !== undefined) profile.logoUrl = dto.logoUrl;
-    if (dto.coverUrl !== undefined) profile.coverUrl = dto.coverUrl;
-    if (dto.mainImageUrl !== undefined) profile.mainImageUrl = dto.mainImageUrl;
+    
+    let oldLogoUrl: string | null = null;
+    let oldCoverUrl: string | null = null;
+    let oldMainImageUrl: string | null = null;
+    
+    if (dto.logoUrl !== undefined && dto.logoUrl !== profile.logoUrl) {
+      oldLogoUrl = profile.logoUrl;
+      profile.logoUrl = dto.logoUrl;
+    }
+    if (dto.coverUrl !== undefined && dto.coverUrl !== profile.coverUrl) {
+      oldCoverUrl = profile.coverUrl;
+      profile.coverUrl = dto.coverUrl;
+    }
+    if (dto.mainImageUrl !== undefined && dto.mainImageUrl !== profile.mainImageUrl) {
+      oldMainImageUrl = profile.mainImageUrl;
+      profile.mainImageUrl = dto.mainImageUrl;
+    }
 
     if (dto.denomination !== undefined) profile.denomination = dto.denomination;
 
     const saved = await this.profiles.save(profile);
+
+    // Image Cleanup
+    const deleteOldImage = async (oldUrl: string | null, context: string) => {
+      if (oldUrl) {
+        const oldKey = this.storageService.extractKeyFromUrl(oldUrl, context);
+        if (oldKey) {
+          this.storageService.deleteObject(oldKey).catch((err) => {
+            this.logger.error(`Failed to delete old ${context} object from R2: ${oldKey}`, err.stack);
+          });
+        }
+      }
+    };
+
+    await deleteOldImage(oldLogoUrl, 'logos');
+    await deleteOldImage(oldCoverUrl, 'covers');
+    await deleteOldImage(oldMainImageUrl, 'main-images');
 
     if (dto.meetings !== undefined) {
       await this.schedules.delete({ profileId: profile.id });

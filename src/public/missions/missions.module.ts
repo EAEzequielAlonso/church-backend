@@ -4,6 +4,7 @@ import { MissionProject } from './entities/mission-project.entity';
 import { MissionCollaboration } from './entities/mission-collaboration.entity';
 import { MissionNeed } from './entities/mission-need.entity';
 import { MissionReport } from './entities/mission-report.entity';
+import { MissionReportMedia } from './entities/mission-report-media.entity';
 import { MissionStatePolicy } from './policies/mission-state.policy';
 import { MissionPermissions } from './policies/mission.permissions';
 import { MissionRules } from './policies/mission.rules';
@@ -25,6 +26,7 @@ import { EcosystemActivitiesModule } from '../ecosystem/ecosystem-activities.mod
 import { ChurchOwnershipService } from '../church/services/church-ownership.service';
 import { ChurchClaim } from '../church/entities/church_claim.entity';
 import { PublicChurchRelation } from '../church/entities/public_church_relation.entity';
+import { StorageService } from 'src/core/storage/storage.service';
 
 @Module({
   imports: [
@@ -33,6 +35,7 @@ import { PublicChurchRelation } from '../church/entities/public_church_relation.
       MissionCollaboration,
       MissionNeed,
       MissionReport,
+      MissionReportMedia,
       Church,
 
       ChurchPublicProfile,
@@ -55,6 +58,7 @@ import { PublicChurchRelation } from '../church/entities/public_church_relation.
     MissionCollaborationsService,
     MissionReportsService,
     ChurchOwnershipService,
+    StorageService,
   ],
   exports: [MissionsService],
 })

@@ -51,6 +51,7 @@ import { SmallGroupsModule } from './small-groups/small-groups.module';
 import { NeedEngagement } from './need/entities/need-engagement.entity';
 import { ChurchNeedSignalsListener } from './need/listeners/church-need-signals.listener';
 import { NeedSignalAddressListener } from './need/listeners/need-signal-address.listener';
+import { UnreachedAreaEvaluator } from './need/policies/unreached-area.evaluator';
 
 @Module({
   imports: [
@@ -104,6 +105,7 @@ import { NeedSignalAddressListener } from './need/listeners/need-signal-address.
     NeedSignalAddressListener,
     NeedSignalsEvaluator,
     ChurchNeedSignalEvaluator,
+    UnreachedAreaEvaluator,
   ],
   controllers: [
     PublicPeopleController,
@@ -112,6 +114,11 @@ import { NeedSignalAddressListener } from './need/listeners/need-signal-address.
     UnreachedAreasController,
     UnreachedAreasAdminController,
   ],
-  exports: [TypeOrmModule, NeedSignalsEvaluator, ChurchNeedSignalEvaluator],
+  exports: [
+    TypeOrmModule,
+    NeedSignalsEvaluator,
+    ChurchNeedSignalEvaluator,
+    UnreachedAreaEvaluator,
+  ],
 })
 export class PublicModule {}

@@ -23,6 +23,7 @@ import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { RegisterFromInvitationDto } from './dto/register-from-invitation.dto';
 import { EcosystemHistoryEvent } from '../../enums/public.enums';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ChurchOwnershipService } from '../../../public/church/services/church-ownership.service';
 
 @Injectable()
 export class InvitationsService {
@@ -40,25 +41,45 @@ export class InvitationsService {
     private readonly emailService: EmailService,
     private readonly dataSource: DataSource,
     private readonly eventEmitter: EventEmitter2,
+    private readonly churchOwnershipService: ChurchOwnershipService,
   ) {}
 
   async createInvitation(
     inviterPersonId: string,
     dto: CreateInvitationDto,
   ): Promise<Invitation> {
-    // 0. Validar invitaciones duplicadas
-    const existingInvitation = await this.invitationRepository.findOne({
-      where: {
-        invitedEmail: dto.invitedEmail,
-        targetChurchId: dto.targetChurchId || null,
-        type: dto.type,
-        status: InvitationStatus.PENDING,
-      },
-    });
+    if (dto.type !== InvitationType.GENERAL_USER && !dto.invitedEmail) {
+      throw new BadRequestException(
+        'Para este tipo de invitación se requiere un email.',
+      );
+    }
 
-    if (existingInvitation) {
-      throw new ConflictException(
-        'Ya existe una invitación pendiente con las mismas características para este email.',
+    if (dto.invitedEmail) {
+      const existingInvitation = await this.invitationRepository.findOne({
+        where: {
+          invitedEmail: dto.invitedEmail,
+          targetChurchId: dto.targetChurchId || null,
+          type: dto.type,
+          status: InvitationStatus.PENDING,
+        },
+      });
+
+      if (existingInvitation) {
+        throw new ConflictException(
+          'Ya existe una invitación pendiente con las mismas características para este email.',
+        );
+      }
+    }
+
+    if (dto.type === InvitationType.CHURCH_MEMBERSHIP) {
+      if (!dto.targetChurchId) {
+        throw new BadRequestException(
+          'Para invitar a la iglesia se requiere targetChurchId.',
+        );
+      }
+      await this.churchOwnershipService.assertOwnsChurch(
+        inviterPersonId,
+        dto.targetChurchId,
       );
     }
 
@@ -79,8 +100,10 @@ export class InvitationsService {
 
     const savedInvitation = await this.invitationRepository.save(invitation);
 
-    // 3. Send email (fire-and-forget)
-    void this.emailService.sendInvitationLink(dto.invitedEmail, token);
+    // 3. Send email only if provided (fire-and-forget)
+    if (dto.invitedEmail) {
+      void this.emailService.sendInvitationLink(dto.invitedEmail, token);
+    }
 
     return savedInvitation;
   }
@@ -127,8 +150,11 @@ export class InvitationsService {
         throw new BadRequestException('La invitación ha expirado');
       }
 
-      // Validar email
-      if (invitation.invitedEmail.toLowerCase() !== dto.email.toLowerCase()) {
+      // Validar email si la invitación está restringida
+      if (
+        invitation.invitedEmail &&
+        invitation.invitedEmail.toLowerCase() !== dto.email.toLowerCase()
+      ) {
         throw new BadRequestException(
           'The invitation does not belong to this email address.',
         );
@@ -194,6 +220,8 @@ export class InvitationsService {
       );
 
       this.eventEmitter.emit('invitation.accepted', {
+        invitation,
+        invitedPersonId: newPerson.id,
         inviterPersonId: invitation.inviterPersonId,
         newUserName: newPerson.firstName,
       });
@@ -238,5 +266,108 @@ export class InvitationsService {
     );
 
     return savedInvitation;
+  }
+
+  async acceptInvitation(userId: string, token: string): Promise<void> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const invitation = await queryRunner.manager.findOne(Invitation, {
+        where: { token },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!invitation) throw new BadRequestException('Token inválido');
+
+      if (invitation.status !== InvitationStatus.PENDING) {
+        throw new BadRequestException(
+          'La invitación ya ha sido utilizada, cancelada o expirada',
+        );
+      }
+
+      if (invitation.expiresAt && new Date() > invitation.expiresAt) {
+        invitation.status = InvitationStatus.EXPIRED;
+        await queryRunner.manager.save(invitation);
+        throw new BadRequestException('La invitación expiró');
+      }
+
+      const person = await queryRunner.manager.findOne(Person, {
+        where: { user: { id: userId } },
+        relations: ['user'],
+      });
+
+      if (!person)
+        throw new BadRequestException(
+          'No se localizó el perfil asociado al usuario.',
+        );
+
+      if (
+        invitation.invitedEmail &&
+        invitation.invitedEmail.toLowerCase() !==
+          person.user.email.toLowerCase()
+      ) {
+        throw new BadRequestException(
+          'El email de la invitación no coincide con el de tu cuenta.',
+        );
+      }
+
+      invitation.status = InvitationStatus.ACCEPTED;
+      invitation.acceptedByPersonId = person.id;
+      invitation.acceptedAt = new Date();
+      await queryRunner.manager.save(invitation);
+
+      let contributionType: EcosystemContributionType;
+      switch (invitation.type) {
+        case InvitationType.CHURCH_ADMIN_CLAIM:
+          contributionType = EcosystemContributionType.CHURCH_ADMIN_INVITED;
+          break;
+        case InvitationType.CHURCH_MEMBERSHIP:
+          contributionType = EcosystemContributionType.CHURCH_MEMBER_INVITED;
+          break;
+        case InvitationType.NEED_SIGNAL_USER:
+          contributionType = EcosystemContributionType.NEED_SIGNAL_INVITED;
+          break;
+        case InvitationType.GENERAL_USER:
+        default:
+          contributionType = EcosystemContributionType.USER_INVITED;
+          break;
+      }
+
+      await this.contributionsService.recordContribution({
+        actorPersonId: invitation.inviterPersonId,
+        targetChurchId: invitation.targetChurchId,
+        type: contributionType,
+        metadata: {
+          invitationId: invitation.id,
+          invitedPersonId: person.id,
+          invitedEmail: invitation.invitedEmail,
+        },
+        manager: queryRunner.manager,
+      });
+
+      await queryRunner.manager.save(
+        this.historyRepository.create({
+          personId: person.id,
+          churchId: invitation.targetChurchId,
+          eventType: EcosystemHistoryEvent.INVITATION_ACCEPTED,
+        }),
+      );
+
+      this.eventEmitter.emit('invitation.accepted', {
+        invitation,
+        invitedPersonId: person.id,
+        inviterPersonId: invitation.inviterPersonId,
+        newUserName: person.firstName,
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

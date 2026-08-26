@@ -21,6 +21,7 @@ import { SmallGroupResponseDto } from '../dto/small-group-response.dto';
 import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
 import { RequirePermissions } from 'src/core/auth/decorators/require-permissions.decorator';
 import { AppPermission } from 'src/core/auth/authorization/permissions.enum';
+import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
 
 @Controller('public/small-groups')
 export class SmallGroupsController {
@@ -56,6 +57,11 @@ export class SmallGroupsController {
       limit,
       offset,
     };
+  }
+
+  @Get('map')
+  async mapMarkers(@Query() viewport: MapViewportDto) {
+    return this.smallGroupsService.mapMarkers(viewport);
   }
 
   @Get(':id/map-summary')

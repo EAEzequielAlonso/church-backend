@@ -15,6 +15,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { UserWorkspaceDto } from './dto/user-workspace.dto';
 import { ChurchPublicProfile } from 'src/public/church/entities/church_public_profile.entity';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class UsersService implements OnApplicationBootstrap {
@@ -26,6 +27,7 @@ export class UsersService implements OnApplicationBootstrap {
     @InjectRepository(ChurchPublicProfile)
     private churchProfileRepository: Repository<ChurchPublicProfile>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly storageService: StorageService,
   ) {}
 
   async getWorkspaces(personId: string): Promise<UserWorkspaceDto[]> {
@@ -151,7 +153,13 @@ export class UsersService implements OnApplicationBootstrap {
       if (data.phoneNumber !== undefined)
         user.person.phoneNumber = data.phoneNumber;
       if (data.birthDate !== undefined) user.person.birthDate = data.birthDate;
-      if (data.avatarUrl !== undefined) user.person.avatarUrl = data.avatarUrl;
+      
+      let oldAvatarUrl: string | null = null;
+      if (data.avatarUrl !== undefined && data.avatarUrl !== user.person.avatarUrl) {
+        oldAvatarUrl = user.person.avatarUrl;
+        user.person.avatarUrl = data.avatarUrl;
+      }
+      
       if (data.sex !== undefined) user.person.sex = data.sex;
       if (data.maritalStatus !== undefined)
         user.person.maritalStatus = data.maritalStatus;
@@ -177,6 +185,15 @@ export class UsersService implements OnApplicationBootstrap {
         user.person.isPublicProfileEnabled = data.isPublicProfileEnabled;
 
       await this.personRepository.save(user.person);
+
+      if (oldAvatarUrl) {
+        const oldKey = this.storageService.extractKeyFromUrl(oldAvatarUrl, 'avatars');
+        if (oldKey) {
+          this.storageService.deleteObject(oldKey).catch((err) => {
+            this.logger.error(`Failed to delete old avatar object from R2: ${oldKey}`, err.stack);
+          });
+        }
+      }
 
       const addressChanged =
         oldCountry !== user.person.country ||

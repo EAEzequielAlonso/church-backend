@@ -23,6 +23,7 @@ import { ChurchNeedSignalResponseDto } from '../dto/church-need-signals/church-n
 import { EditChurchNeedSignalDto } from '../dto/church-need-signals/edit-church-need-signal.dto';
 import { UpdateChurchNeedSignalStatusDto } from '../dto/church-need-signals/update-church-need-signal-status.dto';
 import { ChurchNeedSignalEvaluator } from '../policies/church-need-signals.evaluator';
+import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
 
 @Controller('public/church-need-signals')
 export class ChurchNeedSignalsController {
@@ -72,8 +73,8 @@ export class ChurchNeedSignalsController {
   }
 
   @Get('map')
-  async mapMarkers() {
-    return this.churchNeedSignalsService.mapMarkers();
+  async mapMarkers(@Query() viewport: MapViewportDto) {
+    return this.churchNeedSignalsService.mapMarkers(viewport);
   }
 
   @Get(':id/map-summary')
@@ -137,7 +138,6 @@ export class ChurchNeedSignalsController {
     if (!personId) throw new UnauthorizedException('Missing person context');
     return this.churchNeedSignalsService.updateStatus(personId, id, dto);
   }
-
 
   @Post(':id/information')
   @UseGuards(JwtAuthGuard)

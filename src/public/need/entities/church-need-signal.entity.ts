@@ -7,7 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
-  OneToMany
+  OneToMany,
 } from 'typeorm';
 
 import { Person } from 'src/core/users/entities/person.entity';
@@ -75,6 +75,9 @@ export class ChurchNeedSignal {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => ChurchNeedSignalSupport, support => support.churchNeedSignal)
+  @OneToMany(
+    () => ChurchNeedSignalSupport,
+    (support) => support.churchNeedSignal,
+  )
   supports: ChurchNeedSignalSupport[];
 }
