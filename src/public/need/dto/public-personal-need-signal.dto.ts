@@ -9,6 +9,8 @@ export class PublicPersonalNeedSignalDto {
   relativeTime: string;
   publicNote: string;
   status: NeedSignalStatus;
+  impactedPeopleCount: number;
+  avatarUrl?: string;
 
   static fromEntity(signal: NeedSignal): PublicPersonalNeedSignalDto {
     const dto = new PublicPersonalNeedSignalDto();
@@ -34,6 +36,8 @@ export class PublicPersonalNeedSignalDto {
 
     dto.publicNote = signal.note || 'Buscando una iglesia sana.';
     dto.status = signal.status;
+    dto.impactedPeopleCount = signal.impactedPeopleCount || 1;
+    dto.avatarUrl = signal.person?.avatarUrl || undefined;
     return dto;
   }
 }

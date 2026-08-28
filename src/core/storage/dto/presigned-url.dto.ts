@@ -7,6 +7,7 @@ export enum StorageContext {
   COVERS = 'covers',
   MAIN_IMAGES = 'main-images',
   MISSION_REPORTS = 'mission-reports',
+  NEED_SIGNALS = 'need-signals',
 }
 
 export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];

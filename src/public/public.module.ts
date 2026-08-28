@@ -12,6 +12,7 @@ import { PublicAdminModule } from './church/public-admin.module';
 import { NeedSignalsController } from './need/controllers/need-signals.controller';
 import { NeedSignalsService } from './need/services/need-signals.service';
 import { GetMapAggregatedNeedSignalsUseCase } from './need/use-cases/get-map-aggregated-need-signals.use-case';
+import { GetNearbyPersonalNeedSignalsUseCase } from './need/use-cases/get-nearby-personal-need-signals.use-case';
 import { CreateOrUpdatePersonalNeedSignalUseCase } from './need/use-cases/create-or-update-personal-need-signal.use-case';
 import { ClosePersonalNeedSignalUseCase } from './need/use-cases/close-personal-need-signal.use-case';
 import { GetActivePersonalNeedSignalUseCase } from './need/use-cases/get-active-personal-need-signal.use-case';
@@ -90,6 +91,7 @@ import { UnreachedAreaEvaluator } from './need/policies/unreached-area.evaluator
     ChurchNeedSignalsService,
     UnreachedAreasService,
     GetMapAggregatedNeedSignalsUseCase,
+    GetNearbyPersonalNeedSignalsUseCase,
     CreateOrUpdatePersonalNeedSignalUseCase,
     ClosePersonalNeedSignalUseCase,
     GetActivePersonalNeedSignalUseCase,

@@ -14,6 +14,7 @@ import {
 import { JwtAuthGuard } from '../../../core/auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../../../core/auth/guards/optional-jwt-auth.guard';
 import { GetMapAggregatedNeedSignalsUseCase } from '../use-cases/get-map-aggregated-need-signals.use-case';
+import { GetNearbyPersonalNeedSignalsUseCase } from '../use-cases/get-nearby-personal-need-signals.use-case';
 import { CreateOrUpdatePersonalNeedSignalUseCase } from '../use-cases/create-or-update-personal-need-signal.use-case';
 import { ClosePersonalNeedSignalUseCase } from '../use-cases/close-personal-need-signal.use-case';
 import { GetActivePersonalNeedSignalUseCase } from '../use-cases/get-active-personal-need-signal.use-case';
@@ -37,6 +38,7 @@ import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
 export class NeedSignalsController {
   constructor(
     private readonly getMapAggregatedNeedSignalsUseCase: GetMapAggregatedNeedSignalsUseCase,
+    private readonly getNearbyPersonalNeedSignalsUseCase: GetNearbyPersonalNeedSignalsUseCase,
     private readonly createOrUpdatePersonalNeedSignalUseCase: CreateOrUpdatePersonalNeedSignalUseCase,
     private readonly closePersonalNeedSignalUseCase: ClosePersonalNeedSignalUseCase,
     private readonly getActivePersonalNeedSignalUseCase: GetActivePersonalNeedSignalUseCase,
@@ -185,6 +187,22 @@ export class NeedSignalsController {
   @Get('map')
   async getMapSignals(@Query() viewport: MapViewportDto) {
     return this.getMapAggregatedNeedSignalsUseCase.execute(viewport);
+  }
+
+  @Get('nearby')
+  @UseGuards(OptionalJwtAuthGuard)
+  async getNearbySignals(
+    @Req() req: any,
+    @Query('lat') lat: string,
+    @Query('lng') lng: string,
+  ) {
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    if (isNaN(latNum) || isNaN(lngNum)) {
+      return [];
+    }
+    const personId = req.user?.personId;
+    return this.getNearbyPersonalNeedSignalsUseCase.execute(latNum, lngNum, 5, personId);
   }
 
   @Get('location/:locationId')

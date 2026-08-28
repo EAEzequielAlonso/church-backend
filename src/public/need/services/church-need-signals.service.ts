@@ -494,6 +494,7 @@ export class ChurchNeedSignalsService {
             category: dto.category,
             title: dto.title ?? null,
             contentSnippet: dto.content ? dto.content.substring(0, 150) : null,
+            attachments: dto.attachments ?? [],
           },
         },
         manager,

@@ -60,4 +60,28 @@ export class MapFilterUtil {
 
     return new MapLayerResponseDto(items.map(mapper), hasMore);
   }
+
+  /**
+   * Ordena los resultados por proximidad geográfica a un punto específico,
+   * calculando una distancia euclidiana aproximada ajustada por latitud.
+   * Útil cuando no se dispone de PostGIS.
+   */
+  static applyProximitySort<T>(
+    qb: SelectQueryBuilder<T>,
+    lat: number,
+    lng: number,
+    latColumn = 'latitude',
+    lngColumn = 'longitude',
+  ): SelectQueryBuilder<T> {
+    // Euclidean distance approximation considering latitude scaling factor
+    // Using simple math since it's only for ORDER BY ascending
+    qb.addSelect(
+      `(POWER(${latColumn} - :lat, 2) + POWER((${lngColumn} - :lng) * COS(RADIANS(:lat)), 2))`,
+      'distance_sq',
+    );
+    qb.setParameter('lat', lat);
+    qb.setParameter('lng', lng);
+    qb.orderBy('distance_sq', 'ASC');
+    return qb;
+  }
 }
