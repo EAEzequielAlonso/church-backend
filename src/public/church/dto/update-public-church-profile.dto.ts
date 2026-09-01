@@ -36,6 +36,10 @@ export class UpdatePublicChurchProfileDto {
   @IsOptional() @IsString() coverUrl?: string | null;
   @IsOptional() @IsString() mainImageUrl?: string | null;
 
+  @IsOptional() @IsString() slug?: string | null;
+  @IsOptional() isVerified?: boolean;
+
+
   // Social & Web Links
   @IsOptional() @IsString() website?: string | null;
   @IsOptional() @IsString() instagram?: string | null;

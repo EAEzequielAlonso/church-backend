@@ -35,6 +35,8 @@ export class ChurchPublicAdminService {
 
     return {
       churchId: profile.churchId,
+      slug: profile.slug,
+      isVerified: profile.isVerified,
       publicDescription: profile.publicDescription ?? null,
       denomination: profile.denomination ?? null,
       logoUrl: profile.logoUrl ?? null,
@@ -372,4 +374,15 @@ export class ChurchPublicAdminService {
       },
     };
   }
+
+  async checkSlug(personId: string, churchId: string, slug: string) {
+    await this.ownership.assertOwnsChurch(personId, churchId);
+    if (!slug) return { available: false };
+    const existing = await this.profiles.findOne({ where: { slug } });
+    if (!existing || existing.churchId === churchId) {
+      return { available: true };
+    }
+    return { available: false };
+  }
 }
+

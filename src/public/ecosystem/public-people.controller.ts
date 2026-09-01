@@ -68,6 +68,7 @@ export class PublicPeopleController {
       );
 
     return {
+      id: person.id,
       slug: person.slug,
       avatarUrl: person.avatarUrl,
       firstName: person.firstName,

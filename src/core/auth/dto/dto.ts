@@ -102,6 +102,15 @@ export class RegisterUserDto {
   password: string;
 
   @ApiProperty({
+    example: 'Password123!',
+    description: 'Confirmación de la contraseña',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  confirmPassword?: string;
+
+  @ApiProperty({
     example: 'Pedro',
     description: 'Nombre (opcional)',
     required: false,

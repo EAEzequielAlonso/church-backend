@@ -210,14 +210,16 @@ export class InvitationsService {
         manager: queryRunner.manager,
       });
 
-      // 6. Record Ecosystem History
-      await queryRunner.manager.save(
-        this.historyRepository.create({
-          personId: newPerson.id,
-          churchId: invitation.targetChurchId,
-          eventType: EcosystemHistoryEvent.INVITATION_ACCEPTED,
-        }),
-      );
+      // 6. Record Ecosystem History (only for church-related invitations)
+      if (invitation.targetChurchId) {
+        await queryRunner.manager.save(
+          this.historyRepository.create({
+            personId: newPerson.id,
+            churchId: invitation.targetChurchId,
+            eventType: EcosystemHistoryEvent.INVITATION_ACCEPTED,
+          }),
+        );
+      }
 
       this.eventEmitter.emit('invitation.accepted', {
         invitation,
@@ -347,13 +349,16 @@ export class InvitationsService {
         manager: queryRunner.manager,
       });
 
-      await queryRunner.manager.save(
-        this.historyRepository.create({
-          personId: person.id,
-          churchId: invitation.targetChurchId,
-          eventType: EcosystemHistoryEvent.INVITATION_ACCEPTED,
-        }),
-      );
+      // Record Ecosystem History (only for church-related invitations)
+      if (invitation.targetChurchId) {
+        await queryRunner.manager.save(
+          this.historyRepository.create({
+            personId: person.id,
+            churchId: invitation.targetChurchId,
+            eventType: EcosystemHistoryEvent.INVITATION_ACCEPTED,
+          }),
+        );
+      }
 
       this.eventEmitter.emit('invitation.accepted', {
         invitation,

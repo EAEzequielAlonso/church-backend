@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DoctrinalOpinion } from 'src/public/church/entities/doctrinal-opinion.entity';
 import { DoctrinalOpinionsService } from './doctrinal-opinions.service';
 import { DoctrinalOpinionsController } from './doctrinal-opinions.controller';
-import { DoctrinalOpinionsAdminController } from './doctrinal-opinions-admin.controller';
 import { EcosystemContributionsModule } from 'src/public/ecosystem/ecosystem-contributions.module';
 import { EcosystemActivitiesModule } from 'src/public/ecosystem/ecosystem-activities.module';
 
@@ -14,7 +13,7 @@ import { EcosystemActivitiesModule } from 'src/public/ecosystem/ecosystem-activi
     EcosystemActivitiesModule,
   ],
   providers: [DoctrinalOpinionsService],
-  controllers: [DoctrinalOpinionsController, DoctrinalOpinionsAdminController],
+  controllers: [DoctrinalOpinionsController],
   exports: [DoctrinalOpinionsService],
 })
 export class DoctrinalOpinionsModule {}

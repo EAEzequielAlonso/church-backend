@@ -36,8 +36,15 @@ export class AdminChurchDoctrinalDto {
 
 export class AdminChurchProfileResponseDto {
   churchId: string;
+  slug: string | null;
+  isVerified: boolean;
   publicDescription: string | null;
   denomination: ChurchDenomination | null;
+  
+  logoUrl: string | null;
+  coverUrl: string | null;
+  mainImageUrl: string | null;
+
 
   contact: {
     contactEmail: string | null;

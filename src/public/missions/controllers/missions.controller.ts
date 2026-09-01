@@ -21,6 +21,7 @@ import { MissionCollaborationQueryDto } from '../dto/mission-collaboration-query
 import { CurrentUser } from '../../../common/decorators';
 import { Person } from '../../../core/users/entities/person.entity';
 import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
+import { MissionDirectoryQueryDto } from '../dto/mission-directory-query.dto';
 
 @Controller('public/missions')
 export class MissionsController {
@@ -32,7 +33,7 @@ export class MissionsController {
   ) {}
 
   @Get()
-  async findAll(@Query() query: PaginationQueryDto) {
+  async findAll(@Query() query: MissionDirectoryQueryDto) {
     const result = await this.missionsService.findAllActive(query);
     return new PaginatedResponseDto(
       result.data.map((m) => MissionProjectResponseDto.fromEntity(m)),
@@ -45,6 +46,20 @@ export class MissionsController {
   @Get('map')
   async mapMarkers(@Query() viewport: MapViewportDto) {
     return this.missionsService.mapMarkers(viewport);
+  }
+
+  @Get('church/:churchId/involved')
+  async getChurchInvolvedMissions(
+    @Param('churchId') churchId: string,
+    @Query() query: PaginationQueryDto
+  ) {
+    const result = await this.missionsService.findInvolvedByChurch(churchId, query);
+    return new PaginatedResponseDto(
+      result.data.map((m) => MissionProjectResponseDto.fromEntity(m)),
+      result.total,
+      result.page,
+      result.pageSize,
+    );
   }
 
   @Get(':id/map-summary')

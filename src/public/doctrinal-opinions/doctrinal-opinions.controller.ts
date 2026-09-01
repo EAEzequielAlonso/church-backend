@@ -11,9 +11,11 @@ import {
 import { DoctrinalOpinionsService } from './doctrinal-opinions.service';
 import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
 import { CreateOrUpdateDoctrinalOpinionDto } from './dto/create-or-update-doctrinal-opinion.dto';
-
+import { CurrentUser } from 'src/common/decorators';
+import { SecurityContext } from 'src/core/auth/security-context.interface';
+import { SecurityContextGuard } from 'src/core/auth/guards/security-context.guard';
 @Controller('doctrinal-opinions')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SecurityContextGuard)
 export class DoctrinalOpinionsController {
   constructor(
     private readonly doctrinalOpinionsService: DoctrinalOpinionsService,
@@ -21,24 +23,33 @@ export class DoctrinalOpinionsController {
 
   @Post('church/:churchId')
   createOrUpdateOpinion(
-    @Req() req: any,
+    @CurrentUser() context: SecurityContext,
     @Param('churchId') churchId: string,
     @Body() dto: CreateOrUpdateDoctrinalOpinionDto,
   ) {
+    if (!context.personId) throw new Error('Person ID is required');
     return this.doctrinalOpinionsService.createOrUpdateOpinion(
-      req.user.id,
+      context.personId,
       churchId,
       dto,
     );
   }
 
   @Get('church/:churchId/my')
-  getMyOpinion(@Req() req: any, @Param('churchId') churchId: string) {
-    return this.doctrinalOpinionsService.getMyOpinion(req.user.id, churchId);
+  getMyOpinion(@CurrentUser() context: SecurityContext, @Param('churchId') churchId: string) {
+    if (!context.personId) throw new Error('Person ID is required');
+    return this.doctrinalOpinionsService.getMyOpinion(context.personId, churchId);
   }
 
   @Delete('church/:churchId/my')
-  deleteMyOpinion(@Req() req: any, @Param('churchId') churchId: string) {
-    return this.doctrinalOpinionsService.deleteMyOpinion(req.user.id, churchId);
+  deleteMyOpinion(@CurrentUser() context: SecurityContext, @Param('churchId') churchId: string) {
+    if (!context.personId) throw new Error('Person ID is required');
+    return this.doctrinalOpinionsService.deleteMyOpinion(context.personId, churchId);
+  }
+
+  @Get('my')
+  getMyOpinions(@CurrentUser() context: SecurityContext) {
+    if (!context.personId) throw new Error('Person ID is required');
+    return this.doctrinalOpinionsService.getMyOpinions(context.personId);
   }
 }

@@ -21,6 +21,7 @@ import { MissionMapMarkerDto } from '../dto/mission-map-marker.dto';
 import { MapViewportDto } from 'src/shared/dtos/map-viewport.dto';
 import { MapLayerResponseDto } from 'src/shared/dtos/map-layer-response.dto';
 import { MapFilterUtil } from 'src/shared/utils/map-filter.util';
+import { MissionDirectoryQueryDto } from '../dto/mission-directory-query.dto';
 
 import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
 import {
@@ -89,16 +90,35 @@ export class MissionsService {
   }
 
   async findAllActive(
-    query: PaginationQueryDto,
+    query: MissionDirectoryQueryDto,
   ): Promise<PaginatedResponseDto<MissionProject>> {
-    const { page = 1, limit = 12, sort = 'createdAt', order = 'DESC' } = query;
-    const [data, total] = await this.missionsRepo.findAndCount({
-      where: { status: MissionProjectStatus.ACTIVE },
-      relations: ['creatorChurch', 'creatorChurch.publicProfile', 'leader'],
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { [sort]: order },
-    });
+    const { page = 1, limit = 12, sort = 'createdAt', order = 'DESC', search, country, state, city } = query;
+
+    const qb = this.missionsRepo.createQueryBuilder('mission')
+      .leftJoinAndSelect('mission.creatorChurch', 'creatorChurch')
+      .leftJoinAndSelect('creatorChurch.publicProfile', 'creatorProfile')
+      .leftJoinAndSelect('mission.leader', 'leader')
+      .where('mission.status = :status', { status: MissionProjectStatus.ACTIVE });
+
+    if (search) {
+      qb.andWhere('(mission.title ILIKE :search OR mission.description ILIKE :search)', { search: `%${search}%` });
+    }
+    if (country) {
+      qb.andWhere('mission.country ILIKE :country', { country: `%${country}%` });
+    }
+    if (state) {
+      qb.andWhere('mission.state ILIKE :state', { state: `%${state}%` });
+    }
+    if (city) {
+      qb.andWhere('mission.city ILIKE :city', { city: `%${city}%` });
+    }
+
+    const [data, total] = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy(`mission.${sort}`, order as 'ASC' | 'DESC')
+      .getManyAndCount();
+
     return new PaginatedResponseDto(data, total, page, limit);
   }
 
@@ -114,6 +134,32 @@ export class MissionsService {
       take: limit,
       order: { [sort]: order as 'ASC' | 'DESC' },
     });
+    return new PaginatedResponseDto(data, total, page, limit);
+  }
+
+  async findInvolvedByChurch(
+    churchId: string,
+    query: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<MissionProject>> {
+    const { page = 1, limit = 12, sort = 'createdAt', order = 'DESC' } = query;
+    
+    const qb = this.missionsRepo.createQueryBuilder('mission')
+      .leftJoinAndSelect('mission.creatorChurch', 'creatorChurch')
+      .leftJoinAndSelect('creatorChurch.publicProfile', 'creatorProfile')
+      .leftJoinAndSelect('mission.leader', 'leader')
+      .leftJoin('mission.collaborations', 'collab')
+      .where('mission.status = :status', { status: MissionProjectStatus.ACTIVE })
+      .andWhere('(mission.creatorChurchId = :churchId OR (collab.churchId = :churchId AND collab.status != :collabStatus))', { 
+        churchId,
+        collabStatus: MissionCollaborationStatus.REJECTED
+      });
+
+    const [data, total] = await qb
+      .orderBy(`mission.${sort}`, order as 'ASC' | 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
     return new PaginatedResponseDto(data, total, page, limit);
   }
 

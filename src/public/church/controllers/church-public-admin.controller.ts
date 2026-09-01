@@ -108,6 +108,16 @@ export class ChurchPublicAdminController {
     return this.service.getProfileForAdmin(this.personId(req), churchId);
   }
 
+  @Get('church-profile/:churchId/slug/check')
+  checkSlug(
+    @Req() req: any,
+    @Param('churchId') churchId: string,
+    @Query('slug') slug: string,
+  ) {
+    return this.service.checkSlug(this.personId(req), churchId, slug);
+  }
+
+
   @Patch('church-profile/:churchId') patch(
     @Req() req: any,
     @Param('churchId') churchId: string,

@@ -1,4 +1,4 @@
-import { NotFoundException, Injectable, Logger } from '@nestjs/common';
+import { NotFoundException, Injectable, Logger, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PublicServiceSchedule } from '../entities/public-service-schedule.entity';
@@ -80,6 +80,18 @@ export class UpdatePublicChurchProfileUseCase {
     }
 
     if (dto.denomination !== undefined) profile.denomination = dto.denomination;
+    if (dto.isVerified !== undefined) profile.isVerified = dto.isVerified;
+    
+    if (dto.slug !== undefined) {
+      if (dto.slug !== profile.slug && dto.slug !== null) {
+        // verify uniqueness
+        const existing = await this.profiles.findOne({ where: { slug: dto.slug } });
+        if (existing && existing.churchId !== churchId) {
+          throw new ConflictException('Slug ya está en uso por otra iglesia');
+        }
+      }
+      profile.slug = dto.slug;
+    }
 
     const saved = await this.profiles.save(profile);
 
@@ -128,6 +140,7 @@ export class UpdatePublicChurchProfileUseCase {
     return {
       churchId: saved.churchId,
       isVerified: saved.isVerified,
+      slug: saved.slug,
       publicDescription: saved.publicDescription ?? null,
       doctrinalTags: [], // Taxonomy
       serviceTimes: {}, // PublicServiceSchedule

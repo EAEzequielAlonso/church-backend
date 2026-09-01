@@ -126,16 +126,14 @@ export class AuthService {
 
     // Create User
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const verificationCode = dto.inviteToken
-      ? null
-      : this.generateVerificationCode();
+    const verificationCode = this.generateVerificationCode();
 
     const user = this.userRepository.create({
       email: dto.email,
       password: hashedPassword,
       systemRole: SystemRole.USER,
-      isEmailVerified: !!dto.inviteToken,
-      isOnboarded: !!dto.inviteToken,
+      isEmailVerified: false,
+      isOnboarded: false,
       provider: 'local',
       verificationCode,
       verificationCodeExpiresAt: verificationCode

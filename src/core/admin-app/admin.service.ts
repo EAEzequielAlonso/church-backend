@@ -10,6 +10,7 @@ import { Repository, MoreThanOrEqual } from 'typeorm';
 import { ChurchPublicProfile } from '../../public/church/entities/church_public_profile.entity';
 import { ChurchClaim } from '../../public/church/entities/church_claim.entity';
 import { PublicChurchRelation } from '../../public/church/entities/public_church_relation.entity';
+import { DoctrinalOpinion } from '../../public/church/entities/doctrinal-opinion.entity';
 import { EcosystemContributionsService } from '../../public/ecosystem/services/ecosystem-contributions.service';
 import { ChurchLifecycleService } from 'src/public/church/church-profile/services/church-lifecycle.service';
 import {
@@ -30,6 +31,8 @@ export class AdminService {
     private readonly claimRepo: Repository<ChurchClaim>,
     @InjectRepository(PublicChurchRelation)
     private readonly relationRepo: Repository<PublicChurchRelation>,
+    @InjectRepository(DoctrinalOpinion)
+    private readonly opinionRepo: Repository<DoctrinalOpinion>,
     private readonly contributionsService: EcosystemContributionsService,
     private readonly lifecycleService: ChurchLifecycleService,
   ) {}
@@ -179,18 +182,21 @@ export class AdminService {
       where: { churchId: id },
       relations: ['church'],
     });
-    if (!relation) throw new NotFoundException('Church not found');
+    if (!profile) throw new NotFoundException('Church not found');
 
     let adminName = null;
     let adminEmail = null;
-    const adminPerson = await this.personRepo.findOne({
-      where: { id: relation.personId },
-      relations: ['user'],
-    });
-    if (adminPerson) {
-      adminName =
-        `${adminPerson.firstName || ''} ${adminPerson.lastName || ''}`.trim();
-      adminEmail = adminPerson.user?.email || null;
+    
+    if (relation) {
+      const adminPerson = await this.personRepo.findOne({
+        where: { id: relation.personId },
+        relations: ['user'],
+      });
+      if (adminPerson) {
+        adminName =
+          `${adminPerson.firstName || ''} ${adminPerson.lastName || ''}`.trim();
+        adminEmail = adminPerson.user?.email || null;
+      }
     }
 
     const pendingClaim = await this.claimRepo.findOne({
@@ -210,11 +216,30 @@ export class AdminService {
       };
     }
 
+    const opinions = await this.opinionRepo.find({
+      where: { churchId: id },
+      relations: ['person', 'person.user'],
+      order: { createdAt: 'DESC' },
+    });
+
+    const opinionsData = opinions.map((op) => ({
+      id: op.id,
+      opinion: op.opinion,
+      comment: op.comment,
+      createdAt: op.createdAt,
+      reviewedByAdmin: op.reviewedByAdmin,
+      personName: op.person ? `${op.person.firstName || ''} ${op.person.lastName || ''}`.trim() : 'Usuario',
+    }));
+
     return {
       id: profile.churchId,
       name: profile.church?.canonicalName || 'Sin Nombre',
       city: profile.city,
+      state: profile.state,
       country: profile.country,
+      address: profile.address,
+      publicDescription: profile.publicDescription,
+      denomination: profile.denomination,
       logoUrl: profile.logoUrl,
       coverUrl: profile.coverUrl,
       isVerified: profile.isVerified,
@@ -226,6 +251,7 @@ export class AdminService {
       adminName,
       adminEmail,
       pendingClaim: claimData,
+      opinions: opinionsData,
       createdAt: profile.createdAt,
       slug: profile.slug,
     };

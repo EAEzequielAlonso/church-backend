@@ -13,6 +13,12 @@ async function bootstrap() {
   // Enable CORS
   app.enableCors();
 
+  // Simple Request Logger
+  app.use((req: any, res: any, next: any) => {
+    logger.log(`[REQ] ${req.method} ${req.url}`);
+    next();
+  });
+
   // Enable Global Validation
   app.useGlobalPipes(
     new ValidationPipe({

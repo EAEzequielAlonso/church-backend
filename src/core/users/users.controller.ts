@@ -1,4 +1,4 @@
-import { Controller, Patch, Get, Body, UseGuards } from '@nestjs/common';
+import { Controller, Patch, Get, Body, UseGuards, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SecurityContextGuard } from '../auth/guards/security-context.guard';
@@ -54,6 +54,21 @@ export class UsersController {
   async getWorkspaces(@CurrentUser() securityContext: SecurityContext) {
     if (!securityContext.personId) return [];
     return this.usersService.getWorkspaces(securityContext.personId);
+  }
+
+  @UseGuards(JwtAuthGuard, SecurityContextGuard)
+  @Get('profile/slug-availability')
+  @ApiOperation({ summary: 'Check if a slug is available' })
+  async checkSlugAvailability(
+    @CurrentUser() securityContext: SecurityContext,
+    @Query('slug') slug: string,
+  ) {
+    if (!slug) return { available: false };
+    const available = await this.usersService.isSlugAvailable(
+      slug,
+      securityContext.userId,
+    );
+    return { available };
   }
 
   @UseGuards(JwtAuthGuard, SecurityContextGuard)

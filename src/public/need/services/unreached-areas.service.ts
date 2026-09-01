@@ -166,6 +166,10 @@ export class UnreachedAreasService {
       country: needLocation.country,
       state: needLocation.state,
       city: needLocation.city,
+      metadata: {
+        title: savedArea.title,
+        missionaryNotes: savedArea.missionaryNotes ?? savedArea.description ?? null,
+      },
     });
 
     return savedArea;
@@ -401,6 +405,7 @@ export class UnreachedAreasService {
         title: dto.title ?? null,
         contentSnippet: dto.content ? dto.content.substring(0, 150) : null,
         areaTitle: area.title,
+        attachments: dto.attachments ?? [],
       },
     });
 

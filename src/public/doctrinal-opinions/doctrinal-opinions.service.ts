@@ -84,56 +84,19 @@ export class DoctrinalOpinionsService {
     return DoctrinalOpinionResponseDto.fromEntity(opinion);
   }
 
-  async getChurchOpinionsForAdmin(
-    churchId: string,
-    filterPending?: boolean,
-  ): Promise<DoctrinalOpinionResponseDto[]> {
-    const query = this.doctrinalOpinionRepo
-      .createQueryBuilder('opinion')
-      .where('opinion.churchId = :churchId', { churchId })
-      .orderBy('opinion.createdAt', 'DESC');
-
-    if (filterPending) {
-      query.andWhere('opinion.reviewedByAdmin = false');
-    }
-
-    const opinions = await query.getMany();
-    return opinions.map((o) => DoctrinalOpinionResponseDto.fromEntity(o));
-  }
-
-  async markAsReviewedByAdmin(
-    id: string,
-    churchId: string,
-  ): Promise<DoctrinalOpinionResponseDto> {
-    const opinion = await this.doctrinalOpinionRepo.findOne({
-      where: { id, churchId },
+  async getMyOpinions(personId: string): Promise<DoctrinalOpinionResponseDto[]> {
+    const opinions = await this.doctrinalOpinionRepo.find({
+      where: { personId },
+      relations: ['church', 'church.publicProfile'],
+      order: { createdAt: 'DESC' },
     });
 
-    if (!opinion) {
-      throw new NotFoundException('Opinion not found');
-    }
-
-    opinion.reviewedByAdmin = true;
-    const savedOpinion = await this.doctrinalOpinionRepo.save(opinion);
-
-    return DoctrinalOpinionResponseDto.fromEntity(savedOpinion);
+    return opinions.map((o) => DoctrinalOpinionResponseDto.fromEntity(o));
   }
 
   async deleteMyOpinion(personId: string, churchId: string): Promise<void> {
     const opinion = await this.doctrinalOpinionRepo.findOne({
       where: { personId, churchId },
-    });
-
-    if (!opinion) {
-      throw new NotFoundException('Opinion not found');
-    }
-
-    await this.doctrinalOpinionRepo.remove(opinion);
-  }
-
-  async deleteOpinionAsAdmin(id: string, churchId: string): Promise<void> {
-    const opinion = await this.doctrinalOpinionRepo.findOne({
-      where: { id, churchId },
     });
 
     if (!opinion) {

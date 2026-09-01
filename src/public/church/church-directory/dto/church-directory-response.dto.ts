@@ -11,6 +11,7 @@ export class PublicChurchDirectoryItemDto {
   longitude: number | null;
   isVerified: boolean;
   publicDescription: string | null;
+  denomination: string | null;
 }
 
 export class PublicChurchDirectoryResponseDto {

@@ -18,6 +18,7 @@ export interface VisibleContributionsDto {
 }
 
 export class PublicPersonProfileDto {
+  id: string;
   slug: string;
   avatarUrl: string | null;
   firstName: string | null;

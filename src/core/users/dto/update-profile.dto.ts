@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsDateString,
   IsNumber,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { MaritalStatus, Sex } from '../enums/person.enum';
@@ -101,6 +102,7 @@ export class UpdateProfileDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @IsBoolean()
   isPublicProfileEnabled?: boolean;
 
   @ApiProperty({ required: false })

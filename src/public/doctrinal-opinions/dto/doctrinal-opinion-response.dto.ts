@@ -13,6 +13,13 @@ export class DoctrinalOpinionResponseDto {
   createdAt: Date;
   updatedAt: Date;
 
+  // Optional relations
+  church?: {
+    name: string;
+    slug?: string;
+    logoUrl?: string;
+  };
+
   static fromEntity(entity: DoctrinalOpinion): DoctrinalOpinionResponseDto {
     const dto = new DoctrinalOpinionResponseDto();
     dto.id = entity.id;
@@ -23,6 +30,16 @@ export class DoctrinalOpinionResponseDto {
     dto.reviewedByAdmin = entity.reviewedByAdmin;
     dto.createdAt = entity.createdAt;
     dto.updatedAt = entity.updatedAt;
+    dto.updatedAt = entity.updatedAt;
+
+    if (entity.church) {
+      dto.church = {
+        name: entity.church.canonicalName || 'Iglesia',
+        slug: entity.church.publicProfile?.slug,
+        logoUrl: entity.church.publicProfile?.logoUrl,
+      };
+    }
+
     return dto;
   }
 }

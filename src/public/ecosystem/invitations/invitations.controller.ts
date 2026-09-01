@@ -30,12 +30,14 @@ export class InvitationsController {
   @Get(':token')
   @ApiOperation({ summary: 'Consultar datos de una invitación por token' })
   async getInvitation(@Param('token') token: string) {
+    console.log(`\n[INVITATION DEBUG] Invite token received:\n${token}\n`);
     return this.invitationsService.getInvitationByToken(token);
   }
 
   @Post('register')
   @ApiOperation({ summary: 'Registro de usuario consumiendo una invitación' })
   async registerFromInvitation(@Body() dto: RegisterFromInvitationDto) {
+    console.log(`\n[INVITATION DEBUG] Registration invite token:\n${dto.inviteToken}\n`);
     await this.invitationsService.registerFromInvitation(dto);
     return { message: 'Registro e invitación procesados con éxito' };
   }
@@ -48,6 +50,7 @@ export class InvitationsController {
       'Aceptar una invitación siendo un usuario existente (Requiere JWT)',
   })
   async acceptInvitation(@Request() req, @Param('token') token: string) {
+    console.log(`\n[INVITATION DEBUG] Accept invitation token:\n${token}\n`);
     const userId = req.user.id;
     await this.invitationsService.acceptInvitation(userId, token);
     return { message: 'Invitación aceptada con éxito' };

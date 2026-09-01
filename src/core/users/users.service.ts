@@ -181,8 +181,16 @@ export class UsersService implements OnApplicationBootstrap {
         user.person.occupation = data.occupation;
 
       if (data.slug !== undefined) user.person.slug = data.slug;
-      if (data.isPublicProfileEnabled !== undefined)
+      
+      if (data.isPublicProfileEnabled !== undefined) {
         user.person.isPublicProfileEnabled = data.isPublicProfileEnabled;
+        
+        if (data.isPublicProfileEnabled && !user.person.slug && !data.slug) {
+          const fname = data.firstName ?? user.person.firstName ?? 'user';
+          const lname = data.lastName ?? user.person.lastName ?? '';
+          user.person.slug = this.generateSlug(fname, lname);
+        }
+      }
 
       await this.personRepository.save(user.person);
 
@@ -216,5 +224,23 @@ export class UsersService implements OnApplicationBootstrap {
     }
 
     return this.userRepository.save(user);
+  }
+
+  private generateSlug(firstName: string, lastName: string): string {
+    const base = `${firstName} ${lastName}`
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+    return `${base}-${Math.floor(Math.random() * 10000)}`;
+  }
+
+  async isSlugAvailable(slug: string, userId: string): Promise<boolean> {
+    const user = await this.findOne(userId);
+    if (!user.person) return false;
+    const existing = await this.personRepository.findOne({
+      where: { slug },
+    });
+    if (!existing) return true;
+    return existing.id === user.person.id;
   }
 }

@@ -68,6 +68,7 @@ export class ChurchDirectoryService {
         isVerified: r.isVerified,
         doctrinalTags: [],
         publicDescription: r.publicDescription ?? null,
+        denomination: r.denomination ?? null,
       })),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
