@@ -14,6 +14,8 @@ import { UnreachedAreaHydrator } from './services/hydration/unreached-area.hydra
 import { MissionReportHydrator } from './services/hydration/mission-report.hydrator';
 import { EcosystemHydrationRegistry } from './services/hydration/ecosystem-hydration.registry';
 import { MissionReport } from '../missions/entities/mission-report.entity';
+import { Person } from '../../core/users/entities/person.entity';
+import { ChurchFollow } from '../church/entities/follower.entity';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { MissionReport } from '../missions/entities/mission-report.entity';
       ChurchNeedSignal,
       UnreachedArea,
       MissionReport,
+      Person,
+      ChurchFollow,
     ]),
   ],
   controllers: [EcosystemActivitiesController],

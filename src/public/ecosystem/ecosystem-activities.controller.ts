@@ -1,5 +1,7 @@
-import { Controller, Get, Query, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Query, Param, UseGuards, Req } from '@nestjs/common';
+import { Request } from 'express';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../core/auth/guards/jwt-auth.guard';
 import { EcosystemActivitiesService } from './services/ecosystem-activities.service';
 import { GetEcosystemActivitiesDto } from './dto/get-ecosystem-activities.dto';
 import { EcosystemActivity } from './entities/ecosystem-activity.entity';
@@ -15,6 +17,21 @@ export class EcosystemActivitiesController {
   async getGlobalFeed(@Query() query: GetEcosystemActivitiesDto) {
     const activities = await this.activitiesService.getActivities(query);
     return activities.map(this.mapToResponse);
+  }
+
+  @Get('personalized')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get personalized ecosystem activity feed for the logged in user' })
+  async getPersonalizedFeed(
+    @Req() req: Request & { user: { personId: string } },
+    @Query() query: GetEcosystemActivitiesDto,
+  ) {
+    const activities = await this.activitiesService.getPersonalizedActivities(
+      req.user.personId,
+      query,
+    );
+    return activities.map((activity) => this.mapToResponse(activity));
   }
 
   @Get('location')
@@ -103,6 +120,7 @@ export class EcosystemActivitiesController {
             coverUrl: activity.actorChurch.publicProfile?.coverUrl,
             city: activity.actorChurch.publicProfile?.city,
             state: activity.actorChurch.publicProfile?.state,
+            denomination: activity.actorChurch.publicProfile?.denomination,
           }
         : null,
       relatedChurch: activity.relatedChurch
@@ -114,6 +132,7 @@ export class EcosystemActivitiesController {
             coverUrl: activity.relatedChurch.publicProfile?.coverUrl,
             city: activity.relatedChurch.publicProfile?.city,
             state: activity.relatedChurch.publicProfile?.state,
+            denomination: activity.relatedChurch.publicProfile?.denomination,
           }
         : null,
       targetEntity: {

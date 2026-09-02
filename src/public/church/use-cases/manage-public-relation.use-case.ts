@@ -100,6 +100,9 @@ export class ManagePublicRelationUseCase {
               country: church?.publicProfile?.country,
               state: church?.publicProfile?.state,
               city: church?.publicProfile?.city,
+              metadata: {
+                relationType: row.relationType,
+              },
             },
             manager,
           );
