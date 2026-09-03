@@ -20,6 +20,11 @@ import { ChurchRelationsPolicy } from '../policies/church-relations.policies';
 import { CreatePublicRelationDto } from '../dto/create-public-relation.dto';
 import { PublicRelationResponseDto } from '../dto/public-relation-response.dto';
 import { GeoNormalizationUtil } from '../../ecosystem/geo/utils/geo-normalization.util';
+import { EcosystemActivitiesService } from '../../ecosystem/services/ecosystem-activities.service';
+import {
+  EcosystemActivityType,
+  EcosystemActivityEntityType,
+} from '../../ecosystem/enums/ecosystem.enums';
 
 @Injectable()
 export class PublicRelationsService {
@@ -31,6 +36,7 @@ export class PublicRelationsService {
     @InjectRepository(Church) private readonly churches: Repository<Church>,
     private readonly eventEmitter: EventEmitter2,
     private readonly ownershipService: ChurchOwnershipService,
+    private readonly activitiesService: EcosystemActivitiesService,
   ) {}
 
   async create(personId: string, dto: CreatePublicRelationDto) {
@@ -107,6 +113,25 @@ export class PublicRelationsService {
                   : EcosystemHistoryEvent.VISITOR_JOINED,
             }),
           );
+
+          if (dto.relationType === PublicChurchRelationType.COMMUNITY_MEMBER) {
+            await this.activitiesService.logActivity(
+              {
+                actorPersonId: personId,
+                relatedChurchId: savedRelation.churchId,
+                activityType: EcosystemActivityType.MEMBER_JOINED,
+                entityId: personId,
+                entityType: EcosystemActivityEntityType.PERSON,
+                country: church?.publicProfile?.country,
+                state: church?.publicProfile?.state,
+                city: church?.publicProfile?.city,
+                metadata: {
+                  relationType: dto.relationType,
+                },
+              },
+              manager,
+            );
+          }
         }
       }
 
