@@ -18,8 +18,8 @@ export const getDatabaseConfig = (): TypeOrmModuleOptions => ({
   ],
   autoLoadEntities: true,
   logging: false, // Set to true to debug queries
-  synchronize: true,
-  dropSchema: true,
+  //synchronize: false,
+  //dropSchema: false,
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   migrationsRun: false,
   extra: {
