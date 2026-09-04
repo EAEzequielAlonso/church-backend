@@ -44,6 +44,7 @@ export class AdminChurchProfileResponseDto {
   logoUrl: string | null;
   coverUrl: string | null;
   mainImageUrl: string | null;
+  photoUrls: string[];
 
 
   contact: {

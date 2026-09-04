@@ -114,24 +114,22 @@ export class PublicRelationsService {
             }),
           );
 
-          if (dto.relationType === PublicChurchRelationType.COMMUNITY_MEMBER) {
-            await this.activitiesService.logActivity(
-              {
-                actorPersonId: personId,
-                relatedChurchId: savedRelation.churchId,
-                activityType: EcosystemActivityType.MEMBER_JOINED,
-                entityId: personId,
-                entityType: EcosystemActivityEntityType.PERSON,
-                country: church?.publicProfile?.country,
-                state: church?.publicProfile?.state,
-                city: church?.publicProfile?.city,
-                metadata: {
-                  relationType: dto.relationType,
-                },
+          await this.activitiesService.logActivity(
+            {
+              actorPersonId: personId,
+              relatedChurchId: savedRelation.churchId,
+              activityType: EcosystemActivityType.MEMBER_JOINED,
+              entityId: personId,
+              entityType: EcosystemActivityEntityType.PERSON,
+              country: church?.publicProfile?.country,
+              state: church?.publicProfile?.state,
+              city: church?.publicProfile?.city,
+              metadata: {
+                relationType: dto.relationType,
               },
-              manager,
-            );
-          }
+            },
+            manager,
+          );
         }
       }
 

@@ -42,6 +42,7 @@ export class ChurchPublicAdminService {
       logoUrl: profile.logoUrl ?? null,
       coverUrl: profile.coverUrl ?? null,
       mainImageUrl: profile.mainImageUrl ?? null,
+      photoUrls: profile.photoUrls || [],
       contact: {
         contactEmail: profile.contactEmail ?? null,
         contactPhone: profile.contactPhone ?? null,

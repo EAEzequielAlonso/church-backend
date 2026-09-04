@@ -12,6 +12,8 @@ export class ChurchDirectoryQueryDto {
   @IsOptional() @IsString() city?: string;
   @IsOptional() @IsString() state?: string;
   @IsOptional() @IsString() country?: string;
+  @IsOptional() @Type(() => Number) latitude?: number;
+  @IsOptional() @Type(() => Number) longitude?: number;
   @IsOptional() @IsBooleanString() verified?: string;
   @IsOptional() @IsString() search?: string;
   @IsOptional() @IsString() doctrinalTag?: string;

@@ -85,9 +85,13 @@ export class AuthService {
       await manager.save(user);
     });
 
-    this.emailService.sendVerificationCode(user.email, verificationCode);
+    const emailSent = await this.emailService.sendVerificationCode(user.email, verificationCode);
 
-    return { message: 'Verification email sent', email: dto.email };
+    return { 
+      message: emailSent ? 'Verification email sent' : 'User created but email failed to send', 
+      email: dto.email,
+      emailSent
+    };
   }
 
   // ==========================================
@@ -151,11 +155,16 @@ export class AuthService {
       await manager.save(user);
     });
 
+    let emailSent = false;
     if (verificationCode) {
-      this.emailService.sendVerificationCode(user.email, verificationCode);
+      emailSent = await this.emailService.sendVerificationCode(user.email, verificationCode);
     }
 
-    return { message: 'Verification email sent', email: dto.email };
+    return { 
+      message: emailSent ? 'Verification email sent' : 'User created but email failed to send', 
+      email: dto.email,
+      emailSent
+    };
   }
 
   // ==========================================

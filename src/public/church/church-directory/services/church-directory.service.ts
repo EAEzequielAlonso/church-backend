@@ -19,14 +19,29 @@ export class ChurchDirectoryService {
     const qb = this.repo
       .createQueryBuilder('p')
       .innerJoinAndSelect('p.church', 'c');
-    if (query.city)
-      qb.andWhere('LOWER(p.city) = LOWER(:city)', { city: query.city });
-    if (query.state)
-      qb.andWhere('LOWER(p.state) = LOWER(:state)', { state: query.state });
-    if (query.country)
-      qb.andWhere('LOWER(p.country) = LOWER(:country)', {
-        country: query.country,
-      });
+    const hasCoords = query.latitude !== undefined && query.longitude !== undefined;
+
+    if (!hasCoords && !query.search) {
+      // Fallback: only filter by city/state/country if no coords and no explicit search
+      if (query.city)
+        qb.andWhere('LOWER(p.city) = LOWER(:city)', { city: query.city });
+      if (query.state)
+        qb.andWhere('LOWER(p.state) = LOWER(:state)', { state: query.state });
+      if (query.country)
+        qb.andWhere('LOWER(p.country) = LOWER(:country)', {
+          country: query.country,
+        });
+    }
+
+    if (hasCoords) {
+      // Haversine formula for distance in kilometers
+      qb.addSelect(
+        `(6371 * acos(cos(radians(:lat)) * cos(radians(p.latitude)) * cos(radians(p.longitude) - radians(:lng)) + sin(radians(:lat)) * sin(radians(p.latitude))))`,
+        'distance',
+      );
+      qb.setParameter('lat', query.latitude);
+      qb.setParameter('lng', query.longitude);
+    }
     if (query.verified !== undefined)
       qb.andWhere('p.isVerified = :verified', {
         verified: query.verified === 'true',
@@ -38,7 +53,9 @@ export class ChurchDirectoryService {
     // if (query.doctrinalTag) qb.andWhere(':doctrinalTag = ANY(p.essentialDoctrines)', { doctrinalTag: query.doctrinalTag });
     const page = query.page ?? 1;
     const limit = query.limit ?? 12;
-    if (query.sort === 'city')
+    if (hasCoords && !query.search && !query.sort) {
+      qb.orderBy('distance', 'ASC');
+    } else if (query.sort === 'city')
       qb.orderBy('p.city', 'ASC').addOrderBy('c.canonicalName', 'ASC');
     else if (query.sort === 'newest_claimed') qb.orderBy('p.updatedAt', 'DESC');
     else

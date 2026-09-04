@@ -89,24 +89,22 @@ export class ManagePublicRelationUseCase {
           }),
         );
 
-        if (row.relationType === PublicChurchRelationType.COMMUNITY_MEMBER) {
-          await this.activitiesService.logActivity(
-            {
-              actorPersonId: row.personId,
-              relatedChurchId: row.churchId,
-              activityType: EcosystemActivityType.MEMBER_JOINED,
-              entityId: row.personId,
-              entityType: EcosystemActivityEntityType.PERSON,
-              country: church?.publicProfile?.country,
-              state: church?.publicProfile?.state,
-              city: church?.publicProfile?.city,
-              metadata: {
-                relationType: row.relationType,
-              },
+        await this.activitiesService.logActivity(
+          {
+            actorPersonId: row.personId,
+            relatedChurchId: row.churchId,
+            activityType: EcosystemActivityType.MEMBER_JOINED,
+            entityId: row.personId,
+            entityType: EcosystemActivityEntityType.PERSON,
+            country: church?.publicProfile?.country,
+            state: church?.publicProfile?.state,
+            city: church?.publicProfile?.city,
+            metadata: {
+              relationType: row.relationType,
             },
-            manager,
-          );
-        }
+          },
+          manager,
+        );
 
         this.eventEmitter.emit('community.join.approved', {
           recipientPersonId: row.personId,
@@ -273,6 +271,58 @@ export class ManagePublicRelationUseCase {
       });
 
       return { deleted: true };
+    });
+  }
+
+  async makeAdmin(personId: string, relationId: string) {
+    const row = await this.relations.findOne({ where: { id: relationId } });
+    if (!row) throw new NotFoundException('Relation not found');
+    await this.ownership.assertOwnsChurch(personId, row.churchId);
+
+    if (row.status !== PublicChurchRelationStatus.APPROVED) {
+      throw new BadRequestException('Relation must be APPROVED');
+    }
+    
+    if (row.isCurrentAdmin) {
+      throw new BadRequestException('Person is already an admin');
+    }
+
+    row.isCurrentAdmin = true;
+    await this.relations.save(row);
+
+    return { success: true };
+  }
+
+  async removeAdmin(personId: string, relationId: string) {
+    return this.relations.manager.transaction(async (manager) => {
+      const row = await manager.findOne(PublicChurchRelation, {
+        where: { id: relationId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!row) throw new NotFoundException('Relation not found');
+      
+      await this.ownership.assertOwnsChurch(personId, row.churchId);
+
+      if (!row.isCurrentAdmin) {
+        throw new BadRequestException('Person is not an admin');
+      }
+
+      if (row.personId === personId) {
+        throw new BadRequestException('Cannot remove yourself as an admin');
+      }
+
+      const adminCount = await manager.count(PublicChurchRelation, {
+        where: { churchId: row.churchId, isCurrentAdmin: true },
+      });
+
+      if (adminCount <= 1) {
+        throw new BadRequestException('Cannot remove the last administrator');
+      }
+
+      row.isCurrentAdmin = false;
+      await manager.save(row);
+
+      return { success: true };
     });
   }
 }

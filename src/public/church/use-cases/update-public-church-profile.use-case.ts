@@ -38,9 +38,14 @@ export class UpdatePublicChurchProfileUseCase {
     });
     if (!profile) throw new NotFoundException('Public profile not found');
 
+    let removedPhotoUrls: string[] = [];
     if (dto.publicDescription !== undefined)
       profile.publicDescription = dto.publicDescription;
-    if (dto.photoUrls !== undefined) profile.photoUrls = dto.photoUrls;
+    if (dto.photoUrls !== undefined) {
+      const newUrls = new Set(dto.photoUrls);
+      removedPhotoUrls = (profile.photoUrls || []).filter(url => !newUrls.has(url));
+      profile.photoUrls = dto.photoUrls;
+    }
 
     if (dto.address !== undefined) profile.address = dto.address;
     if (dto.city !== undefined) profile.city = dto.city;
@@ -80,7 +85,6 @@ export class UpdatePublicChurchProfileUseCase {
     }
 
     if (dto.denomination !== undefined) profile.denomination = dto.denomination;
-    if (dto.isVerified !== undefined) profile.isVerified = dto.isVerified;
     
     if (dto.slug !== undefined) {
       if (dto.slug !== profile.slug && dto.slug !== null) {
@@ -110,6 +114,9 @@ export class UpdatePublicChurchProfileUseCase {
     await deleteOldImage(oldLogoUrl, 'logos');
     await deleteOldImage(oldCoverUrl, 'covers');
     await deleteOldImage(oldMainImageUrl, 'main-images');
+    for (const url of removedPhotoUrls) {
+      await deleteOldImage(url, 'galleries');
+    }
 
     if (dto.meetings !== undefined) {
       await this.schedules.delete({ profileId: profile.id });

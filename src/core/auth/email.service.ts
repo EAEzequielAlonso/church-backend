@@ -21,7 +21,7 @@ export class EmailService {
   private getFromEmail(): string {
     return (
       this.configService.get<string>('RESEND_FROM_EMAIL') ||
-      'Telyon <noreply@elyon.app>'
+      'Telyon <noreply@telyon.app>'
     );
   }
 
@@ -60,7 +60,7 @@ export class EmailService {
       }
     } else {
       this.logCodeToConsole(email, code);
-      return true;
+      return this.configService.get<string>('NODE_ENV') !== 'production';
     }
   }
 
@@ -116,7 +116,7 @@ export class EmailService {
       }
     } else {
       this.logInviteToConsole(email, inviteLink);
-      return true;
+      return this.configService.get<string>('NODE_ENV') !== 'production';
     }
   }
 
@@ -171,7 +171,7 @@ export class EmailService {
       }
     } else {
       this.logPasswordResetToConsole(email, resetLink);
-      return true;
+      return this.configService.get<string>('NODE_ENV') !== 'production';
     }
   }
 
@@ -219,7 +219,7 @@ export class EmailService {
       }
     } else {
       this.logNotificationToConsole(email, subject, message);
-      return true;
+      return this.configService.get<string>('NODE_ENV') !== 'production';
     }
   }
 

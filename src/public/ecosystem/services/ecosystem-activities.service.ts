@@ -200,28 +200,44 @@ export class EcosystemActivitiesService {
 
     // Compute Relevance Tier dynamically
     let caseStatement = 'CASE ';
+    let baseScoreStatement = 'CASE ';
+
     // Tier 1: Relational
     caseStatement += 'WHEN activity.actor_person_id = :userId THEN 1 ';
+    baseScoreStatement += 'WHEN activity.actor_person_id = :userId THEN 100 ';
+    
     if (followedChurchIds.length > 0) {
       caseStatement += 'WHEN activity.actor_church_id IN (:...followedChurchIds) THEN 1 ';
       caseStatement += 'WHEN activity.related_church_id IN (:...followedChurchIds) THEN 1 ';
       caseStatement += `WHEN activity.entity_type = '${EcosystemActivityEntityType.CHURCH}' AND activity.entity_id IN (:...followedChurchIds) THEN 1 `;
+      
+      baseScoreStatement += 'WHEN activity.actor_church_id IN (:...followedChurchIds) THEN 100 ';
+      baseScoreStatement += 'WHEN activity.related_church_id IN (:...followedChurchIds) THEN 100 ';
+      baseScoreStatement += `WHEN activity.entity_type = '${EcosystemActivityEntityType.CHURCH}' AND activity.entity_id IN (:...followedChurchIds) THEN 100 `;
     }
     // Tier 2: City
     if (person.city) {
       caseStatement += 'WHEN activity.city = :userCity THEN 2 ';
+      baseScoreStatement += 'WHEN activity.city = :userCity THEN 86 ';
     }
     // Tier 3: State
     if (person.state) {
       caseStatement += 'WHEN activity.state = :userState THEN 3 ';
+      baseScoreStatement += 'WHEN activity.state = :userState THEN 72 ';
     }
     // Tier 4: Country (Global Fallback within same country)
     if (person.country) {
       caseStatement += 'WHEN activity.country = :userCountry THEN 4 ';
+      baseScoreStatement += 'WHEN activity.country = :userCountry THEN 58 ';
     }
     caseStatement += 'ELSE 5 END';
+    baseScoreStatement += 'ELSE 0 END';
+
+    const decayFormula = '(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - activity.created_at)) / 86400.0)';
+    const relevanceScoreStatement = `(${baseScoreStatement}) - ${decayFormula}`;
 
     query.addSelect(caseStatement, 'relevance_tier');
+    query.addSelect(relevanceScoreStatement, 'relevance_score');
 
     // Check if the personalized pool is completely empty before paginating
     const totalPersonalized = await query.getCount();
@@ -231,7 +247,7 @@ export class EcosystemActivitiesService {
     }
 
     // 4. Order & Paginate
-    query.orderBy('relevance_tier', 'ASC');
+    query.orderBy('relevance_score', 'DESC');
     query.addOrderBy('activity.createdAt', 'DESC');
     query.addOrderBy('activity.id', 'DESC'); // Tiebreaker for deterministic pagination
     query.take(limit);

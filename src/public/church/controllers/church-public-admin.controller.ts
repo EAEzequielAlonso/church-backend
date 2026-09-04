@@ -101,6 +101,20 @@ export class ChurchPublicAdminController {
       dto.role,
     );
   }
+
+  @Patch('relations/:id/make-admin') makeAdmin(
+    @Req() req: any,
+    @Param('id') id: string,
+  ) {
+    return this.manageRelationUseCase.makeAdmin(this.personId(req), id);
+  }
+
+  @Patch('relations/:id/remove-admin') removeAdmin(
+    @Req() req: any,
+    @Param('id') id: string,
+  ) {
+    return this.manageRelationUseCase.removeAdmin(this.personId(req), id);
+  }
   @Get('church-profile/:churchId') getProfile(
     @Req() req: any,
     @Param('churchId') churchId: string,

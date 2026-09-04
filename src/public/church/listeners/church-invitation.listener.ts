@@ -105,6 +105,9 @@ export class ChurchInvitationListener {
             country: church?.publicProfile?.country,
             state: church?.publicProfile?.state,
             city: church?.publicProfile?.city,
+            metadata: {
+              relationType: PublicChurchRelationType.COMMUNITY_MEMBER,
+            },
           },
           queryRunner.manager,
         );
