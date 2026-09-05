@@ -6,6 +6,7 @@ import {
   Body,
   UseGuards,
   Post,
+  Query,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { PermissionsGuard } from 'src/core/auth/guards/permissions.guard';
@@ -46,8 +47,15 @@ export class AdminController {
   }
 
   @Get('users')
-  getUsers() {
-    return this.adminService.getUsers();
+  getUsers(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    const pageNum = parseInt(page, 10) || 1;
+    let limitNum = parseInt(limit, 10) || 10;
+    if (limitNum > 10) limitNum = 10;
+    
+    return this.adminService.getUsers(pageNum, limitNum);
   }
 
   @Patch('users/:id/active')

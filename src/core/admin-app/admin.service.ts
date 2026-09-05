@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/core/users/entities/user.entity';
 import { Person } from 'src/core/users/entities/person.entity';
-import { Repository, MoreThanOrEqual } from 'typeorm';
+import { Repository, MoreThanOrEqual, In } from 'typeorm';
 import { ChurchPublicProfile } from '../../public/church/entities/church_public_profile.entity';
 import { ChurchClaim } from '../../public/church/entities/church_claim.entity';
 import { PublicChurchRelation } from '../../public/church/entities/public_church_relation.entity';
@@ -273,36 +273,63 @@ export class AdminService {
     return { success: true };
   }
 
-  async getUsers() {
-    const users = await this.userRepo.find({
+  async getUsers(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await this.userRepo.findAndCount({
       relations: ['person'],
       order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
     });
 
-    // To get the number of relations for each user, we query relations grouped by personId
-    const relationsCount = await this.relationRepo
-      .createQueryBuilder('r')
-      .select('r.personId', 'personId')
-      .addSelect('COUNT(r.id)', 'count')
-      .groupBy('r.personId')
-      .getRawMany();
+    const personIds = users.map((u) => u.personId).filter(Boolean);
 
-    const relationsMap = new Map<string, number>();
-    relationsCount.forEach((r) =>
-      relationsMap.set(r.personId, parseInt(r.count, 10)),
-    );
+    let relations: PublicChurchRelation[] = [];
+    if (personIds.length > 0) {
+      relations = await this.relationRepo.find({
+        where: { personId: In(personIds) },
+        relations: ['church'],
+      });
+    }
 
-    return users.map((u) => ({
-      id: u.id,
-      email: u.email,
-      firstName: u.person?.firstName,
-      lastName: u.person?.lastName,
-      systemRole: u.systemRole,
-      isActive: u.person?.isActive ?? false,
-      relationsCount: u.personId ? relationsMap.get(u.personId) || 0 : 0,
-      createdAt: u.createdAt,
-      slug: u.person?.slug,
-    }));
+    const relationsByPerson = new Map<string, PublicChurchRelation>();
+    relations.forEach((r) => {
+      const existing = relationsByPerson.get(r.personId);
+      // Prefer COMMUNITY_MEMBER over REGULAR_VISITOR
+      if (
+        !existing ||
+        (existing.relationType !== PublicChurchRelationType.COMMUNITY_MEMBER &&
+          r.relationType === PublicChurchRelationType.COMMUNITY_MEMBER)
+      ) {
+        relationsByPerson.set(r.personId, r);
+      }
+    });
+
+    const data = users.map((u) => {
+      const relation = u.personId ? relationsByPerson.get(u.personId) : null;
+      return {
+        id: u.id,
+        email: u.email,
+        firstName: u.person?.firstName,
+        lastName: u.person?.lastName,
+        avatarUrl: u.person?.avatarUrl,
+        city: u.person?.city,
+        state: u.person?.state,
+        country: u.person?.country,
+        churchRelationType: relation?.relationType || null,
+        churchName: relation?.church?.canonicalName || null,
+        createdAt: u.createdAt,
+      };
+    });
+
+    return {
+      data,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+      limit,
+    };
   }
 
   async toggleUserActive(id: string, isActive: boolean) {
